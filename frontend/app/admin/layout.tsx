@@ -110,7 +110,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(56,189,248,0.14),_transparent_24%),linear-gradient(135deg,_#020617_0%,_#08111f_48%,_#0f172a_100%)] text-slate-100">
       <div className="flex min-h-screen flex-col lg:flex-row">
         {!isPosFullScreen && (
-          <aside className={`fixed inset-y-0 left-0 z-50 w-72 overflow-y-auto border-r border-slate-800/80 bg-[linear-gradient(180deg,_#020617_0%,_#0f172a_45%,_#111827_100%)] text-white shadow-[12px_0_45px_rgba(2,6,23,0.35)] transition-transform duration-300 lg:static lg:translate-x-0 ${navOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
+          <aside className={`print:hidden fixed inset-y-0 left-0 z-50 w-72 overflow-y-auto border-r border-slate-800/80 bg-[linear-gradient(180deg,_#020617_0%,_#0f172a_45%,_#111827_100%)] text-white shadow-[12px_0_45px_rgba(2,6,23,0.35)] transition-transform duration-300 lg:static lg:translate-x-0 ${navOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
             <div className="flex h-full flex-col justify-between p-6">
               <div className="mb-6 flex items-center justify-between lg:hidden">
                 <div>
@@ -177,7 +177,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         )}
 
         <main className={`flex-1 ${isPosFullScreen ? 'lg:p-0' : 'lg:p-8'}`}>
-          <div className="border-b border-slate-800/70 bg-slate-950/75 px-4 py-4 backdrop-blur-xl lg:px-0">
+          <div className="print:hidden border-b border-slate-800/70 bg-slate-950/75 px-4 py-4 backdrop-blur-xl lg:px-0">
             <div className={`mx-auto flex items-center justify-between gap-4 ${isPosFullScreen ? 'max-w-none px-4 sm:px-6 lg:px-8' : 'max-w-7xl'}`}>
               <div>
                 <p className="text-[11px] uppercase tracking-[0.35em] text-slate-400">Admin</p>

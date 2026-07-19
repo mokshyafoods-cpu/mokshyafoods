@@ -1,10 +1,18 @@
 import axios from 'axios';
 import { toast } from 'sonner';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://mokshyafoods.onrender.com';
+const DEFAULT_API_BASE_URL = 'https://mokshyafoods.onrender.com/api';
+const normalizeApiBaseUrl = (value?: string) => {
+  const raw = (value || DEFAULT_API_BASE_URL).trim();
+  if (!raw) return DEFAULT_API_BASE_URL;
 
+  const withoutTrailingSlash = raw.replace(/\/$/, '');
+  return withoutTrailingSlash.replace(/\/api$/, '');
+};
+
+const API_BASE_URL = normalizeApiBaseUrl(process.env.NEXT_PUBLIC_API_URL);
 const apiClient = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: `${API_BASE_URL}/api`,
   timeout: 300000,
 });
 
@@ -104,6 +112,13 @@ export const posAPI = {
   startShift: (data: any) => apiClient.post('/pos/tills/start', data),
   closeShift: (id: string, data: any) => apiClient.put(`/pos/tills/${id}/close`, data),
   getTillHistory: () => apiClient.get('/pos/tills'),
+};
+
+export const paymentLedgerAPI = {
+  getAll: (params?: any) => apiClient.get('/payment-ledger', { params }),
+  getByOrderId: (orderId: string) => apiClient.get(`/payment-ledger/order/${orderId}`),
+  createOrUpdate: (data: any) => apiClient.post('/payment-ledger', data),
+  update: (id: string, data: any) => apiClient.put(`/payment-ledger/${id}`, data),
 };
 
 export const reviewAPI = {

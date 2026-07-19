@@ -70,6 +70,7 @@ export default function POSPage() {
   const [searchResults, setSearchResults] = useState<ProductItem[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [customerPhone, setCustomerPhone] = useState('');
+  const [customerName, setCustomerName] = useState('');
   const [attachedCustomer, setAttachedCustomer] = useState<{ _id: string; name: string; phone: string } | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<'cash'>('cash');
   const [paymentOpen, setPaymentOpen] = useState(false);
@@ -274,6 +275,7 @@ export default function POSPage() {
     setCart([]);
     setAttachedCustomer(null);
     setCustomerPhone('');
+    setCustomerName('');
     setDiscountValue(0);
     setDiscountMode('flat');
     setDiscountReason('');
@@ -289,9 +291,11 @@ export default function POSPage() {
     try {
       const response = await userAPI.searchByPhone(customerPhone.trim());
       const payload = unwrapResponseData(response, null);
-      setAttachedCustomer(payload && typeof payload === 'object' ? payload : null);
-      if (payload && typeof payload === 'object' && 'name' in payload) {
-        toast.success(`${payload.name} attached`);
+      const nextCustomer = payload && typeof payload === 'object' ? payload : null;
+      setAttachedCustomer(nextCustomer);
+      if (nextCustomer && typeof nextCustomer === 'object' && 'name' in nextCustomer) {
+        setCustomerName(String(nextCustomer.name || ''));
+        toast.success(`${nextCustomer.name} attached`);
       }
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Customer not found');
@@ -342,6 +346,7 @@ export default function POSPage() {
 
     setCart(resumedItems);
     setCustomerPhone(heldSale.customerId?.phone || '');
+    setCustomerName(heldSale.customerName || heldSale.customerId?.name || '');
     setAttachedCustomer(
       heldSale.customerId
         ? { _id: heldSale.customerId._id, name: heldSale.customerId.name, phone: heldSale.customerId.phone }
@@ -426,6 +431,7 @@ export default function POSPage() {
       setCart([]);
       setAttachedCustomer(null);
       setCustomerPhone('');
+      setCustomerName('');
       setDiscountValue(0);
       setDiscountMode('flat');
       setDiscountReason('');
@@ -457,7 +463,7 @@ export default function POSPage() {
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-slate-50 p-3 sm:p-4 lg:p-6">
-      <div className="mx-auto max-w-7xl screen-only">
+      <div className="mx-auto max-w-7xl screen-only print:hidden">
         <div className="mb-6 grid gap-4 xl:grid-cols-[1.9fr_0.95fr]">
         <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -542,7 +548,7 @@ export default function POSPage() {
                   }}
                   autoFocus
                   placeholder="Search product or scan barcode… (Enter to add)"
-                  className="w-full rounded-[1.75rem] border border-slate-300 bg-slate-50 px-5 py-4 text-lg outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+                  className="w-full rounded-[1.75rem] border border-slate-300 bg-white px-5 py-4 text-lg text-slate-900 placeholder:text-slate-500 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
                 />
                 <button
                   type="button"
@@ -580,7 +586,7 @@ export default function POSPage() {
                       key={product._id}
                       type="button"
                       onClick={() => addProductToCart(product)}
-                      className="flex items-center justify-between rounded-3xl border border-slate-200 bg-white p-4 text-left transition hover:border-primary"
+                      className="flex items-center justify-between rounded-3xl border border-slate-200 bg-white p-4 text-left text-slate-900 transition hover:border-primary"
                     >
                       <div>
                         <p className="text-sm font-semibold text-slate-900">{product.name}</p>
@@ -622,7 +628,7 @@ export default function POSPage() {
                     type="button"
                     onClick={() => addProductToCart(product)}
                     disabled={isSoldOut}
-                    className={`group relative overflow-hidden rounded-[2rem] border p-4 text-left transition ${isSoldOut ? 'cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400' : 'border-slate-200 bg-white hover:border-primary hover:shadow-lg'}`}
+                    className={`group relative overflow-hidden rounded-[2rem] border p-4 text-left text-slate-900 transition ${isSoldOut ? 'cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400' : 'border-slate-200 bg-white hover:border-primary hover:shadow-lg'}`}
                   >
                     <div className="flex items-start gap-4">
                       <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-3xl bg-slate-100">
@@ -714,23 +720,31 @@ export default function POSPage() {
 
           <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
             <p className="text-sm uppercase tracking-[0.35em] text-slate-400">Customer</p>
-            <p className="mt-3 text-xl font-semibold text-slate-900">{attachedCustomer ? attachedCustomer.name : 'Walk-in customer'}</p>
-            <p className="mt-2 text-sm text-slate-500">Attach by phone to save customer data and receipts.</p>
-            <div className="mt-4 flex gap-2">
+            <p className="mt-2 text-sm text-slate-500">Edit the name directly or attach by phone to pull customer details.</p>
+            <div className="mt-4 space-y-3">
               <input
                 type="text"
-                value={customerPhone}
-                onChange={(e) => setCustomerPhone(e.target.value)}
-                placeholder="Customer phone"
-                className="w-full rounded-3xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                value={customerName}
+                onChange={(e) => setCustomerName(e.target.value)}
+                placeholder="Customer name"
+                className="w-full rounded-3xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-500 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
               />
-              <button
-                type="button"
-                onClick={attachCustomer}
-                className="rounded-3xl bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-primary/90"
-              >
-                Attach
-              </button>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={customerPhone}
+                  onChange={(e) => setCustomerPhone(e.target.value)}
+                  placeholder="Customer phone"
+                  className="w-full rounded-3xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-500 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                />
+                <button
+                  type="button"
+                  onClick={attachCustomer}
+                  className="rounded-3xl bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-primary/90"
+                >
+                  Attach
+                </button>
+              </div>
             </div>
           </div>
 
@@ -758,14 +772,14 @@ export default function POSPage() {
                 min={0}
                 value={discountValue}
                 onChange={(e) => setDiscountValue(Number(e.target.value))}
-                className="rounded-3xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                className="rounded-3xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-500 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
                 placeholder={discountMode === 'flat' ? 'Discount amount' : 'Discount percent'}
               />
               <input
                 type="text"
                 value={discountReason}
                 onChange={(e) => setDiscountReason(e.target.value)}
-                className="rounded-3xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                className="rounded-3xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-500 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
                 placeholder="Reason (optional)"
               />
               <div className="grid gap-2">
@@ -832,7 +846,7 @@ export default function POSPage() {
                             min={1}
                             max={item.stock}
                             onChange={(e) => handleQuantityChange(item.productId, Number(e.target.value))}
-                            className="w-14 border-none bg-transparent text-center text-sm outline-none"
+                            className="w-14 border-none bg-transparent text-center text-sm text-slate-900 outline-none"
                           />
                           <button type="button" onClick={() => handleQuantityChange(item.productId, item.quantity + 1)} className="text-slate-600">
                             <Plus className="h-4 w-4" />
@@ -908,7 +922,7 @@ export default function POSPage() {
                           value={tenderedAmount}
                           onChange={(e) => setTenderedAmount(Number(e.target.value))}
                           placeholder="Enter cash received"
-                          className="w-full rounded-3xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                          className="w-full rounded-3xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-500 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
                         />
                       </div>
                       <div className="mt-4 flex items-center justify-between text-sm text-slate-600">
@@ -997,19 +1011,22 @@ export default function POSPage() {
               </div>
               <div className="flex justify-between">
                 <span>Customer</span>
-                <span>{attachedCustomer?.name || 'Walk-in'}</span>
+                <span>{customerName.trim() || attachedCustomer?.name || 'Walk-in'}</span>
               </div>
             </div>
             <div className="mt-6 border-t border-slate-200 pt-4 text-sm">
-              {receiptOrder.items.map((item: any) => (
-                <div key={item.product._id} className="mb-3 flex justify-between gap-2">
-                  <div>
-                    <p className="font-medium">{item.product.name}</p>
-                    <p className="text-xs text-slate-500">{item.quantity} × Rs. {item.price}</p>
+              {receiptOrder.items.map((item: any, index: number) => {
+                const productId = item?.product?._id || item?.productId || item?.product?.id || `receipt-item-${index}`;
+                return (
+                  <div key={productId} className="mb-3 flex justify-between gap-2">
+                    <div>
+                      <p className="font-medium">{item.product.name}</p>
+                      <p className="text-xs text-slate-500">{item.quantity} × Rs. {item.price}</p>
+                    </div>
+                    <p className="font-semibold">Rs. {item.subtotal}</p>
                   </div>
-                  <p className="font-semibold">Rs. {item.subtotal}</p>
-                </div>
-              ))}
+                );
+              })}
             </div>
             <div className="space-y-2 border-t border-slate-200 pt-4 text-sm">
               <div className="flex justify-between">

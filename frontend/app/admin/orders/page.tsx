@@ -2,8 +2,9 @@
 
 import useSWR from 'swr';
 import { useEffect, useMemo, useState } from 'react';
-import { orderAPI } from '@/services/api';
-import { Search, RefreshCcw } from 'lucide-react';
+import { orderAPI, paymentLedgerAPI } from '@/services/api';
+import { Search, RefreshCcw, BookOpenCheck, X, Save } from 'lucide-react';
+import { toast } from 'sonner';
 
 const statusOptions = ['all', 'pending', 'processing', 'shipped', 'delivered', 'cancelled'];
 
@@ -12,6 +13,10 @@ export default function AdminOrdersPage() {
   const [search, setSearch] = useState('');
   const [viewMode, setViewMode] = useState<'customer' | 'pos'>('customer');
   const [page, setPage] = useState(1);
+  const [ledgerOpen, setLedgerOpen] = useState(false);
+  const [ledgerForm, setLedgerForm] = useState<any>({});
+  const [ledgerLoading, setLedgerLoading] = useState(false);
+  const [ledgerEntries, setLedgerEntries] = useState<Record<string, any>>({});
   const PAGE_SIZE = 8;
 
   const queryParams = useMemo(() => ({
@@ -73,6 +78,56 @@ export default function AdminOrdersPage() {
   const handleStatusChange = async (orderId: string, newStatus: string) => {
     await orderAPI.update(orderId, { orderStatus: newStatus });
     await mutate();
+  };
+
+  const openLedger = async (order: any) => {
+    const orderId = order?._id;
+    if (!orderId) return;
+    const existing = ledgerEntries[orderId];
+    const initialForm = {
+      orderId,
+      orderNumber: order.orderNumber || order._id,
+      customerName: order.user?.name || order.shippingAddress?.name || 'Guest',
+      customerContact: order.shippingAddress?.phone || order.user?.phone || '',
+      products: (order.items || []).map((item: any) => `${item.name || 'Product'} x${item.quantity || 1}`).join(', '),
+      amount: order.total || 0,
+      paymentMethod: order.paymentMethod || 'cash',
+      paymentDate: new Date().toISOString().slice(0, 10),
+      notes: '',
+      _id: existing?._id || '',
+    };
+    setLedgerForm(initialForm);
+    setLedgerOpen(true);
+    if (!existing) {
+      try {
+        setLedgerLoading(true);
+        const response = await paymentLedgerAPI.getByOrderId(orderId);
+        const entry = response?.data?.data;
+        if (entry) {
+          setLedgerEntries((prev) => ({ ...prev, [orderId]: entry }));
+          setLedgerForm({ ...initialForm, ...entry, _id: entry._id || '' });
+        }
+      } catch (error) {
+        // Ignore lookup errors and allow create mode.
+      } finally {
+        setLedgerLoading(false);
+      }
+    }
+  };
+
+  const saveLedger = async (event: React.FormEvent) => {
+    event.preventDefault();
+    try {
+      const response = await paymentLedgerAPI.createOrUpdate({ ...ledgerForm, amount: Number(ledgerForm.amount || 0) });
+      const savedEntry = response?.data?.data;
+      if (savedEntry) {
+        setLedgerEntries((prev) => ({ ...prev, [savedEntry.orderId]: savedEntry }));
+      }
+      toast.success('Payment ledger saved');
+      setLedgerOpen(false);
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || 'Failed to save payment ledger');
+    }
   };
 
   useEffect(() => {
@@ -177,11 +232,12 @@ export default function AdminOrdersPage() {
           </div>
         ) : (
           <div className="min-w-[840px]">
-            <div className="grid gap-0 border-b border-slate-200 bg-slate-100 px-6 py-4 text-sm font-semibold uppercase tracking-[0.2em] text-slate-500 sm:grid-cols-[1.5fr_1fr_1fr_1fr_1fr]">
+            <div className="grid gap-0 border-b border-slate-200 bg-slate-100 px-6 py-4 text-sm font-semibold uppercase tracking-[0.2em] text-slate-500 sm:grid-cols-[1.4fr_1fr_1fr_1fr_0.8fr_0.8fr]">
               <span>Order</span>
               <span>Customer</span>
               <span>Status</span>
               <span>Payment</span>
+              <span>Ledger</span>
               <span className="text-right">Total</span>
             </div>
 
@@ -197,7 +253,7 @@ export default function AdminOrdersPage() {
             ) : (
               <div className="divide-y divide-slate-200">
                 {filteredOrders.map((order: any) => (
-                  <div key={order._id} className="grid items-center gap-4 px-6 py-5 sm:grid-cols-[1.5fr_1fr_1fr_1fr_1fr]">
+                  <div key={order._id} className="grid items-center gap-4 px-6 py-5 sm:grid-cols-[1.4fr_1fr_1fr_1fr_0.8fr_0.8fr]">
                     <div>
                       <p className="font-semibold text-slate-900">{order.orderNumber || order._id}</p>
                       <p className="text-sm text-slate-500">{new Date(order.createdAt).toLocaleDateString()}</p>
@@ -207,7 +263,7 @@ export default function AdminOrdersPage() {
                     </div>
                     <div>
                       <select
-                        className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-primary"
+                        className="w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-primary"
                         value={order.orderStatus}
                         onChange={(e) => handleStatusChange(order._id, e.target.value)}
                       >
@@ -217,6 +273,17 @@ export default function AdminOrdersPage() {
                       </select>
                     </div>
                     <div className="text-slate-900">{order.paymentMethod || 'N/A'}</div>
+                    <div className="flex justify-start">
+                      <button
+                        type="button"
+                        onClick={() => openLedger(order)}
+                        className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
+                        title={ledgerEntries[order._id]?._id ? 'View/edit payment ledger entry' : 'Create payment ledger entry'}
+                      >
+                        {ledgerEntries[order._id]?._id ? <BookOpenCheck className="h-4 w-4 text-emerald-600" /> : <BookOpenCheck className="h-4 w-4 text-slate-700" />}
+                        <span>Ledger</span>
+                      </button>
+                    </div>
                     <div className="text-right font-semibold text-slate-900">Rs. {order.total?.toFixed?.(0) ?? order.total ?? 0}</div>
                   </div>
                 ))}
@@ -225,6 +292,69 @@ export default function AdminOrdersPage() {
           </div>
         )}
       </div>
+
+      {ledgerOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/60 px-4 py-6">
+          <div className="w-full max-w-3xl rounded-[2rem] border border-slate-200 bg-white shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+              <div>
+                <p className="text-sm uppercase tracking-[0.3em] text-slate-400">Payment ledger</p>
+                <h2 className="text-xl font-semibold text-slate-900">{ledgerForm._id ? 'Edit payment ledger entry' : 'Create payment ledger entry'}</h2>
+              </div>
+              <button type="button" onClick={() => setLedgerOpen(false)} className="rounded-full border border-slate-200 p-2 text-slate-600">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <form onSubmit={saveLedger} className="space-y-4 p-6">
+              <div className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-slate-700">Order #</label>
+                  <input value={ledgerForm.orderNumber || ''} onChange={(e) => setLedgerForm({ ...ledgerForm, orderNumber: e.target.value })} className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-900" />
+                </div>
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-slate-700">Customer</label>
+                  <input value={ledgerForm.customerName || ''} onChange={(e) => setLedgerForm({ ...ledgerForm, customerName: e.target.value })} className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-900" />
+                </div>
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-slate-700">Contact</label>
+                  <input value={ledgerForm.customerContact || ''} onChange={(e) => setLedgerForm({ ...ledgerForm, customerContact: e.target.value })} className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-900" />
+                </div>
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-slate-700">Amount</label>
+                  <input type="number" min="0" value={ledgerForm.amount || 0} onChange={(e) => setLedgerForm({ ...ledgerForm, amount: e.target.value })} className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-900" required />
+                </div>
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-slate-700">Payment method</label>
+                  <select value={ledgerForm.paymentMethod || 'cash'} onChange={(e) => setLedgerForm({ ...ledgerForm, paymentMethod: e.target.value })} className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-900">
+                    <option value="cash">Cash</option>
+                    <option value="card">Card</option>
+                    <option value="bank-transfer">Bank transfer</option>
+                    <option value="cod">COD</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-slate-700">Date</label>
+                  <input type="date" value={ledgerForm.paymentDate || ''} onChange={(e) => setLedgerForm({ ...ledgerForm, paymentDate: e.target.value })} className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-900" />
+                </div>
+              </div>
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-slate-700">Products</label>
+                <textarea value={ledgerForm.products || ''} onChange={(e) => setLedgerForm({ ...ledgerForm, products: e.target.value })} className="min-h-[100px] w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-900" />
+              </div>
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-slate-700">Notes</label>
+                <textarea value={ledgerForm.notes || ''} onChange={(e) => setLedgerForm({ ...ledgerForm, notes: e.target.value })} className="min-h-[100px] w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-900" />
+              </div>
+              <div className="flex flex-wrap justify-end gap-3">
+                <button type="button" onClick={() => setLedgerOpen(false)} className="rounded-full border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700">Cancel</button>
+                <button type="submit" className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-white">
+                  <Save className="h-4 w-4" /> Save ledger entry
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       <div className="flex flex-wrap items-center justify-between gap-4 rounded-[2rem] border border-slate-200 bg-slate-50 px-6 py-5 text-sm text-slate-500">
         <div>{orders.length} orders displayed.</div>

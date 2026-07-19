@@ -231,13 +231,6 @@
   }
 
 
-  .screen-only {
-    display: block !important;
-  }
-  .screen-only {
-    display: block !important;
-  }
-
   .receipt-print {
     display: block !important;
     width: 100% !important;
@@ -256,7 +249,8 @@
     background: transparent !important;
   }
 
-  .screen-only {
+  .screen-only,
+  .print\:hidden {
     display: none !important;
   }
 }

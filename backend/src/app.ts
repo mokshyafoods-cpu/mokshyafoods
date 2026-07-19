@@ -15,6 +15,7 @@ import adminRoutes from './routes/admin';
 import devRoutes from './routes/dev';
 import paymentRoutes from './routes/payments';
 import posRoutes from './routes/pos';
+import paymentLedgerRoutes from './routes/paymentLedger';
 
 dotenv.config();
 
@@ -22,14 +23,23 @@ const app = express();
 
 app.use(helmet());
 
-const allowedOrigin = process.env.FRONTEND_URL;
 const corsOptions: CorsOptions = {
   origin: (origin, callback) => {
     const allowedOrigins = [
-      process.env.FRONTEND_URL || 'https://mokshyafoods.vercel.app',
-    ];
+      process.env.FRONTEND_URL,
+      'https://mokshyafoods.vercel.app',
+      'https://www.mokshyafoods.vercel.app',
+      'http://localhost:3000',
+      'http://127.0.0.1:3000',
+      'http://localhost:3001',
+      'http://127.0.0.1:3001',
+      'http://localhost:5173',
+      'http://127.0.0.1:5173',
+    ].filter(Boolean) as string[];
 
-    if (!origin || allowedOrigins.includes(origin)) {
+    const isLocalOrigin = origin?.startsWith('http://localhost') || origin?.startsWith('http://127.0.0.1');
+
+    if (!origin || allowedOrigins.includes(origin) || isLocalOrigin) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));
@@ -62,6 +72,15 @@ if (process.env.NODE_ENV !== 'production') {
 }
 app.use('/api/payments', paymentRoutes);
 app.use('/api/pos', posRoutes);
+app.use('/api/payment-ledger', paymentLedgerRoutes);
+
+app.get('/', (_req: Request, res: Response) => {
+  res.status(200).json({
+    success: true,
+    message: 'Mokshya Foods API is running',
+    timestamp: new Date().toISOString(),
+  });
+});
 
 const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
   console.error(err.stack);
