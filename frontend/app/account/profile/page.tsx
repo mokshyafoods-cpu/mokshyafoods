@@ -3,7 +3,6 @@
 import { ChangeEvent, FormEvent, useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
-import { isMobileDevice } from '@/lib/utils';
 
 export default function ProfilePage() {
   const { user, updateProfile } = useAuth();
@@ -38,17 +37,16 @@ export default function ProfilePage() {
   }, [user]);
 
   const handleAvatarChange = (event: ChangeEvent<HTMLInputElement>) => {
-    if (isMobileDevice()) {
-      toast.error('Image uploads are not allowed on mobile devices.');
-      return;
-    }
-
     const file = event.target.files?.[0] || null;
     setAvatarFile(file);
 
     if (file) {
       setAvatarPreview(URL.createObjectURL(file));
+      toast.success('Profile image selected. Save changes to upload it.');
+      return;
     }
+
+    setAvatarPreview(user?.avatar || '');
   };
 
   const handleSave = async (event: FormEvent) => {
@@ -85,8 +83,8 @@ export default function ProfilePage() {
   return (
     <section className="space-y-8 px-4 py-8 lg:px-0">
       <div className="mx-auto max-w-7xl space-y-8">
-        <div className="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm">
-        <h1 className="text-3xl font-bold text-slate-950">My Profile</h1>
+        <div className="rounded-[2rem] border border-slate-200 bg-white p-4 shadow-sm sm:p-8">
+        <h1 className="text-2xl font-bold text-slate-950 sm:text-3xl">My Profile</h1>
         <p className="mt-2 text-sm text-slate-600">Edit your account details and keep your contact information current.</p>
 
         <form onSubmit={handleSave} className="mt-8 space-y-6">
@@ -101,19 +99,20 @@ export default function ProfilePage() {
             </label>
             <div className="block">
               <span className="text-sm font-semibold text-slate-700">Profile Picture</span>
-              <div className="mt-2 flex items-center gap-4">
-                <div className="h-20 w-20 overflow-hidden rounded-3xl border border-slate-200 bg-slate-100">
+              <div className="mt-2 flex flex-col items-start gap-3 sm:flex-row sm:items-center">
+                <div className="h-24 w-24 overflow-hidden rounded-3xl border border-slate-200 bg-slate-100 sm:h-20 sm:w-20">
                   {avatarPreview ? (
                     <img src={avatarPreview} alt="Profile preview" className="h-full w-full object-cover" />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center text-sm text-slate-400">No image</div>
                   )}
                 </div>
-                <label className="cursor-pointer rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-700 transition hover:border-slate-400 hover:bg-slate-100">
-                  <input type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
+                <label className="w-full cursor-pointer rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-center text-sm text-slate-700 transition hover:border-slate-400 hover:bg-slate-100 sm:w-auto">
+                  <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handleAvatarChange} />
                   Choose image
                 </label>
               </div>
+              <p className="mt-2 text-xs text-slate-500">You can choose a photo from your gallery or use the camera on mobile.</p>
             </div>
           </div>
           <div className="grid gap-6 md:grid-cols-2">
@@ -188,7 +187,7 @@ export default function ProfilePage() {
           <button
             type="submit"
             disabled={loading}
-            className="rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white transition hover:bg-primary/90 disabled:opacity-50"
+            className="w-full rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white transition hover:bg-primary/90 disabled:opacity-50 sm:w-auto"
           >
             {loading ? 'Saving...' : 'Save Changes'}
           </button>

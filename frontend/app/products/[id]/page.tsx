@@ -2,7 +2,7 @@
 
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -51,6 +51,10 @@ export default function ProductDetailPage() {
   const [reviews, setReviews] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState('/placeholder.jpg');
+  const [reviewTitle, setReviewTitle] = useState('');
+  const [reviewComment, setReviewComment] = useState('');
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
   const { isAuthenticated } = useAuth();
   const router = useRouter();
   const { addItem } = useCartStore();
@@ -125,6 +129,50 @@ export default function ProductDetailPage() {
       origin: product.origin,
     });
     toast.success('Added to cart');
+  };
+
+  const handleReviewSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (!isAuthenticated) {
+      toast.error('Please sign in to leave a review.');
+      router.push(`/auth/login?redirect=/products/${id}`);
+      return;
+    }
+
+    if (!reviewComment.trim()) {
+      toast.error('Please share a short comment to submit your review.');
+      return;
+    }
+
+    try {
+      setReviewSubmitting(true);
+      const response = await reviewAPI.create({
+        productId: id,
+        rating: reviewRating,
+        title: reviewTitle.trim() || 'Product review',
+        comment: reviewComment.trim(),
+      });
+      const createdReview = response?.data?.data ?? response?.data ?? null;
+      setReviews((current) => [
+        createdReview || {
+          _id: `${Date.now()}`,
+          title: reviewTitle.trim() || 'Product review',
+          comment: reviewComment.trim(),
+          rating: reviewRating,
+          createdAt: new Date().toISOString(),
+        },
+        ...current,
+      ]);
+      setReviewTitle('');
+      setReviewComment('');
+      setReviewRating(5);
+      toast.success('Your review has been submitted.');
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to submit review.');
+    } finally {
+      setReviewSubmitting(false);
+    }
   };
 
   if (loading) {
@@ -282,6 +330,42 @@ export default function ProductDetailPage() {
                     <Star className="h-4 w-4 fill-current" /> {reviews.length}
                   </div>
                 </div>
+
+                <form onSubmit={handleReviewSubmit} className="mt-5 space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <p className="text-sm font-semibold text-slate-900">Share your experience</p>
+                    <select
+                      value={reviewRating}
+                      onChange={(event) => setReviewRating(Number(event.target.value))}
+                      className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700"
+                    >
+                      {[5, 4, 3, 2, 1].map((value) => (
+                        <option key={value} value={value}>{value} star{value > 1 ? 's' : ''}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <input
+                    value={reviewTitle}
+                    onChange={(event) => setReviewTitle(event.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary"
+                    placeholder="Title (optional)"
+                  />
+                  <textarea
+                    value={reviewComment}
+                    onChange={(event) => setReviewComment(event.target.value)}
+                    rows={4}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary"
+                    placeholder="Write about the product quality, delivery, or taste..."
+                  />
+                  <button
+                    type="submit"
+                    disabled={reviewSubmitting}
+                    className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {reviewSubmitting ? 'Submitting...' : 'Submit review'}
+                  </button>
+                </form>
+
                 {reviews.length === 0 ? (
                   <p className="mt-4 text-sm text-slate-600">No reviews yet for this product.</p>
                 ) : (

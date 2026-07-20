@@ -263,9 +263,9 @@
   --success-bg: color-mix(in srgb, var(--primary) 12%, white 88%);
   --success-text: var(--primary);
   --success-border: color-mix(in srgb, var(--primary) 25%, var(--border));
-  --error-bg: color-mix(in srgb, var(--destructive) 12%, white 88%);
-  --error-text: var(--destructive);
-  --error-border: color-mix(in srgb, var(--destructive) 25%, var(--border));
+  --error-bg: #fff1f2;
+  --error-text: #dc2626;
+  --error-border: #fda4af;
   --info-bg: color-mix(in srgb, var(--accent) 12%, white 88%);
   --info-text: var(--accent);
   --info-border: color-mix(in srgb, var(--accent) 25%, var(--border));
@@ -275,9 +275,9 @@
   --success-bg: color-mix(in srgb, var(--primary) 28%, #0f241a 72%);
   --success-text: #dcefe2;
   --success-border: color-mix(in srgb, var(--primary) 35%, var(--border));
-  --error-bg: color-mix(in srgb, var(--destructive) 28%, #0f241a 72%);
-  --error-text: #ffd8d8;
-  --error-border: color-mix(in srgb, var(--destructive) 35%, var(--border));
+  --error-bg: #3f0d13;
+  --error-text: #fecaca;
+  --error-border: #ef4444;
   --info-bg: color-mix(in srgb, var(--accent) 28%, #0f241a 72%);
   --info-text: #f7eecf;
   --info-border: color-mix(in srgb, var(--accent) 35%, var(--border));
@@ -285,5 +285,11 @@
 
 [data-sonner-toast] {
   border-radius: var(--radius);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.16);
+}
+
+[data-sonner-toast][data-type='error'] {
+  font-weight: 600;
+  border-width: 1.5px;
 }
 

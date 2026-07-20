@@ -58,7 +58,10 @@ export const updateProfile = async (req: AuthenticatedRequest, res: Response): P
       }
     }
 
-    if ((req as any).file?.path) {
+    if ((req as any).file?.buffer) {
+      const mimeType = (req as any).file.mimetype || 'image/png';
+      update.avatar = `data:${mimeType};base64,${(req as any).file.buffer.toString('base64')}`;
+    } else if ((req as any).file?.path) {
       update.avatar = (req as any).file.path;
     }
 
