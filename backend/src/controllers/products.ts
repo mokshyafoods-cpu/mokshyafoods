@@ -31,7 +31,8 @@ export const getAllProducts = async (req: Request, res: Response): Promise<Respo
       }
     }
 
-    const products = await Product.find(query).lean().limit(100).exec();
+    const products = await Product.find(query).sort({ createdAt: -1 }).lean().limit(100).exec();
+    res.set('Cache-Control', 'public, max-age=60, s-maxage=60, stale-while-revalidate=300');
     return res.json({ success: true, message: 'Products loaded', data: products || [] });
   } catch (error: any) {
     console.error('getAllProducts error:', error);

@@ -204,6 +204,20 @@
     font: inherit;
   }
 
+  button,
+  [type='button'],
+  [type='submit'],
+  [type='reset'] {
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  }
+
+  button:not(:disabled):hover,
+  [type='button']:not(:disabled):hover,
+  [type='submit']:not(:disabled):hover,
+  [type='reset']:not(:disabled):hover {
+    transform: translateY(-1px);
+  }
+
   label {
     color: #111827;
   }

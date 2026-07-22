@@ -2,6 +2,8 @@ import axios from 'axios';
 import { toast } from 'sonner';
 
 const DEFAULT_API_BASE_URL = 'https://mokshyafoods.onrender.com/api';
+const REQUEST_TIMEOUT_MS = 12_000;
+
 const normalizeApiBaseUrl = (value?: string) => {
   const raw = (value || DEFAULT_API_BASE_URL).trim();
   if (!raw) return DEFAULT_API_BASE_URL;
@@ -13,11 +15,13 @@ const normalizeApiBaseUrl = (value?: string) => {
 const API_BASE_URL = normalizeApiBaseUrl(process.env.NEXT_PUBLIC_API_URL);
 const apiClient = axios.create({
   baseURL: `${API_BASE_URL}/api`,
-  timeout: 300000,
+  timeout: REQUEST_TIMEOUT_MS,
 });
 
 // Add token to requests
 apiClient.interceptors.request.use((config) => {
+  if (typeof window === 'undefined') return config;
+
   const token = localStorage.getItem('token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
@@ -28,19 +32,36 @@ apiClient.interceptors.request.use((config) => {
 // Handle response errors and return full axios response so callers can access response.data
 apiClient.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
+    const config = error.config as (typeof error.config & { _retry?: boolean }) | undefined;
+    const shouldRetry = Boolean(
+      config &&
+      !config._retry &&
+      (error.code === 'ECONNABORTED' || error.message?.includes('timeout') || !error.response)
+    );
+
+    if (shouldRetry) {
+      config._retry = true;
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      return apiClient.request(config);
+    }
+
     if (!error.response) {
       const message = `Unable to connect to the API server. Please make sure the backend is running at ${API_BASE_URL}.`;
-      toast.error(message, {
-        duration: 2500,
-      });
+      if (typeof window !== 'undefined') {
+        toast.error(message, {
+          duration: 2500,
+        });
+      }
       error.message = message;
       return Promise.reject(error);
     }
 
     if (error.response.status === 401) {
-      localStorage.removeItem('token');
-      window.location.href = '/auth/login';
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('token');
+        window.location.href = '/auth/login';
+      }
     }
 
     return Promise.reject(error);
@@ -79,6 +100,15 @@ export const adminAPI = {
   getAnalytics: () => apiClient.get('/admin/analytics'),
   getLowStock: (threshold?: number) => apiClient.get('/admin/low-stock', { params: { threshold } }),
   updateStock: (productId: string, data: any) => apiClient.put(`/admin/stock/${productId}`, data),
+  getRawMaterials: (params?: any) => apiClient.get('/admin/raw-materials', { params }),
+  createRawMaterial: (data: any) => apiClient.post('/admin/raw-materials', data),
+  updateRawMaterial: (id: string, data: any) => apiClient.put(`/admin/raw-materials/${id}`, data),
+  deleteRawMaterial: (id: string) => apiClient.delete(`/admin/raw-materials/${id}`),
+  getProductionBatches: (params?: any) => apiClient.get('/admin/production-batches', { params }),
+  createProductionBatch: (data: any) => apiClient.post('/admin/production-batches', data),
+  updateProductionBatch: (id: string, data: any) => apiClient.put(`/admin/production-batches/${id}`, data),
+  deleteProductionBatch: (id: string) => apiClient.delete(`/admin/production-batches/${id}`),
+  getMonthlyReport: (params?: any) => apiClient.get('/admin/monthly-report', { params }),
 };
 
 export const orderAPI = {

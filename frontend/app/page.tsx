@@ -149,23 +149,25 @@ export default function HomePage() {
                 <div className="inline-flex items-center gap-2 rounded-full bg-secondary/10 px-4 py-2 text-sm font-semibold text-secondary">
                   Premium Nepalese dried fruits
                 </div>
-                <div className="mt-8 space-y-6 max-w-3xl">
-                  <p className="text-sm uppercase tracking-[0.3em] text-slate-600">
-                    Mokshya Foods
-                  </p>
-                  <h1 className="text-4xl font-bold tracking-tight text-slate-950 sm:text-5xl lg:text-6xl">
-                    Pure Taste, Naturally Preserved.
-                  </h1>
-                  <p className="text-lg leading-8 text-slate-700">
-                    Dried mangoes and kiwis sourced from Nepal&apos;s finest orchards — no added sugar, no preservatives, just fruit in its most honest form.
-                  </p>
-                  <div className="flex flex-col gap-4 sm:flex-row">
-                    <Link href="/products" className="inline-flex items-center justify-center gap-2 rounded-full bg-slate-950 px-8 py-3 text-sm font-semibold text-white shadow-xl shadow-slate-200/20 transition hover:bg-slate-800">
-                      Shop Now <ArrowRight className="w-4 h-4" />
-                    </Link>
-                    <Link href="/#story" className="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white px-8 py-3 text-sm font-semibold text-slate-950 shadow-sm transition hover:bg-slate-100">
-                      Our Story
-                    </Link>
+                <div className="mt-8">
+                  <div className="space-y-6 max-w-3xl">
+                    <p className="text-sm uppercase tracking-[0.3em] text-slate-600">
+                      Mokshya Foods
+                    </p>
+                    <h1 className="text-4xl font-bold tracking-tight text-slate-950 sm:text-5xl lg:text-6xl">
+                      Pure Taste, Naturally Preserved.
+                    </h1>
+                    <p className="text-lg leading-8 text-slate-700">
+                      Dried mangoes and kiwis sourced from Nepal&apos;s finest orchards — no added sugar, no preservatives, just fruit in its most honest form.
+                    </p>
+                    <div className="flex flex-col gap-4 sm:flex-row">
+                      <Link href="/products" className="inline-flex items-center justify-center gap-2 rounded-full bg-slate-950 px-8 py-3 text-sm font-semibold text-white shadow-xl shadow-slate-200/20 transition hover:bg-slate-800">
+                        Shop Now <ArrowRight className="w-4 h-4" />
+                      </Link>
+                      <Link href="/#story" className="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white px-8 py-3 text-sm font-semibold text-slate-950 shadow-sm transition hover:bg-slate-100">
+                        Our Story
+                      </Link>
+                    </div>
                   </div>
                 </div>
 

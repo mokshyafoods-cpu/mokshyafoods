@@ -3,10 +3,10 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { AlertTriangle, ArrowLeft, BarChart3, Package, ShoppingBag, Users, Settings, LogOut, Menu, X, PlusCircle, BookOpenCheck } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, BarChart3, Package, ShoppingBag, Users, Settings, LogOut, Menu, X, PlusCircle, BookOpenCheck, Factory, FileBarChart, Boxes } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
-type SectionKey = 'overview' | 'orders' | 'products' | 'low-stock' | 'customers' | 'payment-ledger' | 'settings';
+type SectionKey = 'overview' | 'orders' | 'products' | 'low-stock' | 'customers' | 'payment-ledger' | 'raw-materials' | 'production' | 'reports' | 'operations' | 'settings';
 
 const getSectionFromPath = (pathname?: string | null): SectionKey => {
   const normalized = pathname?.replace(/\/+$/, '') || '/admin';
@@ -16,6 +16,10 @@ const getSectionFromPath = (pathname?: string | null): SectionKey => {
   if (normalized.startsWith('/admin/low-stock')) return 'low-stock';
   if (normalized.startsWith('/admin/customers')) return 'customers';
   if (normalized.startsWith('/admin/payment-ledger')) return 'payment-ledger';
+  if (normalized.startsWith('/admin/raw-materials')) return 'raw-materials';
+  if (normalized.startsWith('/admin/production')) return 'production';
+  if (normalized.startsWith('/admin/reports')) return 'reports';
+  if (normalized.startsWith('/admin/operations')) return 'operations';
   if (normalized.startsWith('/admin/settings')) return 'settings';
   return 'overview';
 };
@@ -27,6 +31,10 @@ const navItems: Array<{ label: string; key: SectionKey; href: string; icon: Reac
   { label: 'Low stock', key: 'low-stock', href: '/admin/low-stock', icon: <AlertTriangle className="w-5 h-5" /> },
   { label: 'Customers', key: 'customers', href: '/admin/customers', icon: <Users className="w-5 h-5" /> },
   { label: 'Payment Ledger', key: 'payment-ledger', href: '/admin/payment-ledger', icon: <BookOpenCheck className="w-5 h-5" /> },
+  { label: 'Raw Materials', key: 'raw-materials', href: '/admin/raw-materials', icon: <Boxes className="w-5 h-5" /> },
+  { label: 'Production', key: 'production', href: '/admin/production', icon: <Factory className="w-5 h-5" /> },
+  { label: 'Reports', key: 'reports', href: '/admin/reports', icon: <FileBarChart className="w-5 h-5" /> },
+  { label: 'Operations', key: 'operations', href: '/admin/operations', icon: <Factory className="w-5 h-5" /> },
   { label: 'Settings', key: 'settings', href: '/admin/settings', icon: <Settings className="w-5 h-5" /> },
 ];
 
@@ -96,6 +104,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       return children;
     }
     if (pathname === '/admin/payment-ledger') {
+      return children;
+    }
+    if (pathname === '/admin/raw-materials') {
+      return children;
+    }
+    if (pathname === '/admin/production') {
+      return children;
+    }
+    if (pathname === '/admin/reports') {
+      return children;
+    }
+    if (pathname === '/admin/operations') {
       return children;
     }
     if (pathname === '/admin/settings') {

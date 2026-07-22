@@ -3,8 +3,8 @@ import mongoose from 'mongoose';
 const connectDB = async (): Promise<typeof mongoose> => {
   try {
     const conn = await mongoose.connect(process.env.MONGODB_URI || '', {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
+      serverSelectionTimeoutMS: 5000,
+      maxPoolSize: 10,
     } as mongoose.ConnectOptions);
     console.log(`MongoDB Connected: ${conn.connection.host}`);
     return conn;

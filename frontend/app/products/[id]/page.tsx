@@ -237,7 +237,7 @@ export default function ProductDetailPage() {
           </div>
 
           <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr]">
-            <div className="space-y-6">
+            <div className="order-1 space-y-6 lg:order-none">
               <div className="overflow-hidden rounded-[2rem] bg-white shadow-sm">
                 <img
                   src={selectedImage}
@@ -261,14 +261,14 @@ export default function ProductDetailPage() {
                 </div>
               )}
 
-                <div className="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm">
-                <h2 className="text-2xl font-semibold text-slate-950 mb-4">Product Details</h2>
+              <div className="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm">
+                <h2 className="mb-4 text-2xl font-semibold text-slate-950">Product Description</h2>
                 {saleActive && (
                   <div className="mb-4 inline-flex rounded-full bg-rose-50 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-rose-700">
                     Sale active
                   </div>
                 )}
-                <p className="text-base leading-8 text-slate-700 whitespace-pre-line">{product.description || 'No description available for this product.'}</p>
+                <p className="text-base leading-8 whitespace-pre-line text-slate-700">{product.description || 'No description available for this product.'}</p>
                 <div className="mt-6 grid gap-4 sm:grid-cols-2">
                   <div className="rounded-3xl bg-slate-50 p-5">
                     <p className="text-sm uppercase tracking-[0.24em] text-slate-500">Price</p>
@@ -291,7 +291,7 @@ export default function ProductDetailPage() {
               </div>
             </div>
 
-            <aside className="space-y-6">
+            <aside className="order-2 space-y-6 lg:order-none">
               <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
                 <h3 className="text-xl font-semibold text-slate-950 mb-4">Quick Info</h3>
                 <div className="space-y-3 text-sm text-slate-700">
@@ -382,6 +382,7 @@ export default function ProductDetailPage() {
                   </div>
                 )}
               </div>
+
             </aside>
           </div>
         </div>

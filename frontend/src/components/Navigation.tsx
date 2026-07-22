@@ -77,18 +77,18 @@ export default function Navigation() {
   };
 
   return (
-    <div className="sticky top-0 z-50 w-full overflow-x-hidden pb-20 supports-[padding-top:env(safe-area-inset-top)]:pt-[env(safe-area-inset-top,0px)] lg:pb-0">
-      <div className="bg-primary px-3 py-2 text-center text-[11px] font-semibold leading-4 text-primary-foreground sm:px-4 sm:text-sm sm:leading-5">
+    <div className="sticky top-0 z-50 w-full overflow-x-hidden pb-20 pt-0 supports-[padding-top:env(safe-area-inset-top)]:pt-[env(safe-area-inset-top,0px)] lg:pb-0">
+      <div className="bg-primary px-3 py-1 text-center text-[11px] font-semibold leading-3 text-primary-foreground sm:px-4 sm:py-1.5 sm:text-sm sm:leading-4">
         <span className="block truncate sm:whitespace-normal">
           Pure Nepali dried fruits, naturally crafted for your family.
         </span>
       </div>
       <nav className="border-b border-border/80 bg-white/95 backdrop-blur will-change-transform">
         <div className="mx-auto max-w-7xl px-3 sm:px-6 lg:px-8">
-          <div className="flex h-14 items-center justify-between gap-2 py-2 sm:h-16 sm:gap-3 sm:py-3 lg:h-20">
+          <div className="flex h-10 items-center justify-between gap-2 py-0 sm:h-16 sm:gap-3 sm:py-3 lg:h-20">
             <div className="flex min-w-0 items-center gap-2 sm:gap-3">
               <Link href="/" className="flex min-w-0 items-center gap-2 sm:gap-3">
-                <div className="relative w-12 h-12 rounded-2xl overflow-hidden ring-1 ring-accent/20 bg-accent/10">
+                <div className="relative h-9 w-9 rounded-2xl overflow-hidden ring-1 ring-accent/20 bg-accent/10 sm:h-12 sm:w-12">
                   <img src="/logo.jpeg" alt="Mokshya Foods Logo" className="object-cover w-full h-full" />
                 </div>
                 <div className="hidden sm:block">

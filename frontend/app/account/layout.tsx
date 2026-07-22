@@ -1,12 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { ReactNode } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 import { useAuth } from '@/context/AuthContext';
-import { Home, ShoppingBag, User, MapPin, Heart, Star, Settings, LogOut, ListChecks } from 'lucide-react';
+import { Home, ShoppingBag, User, MapPin, Heart, Star, Settings, LogOut, ListChecks, BadgeInfo } from 'lucide-react';
 
 const navItems = [
   { href: '/account/dashboard', label: 'Dashboard', icon: Home },
@@ -16,14 +16,20 @@ const navItems = [
   { href: '/account/wishlist', label: 'Wishlist', icon: Heart },
   { href: '/account/reviews', label: 'My Reviews', icon: Star },
   { href: '/account/settings', label: 'Settings', icon: Settings },
+  { href: '/about', label: 'About', icon: BadgeInfo },
 ];
 
 export default function AccountLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { isAuthenticated, logout, user } = useAuth();
+  const [activeNav, setActiveNav] = useState(pathname);
 
-  const activePath = (href: string) => pathname === href || pathname?.startsWith(`${href}/`);
+  useEffect(() => {
+    setActiveNav(pathname);
+  }, [pathname]);
+
+  const activePath = (href: string) => activeNav === href || pathname === href || pathname?.startsWith(`${href}/`);
 
   if (!isAuthenticated) {
     return (
@@ -138,14 +144,14 @@ export default function AccountLayout({ children }: { children: ReactNode }) {
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition ${
+                    onClick={() => setActiveNav(item.href)}
+                    className={`block rounded-2xl px-4 py-3 text-sm font-medium transition ${
                       activePath(item.href)
                         ? 'bg-primary text-white shadow-sm'
                         : 'text-slate-700 hover:bg-slate-100'
                     }`}
                   >
-                    <item.icon className="h-4 w-4" />
-                    <span>{item.label}</span>
+                    {item.label}
                   </Link>
                 ))}
               </nav>

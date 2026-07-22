@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import mongoose from 'mongoose';
+import InvoiceCounter from '../models/InvoiceCounter';
 
 type AuthenticatedRequest = Request & { userId?: string; userRole?: string };
 
@@ -71,16 +72,24 @@ export const createPOSOrder = async (req: AuthenticatedRequest, res: Response): 
     const tenderedAmount = Number(body.tenderedAmount || 0);
     const changeDue = Math.max(0, tenderedAmount - total);
     const orderNumber = buildOrderNumber();
+    const counterDoc = await InvoiceCounter.findOneAndUpdate(
+      { key: 'pos-bills' },
+      { $inc: { value: 1 } },
+      { new: true, upsert: true }
+    );
+    const sequenceValue = Number(counterDoc?.value || 1);
+    const invoiceNumber = `BILL-${String(sequenceValue).padStart(4, '0')}`;
 
     const orderDoc = {
       orderNumber,
+      invoiceNumber,
       userId,
       user: {
         _id: body.customerId || userId,
         id: body.customerId || userId,
-        name: body.customerName || 'Walk-in',
+        name: String(body.customerName || 'Walk-in Customer'),
         email: body.customerEmail || '',
-        phone: body.customerPhone || '',
+        phone: String(body.customerPhone || ''),
       },
       items: normalizedItems,
       subtotal,
