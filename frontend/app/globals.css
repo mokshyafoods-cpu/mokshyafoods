@@ -240,15 +240,26 @@
     color-adjust: exact;
   }
 
+  /* Hide everything by default in print, then show the receipt */
   body * {
+    visibility: hidden !important;
     box-shadow: none !important;
   }
 
+  .receipt-print,
+  .receipt-print * {
+    visibility: visible !important;
+    color: #000 !important;
+    background: transparent !important;
+  }
 
   .receipt-print {
-    display: block !important;
-    width: 100% !important;
-    max-width: 320px !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    width: 85mm !important;
+    max-width: 85mm !important;
     margin: 0 auto !important;
     padding: 0 !important;
     border: none !important;
@@ -256,15 +267,28 @@
     background: #fff !important;
     page-break-after: avoid !important;
     page-break-inside: avoid !important;
+    overflow: visible !important;
   }
 
   .receipt-print * {
+    visibility: visible !important;
     color: #000 !important;
     background: transparent !important;
   }
 
+  @page {
+    size: 85mm auto;
+    margin: 0;
+  }
+
   .screen-only,
   .print\:hidden {
+    display: none !important;
+  }
+}
+
+@media screen {
+  .receipt-print {
     display: none !important;
   }
 }

@@ -69,7 +69,8 @@ export const createPOSOrder = async (req: AuthenticatedRequest, res: Response): 
     const subtotal = normalizedItems.reduce((sum, item) => sum + Number(item.subtotal || 0), 0);
     const discountAmount = Number(body.discountAmount || 0);
     const total = Math.max(0, subtotal - discountAmount);
-    const tenderedAmount = Number(body.tenderedAmount || 0);
+    const paymentMethod = String(body.paymentMethod || 'cash').toLowerCase();
+    const tenderedAmount = paymentMethod === 'cash' ? Number(body.tenderedAmount || 0) : 0;
     const changeDue = Math.max(0, tenderedAmount - total);
     const orderNumber = buildOrderNumber();
     const counterDoc = await InvoiceCounter.findOneAndUpdate(
@@ -96,8 +97,8 @@ export const createPOSOrder = async (req: AuthenticatedRequest, res: Response): 
       discountAmount,
       taxAmount: 0,
       total,
-      paymentMethod: body.paymentMethod || 'cash',
-      paymentStatus: body.paymentMethod === 'cash' ? 'paid' : 'pending',
+      paymentMethod,
+      paymentStatus: paymentMethod === 'cash' ? 'paid' : 'pending',
       orderStatus: 'completed',
       status: 'completed',
       tenderedAmount,

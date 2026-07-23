@@ -25,17 +25,24 @@ app.use(helmet());
 
 const corsOptions: CorsOptions = {
   origin: (origin, callback) => {
-    const allowedOrigins = [
-      process.env.FRONTEND_URL,
-      'https://mokshyafoods.vercel.app',
-      'https://www.mokshyafoods.vercel.app',
-      'http://localhost:3000',
-      'http://127.0.0.1:3000',
-      'http://localhost:3001',
-      'http://127.0.0.1:3001',
-      'http://localhost:5173',
-      'http://127.0.0.1:5173',
-    ].filter(Boolean) as string[];
+    const envFrontendUrls = process.env.FRONTEND_URLS
+      ? process.env.FRONTEND_URLS.split(',').map((url) => url.trim()).filter(Boolean)
+      : [];
+
+    const allowedOrigins = Array.from(
+      new Set([
+        process.env.FRONTEND_URL,
+        ...envFrontendUrls,
+        'https://mokshyafoods.vercel.app',
+        'https://www.mokshyafoods.vercel.app',
+        'http://localhost:3000',
+        'http://127.0.0.1:3000',
+        'http://localhost:3001',
+        'http://127.0.0.1:3001',
+        'http://localhost:5173',
+        'http://127.0.0.1:5173',
+      ].filter(Boolean) as string[]),
+    );
 
     const isLocalOrigin = origin?.startsWith('http://localhost') || origin?.startsWith('http://127.0.0.1');
 

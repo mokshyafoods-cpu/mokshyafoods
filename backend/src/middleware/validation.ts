@@ -71,7 +71,7 @@ export const createOrderValidator: ValidationChain[] = [
   body('items.*.product').isMongoId().withMessage('Valid product ID is required'),
   body('items.*.quantity').isInt({ min: 1 }).withMessage('Quantity must be at least 1'),
   body('shippingAddress').notEmpty().withMessage('Shipping address is required'),
-  body('paymentMethod').trim().notEmpty().withMessage('Payment method is required'),
+  body('paymentMethod').trim().notEmpty().isIn(['cash', 'cod']).withMessage('Payment method must be cash or cod'),
   body('couponCode').optional().trim(),
   body('channel').optional().trim(),
 ];
