@@ -7,6 +7,14 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  async rewrites() {
+    return [
+      {
+        source: '/pos',
+        destination: '/admin/pos',
+      },
+    ];
+  },
 }
 
 export default nextConfig
