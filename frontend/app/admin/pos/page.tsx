@@ -147,6 +147,11 @@ export default function POSPage() {
 
   const total = useMemo(() => Math.max(0, subtotal - discountAmount + taxAmount), [subtotal, discountAmount, taxAmount]);
 
+  const lowStockItems = cart.filter((item) => {
+    const remainingStock = item.stock - item.quantity;
+    return remainingStock >= 0 && remainingStock <= LOW_STOCK_THRESHOLD;
+  });
+
   const loadProducts = async () => {
     try {
       const response = await productAPI.getAll({ limit: 40, category: activeCategory !== 'all' ? activeCategory : undefined });
@@ -207,11 +212,23 @@ export default function POSPage() {
       const existing = current.find((item) => item.productId === product._id);
       if (existing) {
         const nextQuantity = Math.min(existing.quantity + quantity, product.quantity);
+        if (nextQuantity === existing.quantity) {
+          toast.error(`Only ${product.quantity} item${product.quantity === 1 ? '' : 's'} available`);
+          return current;
+        }
+        if (nextQuantity < existing.quantity + quantity) {
+          toast.error(`Limited to ${product.quantity} item${product.quantity === 1 ? '' : 's'} due to stock`);
+        }
         return current.map((item) =>
           item.productId === product._id
             ? { ...item, quantity: nextQuantity, subtotal: nextQuantity * item.price }
             : item
         );
+      }
+
+      if (quantity > product.quantity) {
+        toast.error(`Only ${product.quantity} item${product.quantity === 1 ? '' : 's'} available`);
+        quantity = product.quantity;
       }
 
       return [
@@ -520,8 +537,10 @@ export default function POSPage() {
                     </div>
                     {isSoldOut ? (
                       <span className="mt-4 inline-flex rounded-full bg-rose-100 px-3 py-1 text-xs font-semibold text-rose-600">Sold Out</span>
+                    ) : product.quantity <= 3 ? (
+                      <span className="mt-4 inline-flex rounded-full bg-rose-100 px-3 py-1 text-xs font-semibold text-rose-700">Only {product.quantity} left</span>
                     ) : product.quantity <= LOW_STOCK_THRESHOLD ? (
-                      <span className="mt-4 inline-flex rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">Low stock</span>
+                      <span className="mt-4 inline-flex rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">Low stock — {product.quantity} left</span>
                     ) : null}
                   </button>
                 );
@@ -646,15 +665,23 @@ export default function POSPage() {
               )}
             </div>
 
-            <div className="mt-5 grid gap-3">
-              <button
-                type="button"
-                onClick={confirmPayment}
-                disabled={cart.length === 0}
-                className="inline-flex w-full items-center justify-center rounded-[2rem] bg-blue-600 px-6 py-4 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                Pay Rs. {total}
-              </button>
+            <div className="space-y-4">
+              {lowStockItems.length > 0 && (
+                <div className="rounded-3xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+                  <p className="font-semibold">Stock Alert</p>
+                  <p>{lowStockItems.length} item{lowStockItems.length > 1 ? 's' : ''} are low on stock. Please confirm quantities before payment.</p>
+                </div>
+              )}
+              <div className="grid gap-3">
+                <button
+                  type="button"
+                  onClick={confirmPayment}
+                  disabled={cart.length === 0}
+                  className="inline-flex w-full items-center justify-center rounded-[2rem] bg-blue-600 px-6 py-4 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  Pay Rs. {total}
+                </button>
+              </div>
               <label className="inline-flex items-center gap-3 rounded-[2rem] border border-slate-800 bg-slate-900 px-4 py-3 text-sm text-slate-300">
                 <input type="checkbox" checked readOnly className="h-4 w-4 rounded border-slate-700 bg-slate-950 text-primary focus:ring-primary" />
                 Print bill after order
@@ -684,9 +711,9 @@ export default function POSPage() {
                             {remainingStock < 0 ? (
                               <span className="rounded-full bg-rose-100 px-3 py-1 text-xs font-semibold text-rose-700">Overstock</span>
                             ) : lowStock ? (
-                              <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">Low stock warning</span>
+                              <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">Only {remainingStock} left</span>
                             ) : null}
-                            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-600">{item.stock} remaining</span>
+                            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-600">{remainingStock} remaining</span>
                           </div>
                         </div>
                         <div className="mt-4 flex flex-wrap items-center gap-3 sm:mt-0 sm:justify-end">

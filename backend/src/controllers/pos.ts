@@ -65,7 +65,35 @@ export const createPOSOrder = async (req: AuthenticatedRequest, res: Response): 
     }
 
     const ordersColl = mongoose.connection.collection('orders');
+    const productsColl = mongoose.connection.collection('products');
     const normalizedItems = await normalizeHeldSaleItems(items);
+
+    const productIds = normalizedItems
+      .map((item) => item.productId)
+      .filter(Boolean)
+      .filter((id, index, arr) => arr.indexOf(id) === index)
+      .map((id) => (mongoose.Types.ObjectId.isValid(String(id)) ? new mongoose.Types.ObjectId(String(id)) : null))
+      .filter(Boolean) as mongoose.Types.ObjectId[];
+
+    if (productIds.length) {
+      const products = await productsColl.find({ _id: { $in: productIds } }).toArray();
+      const productMap = new Map(products.map((product: any) => [product._id.toString(), product]));
+
+      for (const item of normalizedItems) {
+        if (!item.productId) continue;
+        const product = productMap.get(String(item.productId));
+        if (!product) {
+          return res.status(400).json({ success: false, message: `Product not found: ${item.name || item.productId}` });
+        }
+        if (item.quantity > Number(product.quantity || 0)) {
+          return res.status(400).json({
+            success: false,
+            message: `Insufficient stock for ${item.name || product.name}: requested ${item.quantity}, available ${product.quantity}`,
+          });
+        }
+      }
+    }
+
     const subtotal = normalizedItems.reduce((sum, item) => sum + Number(item.subtotal || 0), 0);
     const discountAmount = Number(body.discountAmount || 0);
     const total = Math.max(0, subtotal - discountAmount);
@@ -110,6 +138,18 @@ export const createPOSOrder = async (req: AuthenticatedRequest, res: Response): 
     };
 
     const result = await ordersColl.insertOne(orderDoc as any);
+
+    const productsColl = mongoose.connection.collection('products');
+    await Promise.all(
+      normalizedItems.map(async (item) => {
+        if (!item.productId || item.quantity <= 0) return;
+        const filter = mongoose.Types.ObjectId.isValid(item.productId)
+          ? { _id: new mongoose.Types.ObjectId(item.productId) }
+          : { _id: item.productId };
+        await productsColl.updateOne(filter as any, { $inc: { quantity: -item.quantity } });
+      })
+    );
+
     return res.status(201).json({ success: true, message: 'POS order created successfully', data: { ...orderDoc, _id: result.insertedId } });
   } catch (error: any) {
     console.error('createPOSOrder error:', error);
