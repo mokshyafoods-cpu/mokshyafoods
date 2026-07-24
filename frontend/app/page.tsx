@@ -84,7 +84,10 @@ export default function HomePage() {
     const saleActive = onSale && (!saleStart || saleStart <= now) && (!saleEnd || saleEnd >= now) && item.discountPrice;
     const price = Number(saleActive ? item.discountPrice : item.price || item.amount || 0);
     const compareAtPrice = Number(item.price || item.amount || 0);
-    return { price, compareAtPrice, saleActive };
+    const discountPercent = saleActive && compareAtPrice > 0 && price < compareAtPrice
+      ? Math.round(((compareAtPrice - price) / compareAtPrice) * 100)
+      : 0;
+    return { price, compareAtPrice, saleActive, discountPercent };
   };
 
   const handleAddToCart = (item: any) => {
@@ -244,7 +247,7 @@ export default function HomePage() {
               <div className="mx-auto grid max-w-6xl gap-6 sm:grid-cols-2 xl:grid-cols-3">
                 {topSelling.map((item) => {
                   const imageSrc = getItemImage(item);
-                  const { price, compareAtPrice, saleActive } = getSalePricing(item);
+                  const { price, compareAtPrice, saleActive, discountPercent } = getSalePricing(item);
                   return (
                     <Link
                       key={item._id || item.id || item.name}
@@ -270,8 +273,13 @@ export default function HomePage() {
                         >
                           <Heart className="w-4 h-4" />
                         </button>
+                        {saleActive && discountPercent > 0 && (
+                          <span className="absolute right-4 top-4 rounded-full bg-red-600 px-3 py-1 text-xs font-semibold text-white">
+                            {discountPercent}% OFF
+                          </span>
+                        )}
                         {item.status && (
-                          <span className="absolute right-4 top-4 rounded-full bg-black/70 px-3 py-1 text-xs font-semibold text-white">
+                          <span className="absolute left-4 top-4 rounded-full bg-black/70 px-3 py-1 text-xs font-semibold text-white">
                             {item.status}
                           </span>
                         )}
@@ -337,7 +345,7 @@ export default function HomePage() {
               <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
                 {everydayBites.map((item) => {
                   const imageSrc = getItemImage(item);
-                  const { price, compareAtPrice, saleActive } = getSalePricing(item);
+                  const { price, compareAtPrice, saleActive, discountPercent } = getSalePricing(item);
                   return (
                     <Link
                       key={item._id || item.id || item.name}
@@ -351,6 +359,11 @@ export default function HomePage() {
                           fill
                           className="object-cover transition duration-300 group-hover:scale-105"
                         />
+                        {saleActive && discountPercent > 0 && (
+                          <span className="absolute left-4 top-4 rounded-full bg-red-600 px-3 py-1 text-xs font-semibold text-white">
+                            {discountPercent}% OFF
+                          </span>
+                        )}
                         <div className="absolute right-4 top-4 flex gap-2 opacity-0 transition duration-200 group-hover:opacity-100">
                           <button
                             type="button"

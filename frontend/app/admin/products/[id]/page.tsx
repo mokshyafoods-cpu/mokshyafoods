@@ -103,25 +103,49 @@ export default function EditProductPage() {
     event.preventDefault();
     if (!id) return;
 
+    const trimmedName = formData.name?.trim();
+    const trimmedSku = formData.sku?.trim();
+    const trimmedDescription = formData.description?.trim();
+    const categoryValue = formData.category === 'other' ? otherCategory.trim() : formData.category?.trim();
+
+    if (!trimmedName || !trimmedSku || !trimmedDescription || !categoryValue) {
+      toast.error('Please complete the required product fields before saving.');
+      return;
+    }
+
+    if (formData.price !== '' && Number(formData.price) < 0) {
+      toast.error('Price must be a valid number.');
+      return;
+    }
+
     setSaving(true);
     try {
       const submitData = new FormData();
-      Object.entries(formData).forEach(([key, value]) => {
-        if (value !== undefined && key !== 'category') {
-          // FormData only accepts string or Blob; stringify non-blob values
-          const val = value === null ? '' : (typeof value === 'object' ? JSON.stringify(value) : String(value));
-          submitData.append(key, val);
-        }
-      });
-      // Ensure onSale, isActive, and dates are appended correctly (booleans as strings)
-      submitData.set('onSale', formData.onSale ? 'true' : 'false');
-      submitData.set('isActive', formData.isActive ? 'true' : 'false');
-      if (formData.saleStart) submitData.set('saleStart', formData.saleStart);
-      if (formData.saleEnd) submitData.set('saleEnd', formData.saleEnd);
-      const categoryValue = formData.category === 'other' ? otherCategory : formData.category;
-      if (categoryValue) {
-        submitData.append('category', categoryValue);
+      const appendIfPresent = (key: string, value: any) => {
+        if (value === undefined || value === null || value === '') return;
+        const val = typeof value === 'object' ? JSON.stringify(value) : String(value);
+        submitData.append(key, val);
+      };
+
+      appendIfPresent('name', trimmedName);
+      appendIfPresent('sku', trimmedSku);
+      appendIfPresent('description', trimmedDescription);
+      appendIfPresent('category', categoryValue);
+      appendIfPresent('price', formData.price);
+      appendIfPresent('discountPrice', formData.discountPrice);
+      appendIfPresent('quantity', formData.quantity);
+      appendIfPresent('weight', formData.weight);
+      appendIfPresent('packaging', formData.packaging);
+      appendIfPresent('packagesInStock', formData.packagesInStock);
+      appendIfPresent('tags', formData.tags || '[]');
+      if (formData.onSale) {
+        submitData.set('onSale', 'true');
+        if (formData.saleStart) submitData.set('saleStart', formData.saleStart);
+        if (formData.saleEnd) submitData.set('saleEnd', formData.saleEnd);
+      } else {
+        submitData.set('onSale', 'false');
       }
+      submitData.set('isActive', formData.isActive ? 'true' : 'false');
 
       if (images.length > 0) {
         images.forEach((file) => submitData.append('images', file));
@@ -353,8 +377,8 @@ export default function EditProductPage() {
             />
 
             <div className="flex flex-col gap-3 sm:flex-row">
-              <Button type="submit" loading={saving} className="flex-1">
-                Save changes
+              <Button type="submit" loading={saving} disabled={saving} className="flex-1">
+                {saving ? 'Saving...' : 'Save changes'}
               </Button>
               <Button type="button" variant="outline" onClick={() => router.push('/admin/products')} className="flex-1">
                 Cancel

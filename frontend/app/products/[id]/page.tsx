@@ -264,8 +264,15 @@ export default function ProductDetailPage() {
               <div className="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm">
                 <h2 className="mb-4 text-2xl font-semibold text-slate-950">Product Description</h2>
                 {saleActive && (
-                  <div className="mb-4 inline-flex rounded-full bg-rose-50 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-rose-700">
-                    Sale active
+                  <div className="mb-4 flex flex-wrap items-center gap-2">
+                    <div className="inline-flex rounded-full bg-rose-50 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-rose-700">
+                      Sale active
+                    </div>
+                    {product.price > 0 && product.discountPrice && Number(product.discountPrice) < Number(product.price) && (
+                      <div className="inline-flex rounded-full bg-red-600 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-white">
+                        {Math.round(((Number(product.price) - Number(product.discountPrice)) / Number(product.price)) * 100)}% OFF
+                      </div>
+                    )}
                   </div>
                 )}
                 <p className="text-base leading-8 whitespace-pre-line text-slate-700">{product.description || 'No description available for this product.'}</p>
