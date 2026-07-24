@@ -9,7 +9,7 @@ import Link from 'next/link';
 import { productAPI, reviewAPI } from '@/services/api';
 import { useCartStore } from '@/context/cartStore';
 import { toast } from 'sonner';
-import { ArrowLeft, ShoppingCart, Star, Tag } from 'lucide-react';
+import { ArrowLeft, ShoppingCart, Star, Tag, Percent } from 'lucide-react';
 
 const normalizeImageUrl = (image: any): string => {
   if (!image) return '';
@@ -55,7 +55,7 @@ export default function ProductDetailPage() {
   const [reviewComment, setReviewComment] = useState('');
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewSubmitting, setReviewSubmitting] = useState(false);
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const router = useRouter();
   const { addItem } = useCartStore();
 
@@ -211,6 +211,9 @@ export default function ProductDetailPage() {
   const saleActive = onSale && (!saleStart || saleStart <= now) && (!saleEnd || saleEnd >= now) && product.discountPrice;
   const price = Number(saleActive ? product.discountPrice : product.price || 0);
   const compareAtPrice = Number(product.price || 0);
+  const discountPercentage = saleActive && compareAtPrice > 0 
+    ? Math.round(((compareAtPrice - price) / compareAtPrice) * 100) 
+    : 0;
   const galleryImages = getGalleryImages(product);
   const productImage = galleryImages[0] || product.thumbnail || product.image || '/placeholder.jpg';
 
@@ -230,9 +233,9 @@ export default function ProductDetailPage() {
             <button
               type="button"
               onClick={handleAddToCart}
-              className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white transition hover:bg-primary/90"
+              className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-xs sm:px-6 sm:py-3 sm:text-sm font-semibold text-white transition hover:bg-primary/90"
             >
-              <ShoppingCart className="w-4 h-4" /> Add to cart
+              <ShoppingCart className="w-3 h-3 sm:w-4 sm:h-4" /> Add to cart
             </button>
           </div>
 
@@ -264,15 +267,8 @@ export default function ProductDetailPage() {
               <div className="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm">
                 <h2 className="mb-4 text-2xl font-semibold text-slate-950">Product Description</h2>
                 {saleActive && (
-                  <div className="mb-4 flex flex-wrap items-center gap-2">
-                    <div className="inline-flex rounded-full bg-rose-50 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-rose-700">
-                      Sale active
-                    </div>
-                    {product.price > 0 && product.discountPrice && Number(product.discountPrice) < Number(product.price) && (
-                      <div className="inline-flex rounded-full bg-red-600 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-white">
-                        {Math.round(((Number(product.price) - Number(product.discountPrice)) / Number(product.price)) * 100)}% OFF
-                      </div>
-                    )}
+                  <div className="mb-4 inline-flex rounded-full bg-rose-50 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-rose-700">
+                    Sale active
                   </div>
                 )}
                 <p className="text-base leading-8 whitespace-pre-line text-slate-700">{product.description || 'No description available for this product.'}</p>
@@ -282,7 +278,14 @@ export default function ProductDetailPage() {
                     <div className="mt-2">
                       {saleActive ? (
                         <div className="space-y-1">
-                          <p className="text-3xl font-bold text-secondary">Rs {price.toFixed(0)}</p>
+                          <div className="flex items-center gap-3">
+                            <p className="text-3xl font-bold text-secondary">Rs {price.toFixed(0)}</p>
+                            {discountPercentage > 0 && (
+                              <div className="inline-flex items-center gap-1 rounded-full bg-rose-100 px-3 py-1 text-sm font-semibold text-rose-700">
+                                <Percent className="h-3 w-3" /> {discountPercentage}% OFF
+                              </div>
+                            )}
+                          </div>
                           <p className="text-sm text-slate-500 line-through">Rs {compareAtPrice.toFixed(0)}</p>
                         </div>
                       ) : (
@@ -318,6 +321,51 @@ export default function ProductDetailPage() {
                   </div>
                 </div>
               </div>
+
+              {user?.role === 'admin' && (
+                <div className="rounded-[2rem] border border-blue-200 bg-blue-50 p-6 shadow-sm">
+                  <h3 className="text-xl font-semibold text-blue-950 mb-4">Admin: Pricing & Discount Info</h3>
+                  <div className="space-y-3 text-sm text-blue-900">
+                    <div className="flex items-center justify-between gap-3 pb-3 border-b border-blue-200">
+                      <span className="font-semibold">Original Price:</span>
+                      <span className="font-bold text-lg">Rs {compareAtPrice.toFixed(0)}</span>
+                    </div>
+                    {saleActive && (
+                      <>
+                        <div className="flex items-center justify-between gap-3 pb-3 border-b border-blue-200">
+                          <span className="font-semibold">Sale Price:</span>
+                          <span className="font-bold text-lg text-green-600">Rs {price.toFixed(0)}</span>
+                        </div>
+                        <div className="flex items-center justify-between gap-3 pb-3 border-b border-blue-200">
+                          <span className="font-semibold">Discount Amount:</span>
+                          <span className="font-bold text-lg text-red-600">Rs {(compareAtPrice - price).toFixed(0)}</span>
+                        </div>
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="font-semibold">Discount Percentage:</span>
+                          <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-3 py-1 font-bold text-red-700">
+                            <Percent className="h-4 w-4" /> {discountPercentage}% OFF
+                          </span>
+                        </div>
+                        {product.saleStart && (
+                          <div className="text-xs text-blue-700 pt-2 border-t border-blue-200">
+                            <p>Sale starts: {new Date(product.saleStart).toLocaleString()}</p>
+                          </div>
+                        )}
+                        {product.saleEnd && (
+                          <div className="text-xs text-blue-700">
+                            <p>Sale ends: {new Date(product.saleEnd).toLocaleString()}</p>
+                          </div>
+                        )}
+                      </>
+                    )}
+                    {!saleActive && (
+                      <div className="text-sm text-blue-700 italic">
+                        No active sale for this product
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
               <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
                 <div className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.22em] text-secondary">

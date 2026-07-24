@@ -36,13 +36,14 @@ export default function Button({
   loading = false,
   className = '',
 }: ButtonProps) {
+  const isDisabled = disabled || loading;
   return (
     <button
       type={type}
       onClick={onClick}
-      disabled={disabled}
+      disabled={isDisabled}
       className={`rounded-lg font-semibold transition ${variantStyles[variant]} ${sizeStyles[size]} ${
-        disabled ? 'opacity-50 cursor-not-allowed' : ''
+        isDisabled ? 'opacity-50 cursor-not-allowed' : ''
       } ${className}`}
     >
       {loading ? 'Loading...' : children}
