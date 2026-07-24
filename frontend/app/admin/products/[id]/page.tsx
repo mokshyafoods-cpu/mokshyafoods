@@ -101,6 +101,33 @@ export default function EditProductPage() {
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
+    
+    // Validate required fields
+    if (!formData.name.trim()) {
+      toast.error('Product name is required');
+      return;
+    }
+    if (!formData.sku.trim()) {
+      toast.error('SKU is required');
+      return;
+    }
+    if (!formData.category.trim()) {
+      toast.error('Category is required');
+      return;
+    }
+    if (!formData.price.trim()) {
+      toast.error('Price is required');
+      return;
+    }
+    if (!formData.description.trim()) {
+      toast.error('Description is required');
+      return;
+    }
+    if (!formData.quantity.trim()) {
+      toast.error('Quantity is required');
+      return;
+    }
+    
     if (!id) return;
 
     setSaving(true);
@@ -179,21 +206,19 @@ export default function EditProductPage() {
             </Link>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6 rounded-[2rem] border border-[#d8caa7]/80 bg-white/90 p-8 shadow-[0_30px_90px_rgba(27,58,43,0.16)] backdrop-blur-xl">
+          <form onSubmit={handleSubmit} noValidate className="space-y-6 rounded-[2rem] border border-[#d8caa7]/80 bg-white/90 p-8 shadow-[0_30px_90px_rgba(27,58,43,0.16)] backdrop-blur-xl">
             <div className="grid gap-6 md:grid-cols-2">
               <FormInput
                 label="Product Name"
                 name="name"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                required
               />
               <FormInput
                 label="SKU"
                 name="sku"
                 value={formData.sku}
                 onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
-                required
               />
               <div className="space-y-2">
                 <label htmlFor="category" className="block text-sm font-semibold text-slate-800">Category</label>
@@ -202,7 +227,6 @@ export default function EditProductPage() {
                   value={formData.category}
                   onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                   className="w-full rounded-2xl border border-[#d8caa7] bg-[#fcfaf7] px-4 py-2.5 text-sm font-medium text-slate-900 shadow-sm outline-none transition focus:border-[#9b7a2f] focus:ring-2 focus:ring-[#9b7a2f]/20"
-                  required
                 >
                   <option value="">Choose category</option>
                   {categories.map((category) => (
@@ -230,7 +254,6 @@ export default function EditProductPage() {
                 type="number"
                 value={formData.price}
                 onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                required
               />
               <FormInput
                 label="Discount Price (optional)"
@@ -280,7 +303,6 @@ export default function EditProductPage() {
                 type="number"
                 value={formData.quantity}
                 onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
-                required
               />
               <FormInput
                 label="Weight (grams)"
@@ -310,7 +332,6 @@ export default function EditProductPage() {
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               rows={5}
-              required
             />
 
             <div className="space-y-4 rounded-[1.25rem] border border-[#d8caa7]/70 bg-[#fbf7ec] p-4 shadow-sm">
