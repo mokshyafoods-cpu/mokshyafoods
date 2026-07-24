@@ -141,7 +141,7 @@ export default function HomePage() {
       <Navigation />
 
       <main className="flex-grow">
-        <section className="relative overflow-hidden bg-[#f5f0e8] py-10 sm:py-12 lg:py-16">
+        <section className="relative overflow-hidden bg-[#f5f0e8] pt-4 pb-10 sm:pt-6 sm:pb-12 lg:pt-8 lg:pb-16">
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(28,64,40,0.08),_transparent_35%),radial-gradient(circle_at_bottom_right,_rgba(201,162,39,0.08),_transparent_30%)]" />
           <div className="relative mx-auto max-w-7xl px-3 sm:px-6 lg:px-8">
             <div className="grid items-center gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:gap-10">
@@ -440,24 +440,47 @@ export default function HomePage() {
               </p>
             </div>
 
-            <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
-              {Array.from({ length: 4 }).map((_, index) => (
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {[
+                { video: '/video/video1.mp4', title: 'Production Process', desc: 'Watch our careful drying process' },
+                { video: '/video/video2.mp4', title: 'Quality Check', desc: 'How we ensure premium quality' },
+                { video: '/video/vidoe3.mp4', title: 'Behind the Scenes', desc: 'Life at Mokshya Foods' },
+              ].map((item, index) => (
                 <div key={index} className="group overflow-hidden rounded-[1.75rem] bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
                   <div className="relative h-80 overflow-hidden bg-muted">
-                    <Image
-                      src="/placeholder.jpg"
-                      alt={`Social story ${index + 1}`}
-                      fill
-                      className="object-cover transition duration-300 group-hover:scale-105"
+                    <video
+                      src={item.video}
+                      className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                      preload="metadata"
+                      controls
+                      muted
+                      autoPlay
+                      loop
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
-                    <div className="absolute left-4 top-4 rounded-full bg-white/90 p-3 text-primary">
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 transition duration-200 group-hover:opacity-100">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const video = document.querySelector(`video[src="${item.video}"]`) as HTMLVideoElement;
+                          if (video) {
+                            video.play();
+                          }
+                        }}
+                        className="rounded-full bg-white p-4 text-primary shadow-lg transition hover:bg-white/90"
+                        aria-label="Play video"
+                      >
+                        <Play className="w-8 h-8" />
+                      </button>
+                    </div>
+                    <div className="absolute left-4 top-4 rounded-full bg-white/90 p-3 text-primary group-hover:opacity-0 transition duration-200">
                       <Play className="w-5 h-5" />
                     </div>
                   </div>
                   <div className="p-5">
-                    <p className="text-sm font-semibold text-primary">Mokshya Foods</p>
-                    <h3 className="mt-3 text-lg font-semibold text-foreground">Behind the scenes of our drying process</h3>
+                    <p className="text-sm font-semibold text-secondary">Mokshya Foods</p>
+                    <h3 className="mt-3 text-lg font-semibold text-foreground">{item.title}</h3>
+                    <p className="mt-2 text-sm text-slate-600">{item.desc}</p>
                   </div>
                 </div>
               ))}

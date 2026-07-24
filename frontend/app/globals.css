@@ -233,6 +233,22 @@
     -moz-appearance: textfield;
   }
 
+  /* Smooth side drawer animation */
+  @media (max-width: 1024px) {
+    .fixed.left-0.top-0 {
+      animation: slideInFromLeft 300ms ease-out forwards;
+    }
+
+    @keyframes slideInFromLeft {
+      from {
+        transform: translateX(-100%);
+      }
+      to {
+        transform: translateX(0);
+      }
+    }
+  }
+
   ::selection {
     background: rgba(180, 130, 70, 0.24);
     color: inherit;

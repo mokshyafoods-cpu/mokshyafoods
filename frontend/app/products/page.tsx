@@ -390,7 +390,7 @@ function ProductsPageContent() {
     <div className="min-h-screen flex flex-col bg-[#f8f9fa]">
       <Navigation />
 
-      <main className="flex-grow py-10 px-4">
+      <main className="flex-grow pt-4 pb-10 sm:pt-6 lg:pt-8 px-4">
         <div className="max-w-7xl mx-auto">
           <div className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
@@ -600,85 +600,131 @@ function ProductsPageContent() {
                 </div>
               </div>
               {isFilterOpen && (
-                <div
-                  className="fixed inset-0 z-50 overflow-y-auto bg-black/40 px-4 py-6 lg:hidden"
-                  onClick={() => setIsFilterOpen(false)}
-                >
+                <div className="lg:hidden">
+                  {/* Overlay */}
                   <div
-                    className="mx-auto max-w-md rounded-[1.75rem] bg-white p-6 shadow-2xl"
-                    onClick={(event) => event.stopPropagation()}
-                  >
-                    <div className="mb-6 flex items-center justify-between">
-                      <div>
-                        <p className="text-sm uppercase tracking-[0.25em] text-secondary">Filters</p>
-                        <h2 className="text-lg font-semibold text-primary">Refine products</h2>
+                    className="fixed inset-0 z-40 bg-black/40 transition-opacity"
+                    onClick={() => setIsFilterOpen(false)}
+                  />
+                  
+                  {/* Side Drawer */}
+                  <div className="fixed left-0 top-0 z-50 h-screen w-80 max-w-full overflow-y-auto bg-white shadow-2xl transition-transform duration-300 ease-in-out">
+                    <div className="sticky top-0 border-b border-slate-200 bg-white p-6">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm uppercase tracking-[0.25em] text-secondary">Filters</p>
+                          <h2 className="text-lg font-semibold text-primary">Refine products</h2>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setIsFilterOpen(false)}
+                          className="rounded-full border border-slate-200 bg-slate-100 p-2 text-slate-900 hover:bg-slate-200"
+                          aria-label="Close filters"
+                        >
+                          <X className="w-5 h-5" />
+                        </button>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => setIsFilterOpen(false)}
-                        className="rounded-full border border-slate-200 bg-slate-100 p-2 text-slate-900 hover:bg-slate-200"
-                        aria-label="Close filters"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
                     </div>
 
-                    <div className="space-y-6">
+                    <div className="space-y-6 p-6">
+                      {/* Price Filter */}
                       <div>
-                        <h3 className="text-sm font-semibold text-primary mb-3">Price Range</h3>
-                        <div className="grid gap-4 sm:grid-cols-2">
+                        <h3 className="text-sm font-semibold text-primary mb-4 flex items-center justify-between">
+                          Price Range
+                          {(priceFilter.min !== null || priceFilter.max !== null) && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setMinPrice('');
+                                setMaxPrice('');
+                                setPriceFilter({ min: null, max: null });
+                              }}
+                              className="text-xs font-medium text-secondary hover:text-secondary/80"
+                            >
+                              Clear
+                            </button>
+                          )}
+                        </h3>
+                        <div className="space-y-3">
                           <input
                             type="number"
                             value={minPrice}
                             onChange={(event) => setMinPrice(event.target.value)}
-                            placeholder="Min"
+                            placeholder="Min price"
                             className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary"
                           />
                           <input
                             type="number"
                             value={maxPrice}
                             onChange={(event) => setMaxPrice(event.target.value)}
-                            placeholder="Max"
+                            placeholder="Max price"
                             className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary"
                           />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              applyPriceFilter();
+                              setIsFilterOpen(false);
+                            }}
+                            className="w-full rounded-full bg-secondary px-4 py-3 text-sm font-semibold text-secondary-foreground transition hover:bg-secondary/90"
+                          >
+                            Apply Price
+                          </button>
                         </div>
-                        <button
-                          type="button"
-                          onClick={applyPriceFilter}
-                          className="mt-4 w-full rounded-full bg-secondary px-4 py-3 text-sm font-semibold text-secondary-foreground transition hover:bg-secondary/90"
-                        >
-                          Apply
-                        </button>
                       </div>
 
+                      {/* Category Filter */}
                       <div>
-                        <h3 className="text-sm font-semibold text-primary mb-3">Categories</h3>
+                        <h3 className="text-sm font-semibold text-primary mb-4 flex items-center justify-between">
+                          Categories
+                          {selectedCategories.length > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => setSelectedCategories([])}
+                              className="text-xs font-medium text-secondary hover:text-secondary/80"
+                            >
+                              Clear ({selectedCategories.length})
+                            </button>
+                          )}
+                        </h3>
                         <input
                           type="search"
                           value={categorySearch}
                           onChange={(event) => setCategorySearch(event.target.value)}
                           placeholder="Search categories..."
-                          className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary"
+                          className="mb-4 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary"
                         />
-                        <div className="mt-4 max-h-60 space-y-3 overflow-y-auto pr-2">
+                        <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
                           {filteredCategories.map((category: any) => {
                             const categoryId = category?._id || category?.id || category?.slug || category?.name || '';
+                            const isSelected = isCategorySelected(category);
                             return (
-                              <label key={categoryId} className="flex items-center gap-3 text-sm text-foreground">
+                              <label key={categoryId} className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50 cursor-pointer transition">
                                 <input
                                   type="checkbox"
-                                  checked={isCategorySelected(category)}
+                                  checked={isSelected}
                                   onChange={() => handleCategoryToggle(category)}
-                                  className="h-4 w-4 rounded border-border text-primary focus:ring-secondary"
+                                  className="h-4 w-4 rounded border-slate-300 text-primary focus:ring-secondary cursor-pointer"
                                 />
-                                <span>{category?.name || category?.slug || categoryId}</span>
+                                <span className="text-sm text-slate-700">{category?.name || category?.slug || categoryId}</span>
                               </label>
                             );
                           })}
                           {filteredCategories.length === 0 && (
-                            <p className="text-sm text-muted-foreground">No categories found.</p>
+                            <p className="text-sm text-slate-500 py-4 text-center">No categories found.</p>
                           )}
                         </div>
+                      </div>
+
+                      {/* Apply Button */}
+                      <div className="border-t border-slate-200 pt-6 sticky bottom-0 bg-white">
+                        <button
+                          type="button"
+                          onClick={() => setIsFilterOpen(false)}
+                          className="w-full rounded-full bg-primary px-4 py-3 text-sm font-semibold text-white transition hover:bg-primary/90"
+                        >
+                          Show Products
+                        </button>
                       </div>
                     </div>
                   </div>
