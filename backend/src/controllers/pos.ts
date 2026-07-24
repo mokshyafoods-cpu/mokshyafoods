@@ -139,7 +139,6 @@ export const createPOSOrder = async (req: AuthenticatedRequest, res: Response): 
 
     const result = await ordersColl.insertOne(orderDoc as any);
 
-    const productsColl = mongoose.connection.collection('products');
     await Promise.all(
       normalizedItems.map(async (item) => {
         if (!item.productId || item.quantity <= 0) return;

@@ -4,10 +4,56 @@ import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 import { useCartStore } from '@/context/cartStore';
 import Link from 'next/link';
-import { Trash2, Minus, Plus } from 'lucide-react';
+import { Trash2, Minus, Plus, Percent } from 'lucide-react';
+import { useEffect } from 'react';
+import { productAPI } from '@/services/api';
+import { toast } from 'sonner';
 
 export default function CartPage() {
-  const { items, removeItem, updateQuantity, getTotalPrice, getTotalItems } = useCartStore();
+  const { items, removeItem, updateQuantity, getTotalPrice, getTotalItems, updateItem } = useCartStore();
+
+  // Refresh product data when cart loads to get latest prices, images, and discounts
+  useEffect(() => {
+    const refreshProductData = async () => {
+      if (items.length === 0) return;
+      
+      try {
+        for (const item of items) {
+          try {
+            const result = await productAPI.getById(item.productId);
+            const freshProduct = result.data?.data ?? result.data;
+            
+            if (freshProduct) {
+              const galleryImages = Array.isArray(freshProduct.images) 
+                ? freshProduct.images.map((img: any) => 
+                    typeof img === 'string' ? img : (img.url || img.secure_url || img.path || '')
+                  ).filter(Boolean)
+                : [];
+              const mainImage = galleryImages[0] || freshProduct.thumbnail || freshProduct.image || '/placeholder.jpg';
+              
+              updateItem({
+                ...item,
+                price: freshProduct.discountPrice || freshProduct.price || item.price,
+                compareAtPrice: freshProduct.price || item.compareAtPrice,
+                discountPrice: freshProduct.discountPrice,
+                onSale: freshProduct.onSale,
+                image: mainImage,
+                thumbnail: mainImage,
+                images: galleryImages,
+              });
+            }
+          } catch (err) {
+            // Silently skip if product fetch fails
+            console.error(`Failed to refresh product ${item.productId}:`, err);
+          }
+        }
+      } catch (err) {
+        console.error('Error refreshing cart items:', err);
+      }
+    };
+
+    refreshProductData();
+  }, [items, updateItem]);
 
   if (items.length === 0) {
     return (
@@ -49,6 +95,10 @@ export default function CartPage() {
                   const detailImage = item.image || item.thumbnail || '/placeholder.jpg';
                   const detailSku = item.sku || '';
                   const isOnSale = Boolean(item.onSale || (item.compareAtPrice && detailCompareAtPrice > detailPrice));
+                  const discountPercentage = isOnSale && detailCompareAtPrice > 0 
+                    ? Math.round(((detailCompareAtPrice - detailPrice) / detailCompareAtPrice) * 100) 
+                    : 0;
+                  const discountAmount = detailCompareAtPrice - detailPrice;
 
                   return (
                     <div key={item.productId} className="p-6 border-b border-slate-200 last:border-b-0 flex flex-col gap-6 sm:flex-row sm:items-center">
@@ -73,9 +123,16 @@ export default function CartPage() {
                         <div className="mt-3 flex flex-wrap items-center gap-3 text-sm">
                           <span className="font-semibold text-slate-950">Rs. {detailPrice}</span>
                           {detailCompareAtPrice > detailPrice ? (
-                            <span className="text-slate-500 line-through">Rs. {detailCompareAtPrice}</span>
+                            <>
+                              <span className="text-slate-500 line-through">Rs. {detailCompareAtPrice}</span>
+                              {discountPercentage > 0 && (
+                                <div className="inline-flex items-center gap-1 rounded-full bg-rose-100 px-3 py-1 font-semibold text-rose-700">
+                                  <Percent className="h-3 w-3" /> {discountPercentage}% OFF
+                                </div>
+                              )}
+                            </>
                           ) : null}
-                          {isOnSale ? <span className="rounded-full bg-rose-50 px-3 py-1 font-semibold text-rose-700">On sale</span> : null}
+                          {isOnSale && discountPercentage === 0 ? <span className="rounded-full bg-rose-50 px-3 py-1 font-semibold text-rose-700">On sale</span> : null}
                         </div>
                       </div>
 
@@ -116,16 +173,31 @@ export default function CartPage() {
               <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm lg:sticky lg:top-20 space-y-4">
                 <h2 className="text-xl font-bold text-slate-950">Order Summary</h2>
 
-                <div className="space-y-2 border-b border-border pb-4">
-                  <div className="flex justify-between">
+                <div className="space-y-3 border-b border-border pb-4">
+                  <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Items</span>
                     <span className="font-semibold">{getTotalItems()}</span>
                   </div>
+                  {(() => {
+                    const totalDiscount = items.reduce((sum, item) => {
+                      const compareAtPrice = Number(item.compareAtPrice || 0);
+                      const price = Number(item.price || 0);
+                      return sum + ((compareAtPrice - price) * item.quantity);
+                    }, 0);
+                    return totalDiscount > 0 ? (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-emerald-600 font-semibold flex items-center gap-1">
+                          <Percent className="h-3 w-3" /> Total Discount
+                        </span>
+                        <span className="font-semibold text-emerald-600">-Rs. {totalDiscount.toFixed(0)}</span>
+                      </div>
+                    ) : null;
+                  })()}
                 </div>
 
                 <div className="flex justify-between text-lg font-bold text-primary">
-                  <span>Total items</span>
-                  <span>{getTotalItems()}</span>
+                  <span>Subtotal</span>
+                  <span>Rs. {getTotalPrice().toFixed(0)}</span>
                 </div>
 
                 <Link

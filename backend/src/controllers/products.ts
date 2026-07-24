@@ -190,13 +190,31 @@ export const updateProduct = async (req: Request, res: Response): Promise<Respon
     if (update.tags !== undefined && typeof update.tags === 'string') {
       try { update.tags = JSON.parse(update.tags); } catch { update.tags = [update.tags]; }
     }
-    if (normalizedImages.length > 0) {
-      update.images = normalizedImages;
-    } else if (update.images !== undefined && typeof update.images === 'string') {
-      try { update.images = JSON.parse(update.images); } catch { update.images = []; }
-    } else if (update.images === undefined) {
-      update.images = [];
+
+    // Handle image management
+    let finalImages: any[] = [];
+    
+    // Check if we need to preserve existing images
+    if (update.keepImages !== undefined) {
+      try {
+        const keepImages = typeof update.keepImages === 'string' ? JSON.parse(update.keepImages) : update.keepImages;
+        if (Array.isArray(keepImages)) {
+          finalImages = keepImages.map((url: string) => ({ url, cloudinaryId: undefined }));
+        }
+      } catch (e) {
+        console.log('Failed to parse keepImages');
+      }
+      delete update.keepImages; // Remove from update object
     }
+
+    // Add new uploaded images
+    if (normalizedImages.length > 0) {
+      finalImages = [...finalImages, ...normalizedImages];
+    }
+
+    // Set the images in the update
+    update.images = finalImages;
+    
     const filter = mongoose.Types.ObjectId.isValid(id) ? { _id: new mongoose.Types.ObjectId(id) } : { id };
     const updated = await Product.findOneAndUpdate(filter, update, { new: true }).lean().exec();
     if (!updated) return res.status(404).json({ success: false, message: 'Product not found' });

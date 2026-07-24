@@ -9,7 +9,6 @@ import Button from '@/components/Button';
 import { categoryAPI, productAPI } from '@/services/api';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
-import { isMobileDevice } from '@/lib/utils';
 
 const placeholder = '/placeholder.jpg';
 
@@ -37,7 +36,8 @@ export default function EditProductPage() {
     isActive: true,
   });
   const [otherCategory, setOtherCategory] = useState('');
-  const [images, setImages] = useState<File[]>([]);
+  const [existingImages, setExistingImages] = useState<Array<{ url: string; _id?: string }>>([]);
+  const [newImages, setNewImages] = useState<File[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -74,6 +74,9 @@ export default function EditProductPage() {
           tags: JSON.stringify(productData?.tags || []),
           isActive: productData?.isActive !== false,
         });
+        // Load existing images
+        const images = productData?.images || [];
+        setExistingImages(Array.isArray(images) ? images : []);
         setOtherCategory(categoryId === 'other' ? '' : categoryId);
         setError('');
       } catch (err: any) {
@@ -88,15 +91,24 @@ export default function EditProductPage() {
   }, [id]);
 
   const handleImageChange = (event: ChangeEvent<HTMLInputElement>) => {
-    if (isMobileDevice()) {
-      toast.error('Image uploads are not allowed on mobile devices.');
-      return;
-    }
-
     const files = event.target.files;
     if (!files) return;
-    const selected = Array.from(files).slice(0, 5);
-    setImages(selected);
+    const selected = Array.from(files);
+    // Add new files to the new images list (up to 5 total images including existing)
+    const totalImages = existingImages.length + newImages.length + selected.length;
+    if (totalImages > 5) {
+      toast.error(`Maximum 5 images allowed. You have ${existingImages.length + newImages.length} images.`);
+      return;
+    }
+    setNewImages((prev) => [...prev, ...selected].slice(0, 5));
+  };
+
+  const removeExistingImage = (index: number) => {
+    setExistingImages((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const removeNewImage = (index: number) => {
+    setNewImages((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -150,8 +162,15 @@ export default function EditProductPage() {
         submitData.append('category', categoryValue);
       }
 
-      if (images.length > 0) {
-        images.forEach((file) => submitData.append('images', file));
+      // Send existing images URLs to preserve them
+      const existingImageUrls = existingImages.map((img) => img.url);
+      if (existingImageUrls.length > 0) {
+        submitData.append('keepImages', JSON.stringify(existingImageUrls));
+      }
+
+      // Add only new images if any
+      if (newImages.length > 0) {
+        newImages.forEach((file) => submitData.append('images', file));
       }
 
       await productAPI.update(id, submitData);
@@ -335,20 +354,76 @@ export default function EditProductPage() {
             />
 
             <div className="space-y-4 rounded-[1.25rem] border border-[#d8caa7]/70 bg-[#fbf7ec] p-4 shadow-sm">
-              <label className="block text-sm font-semibold text-slate-800">Existing image</label>
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-                <img
-                  src={product.thumbnail || product.images?.[0]?.url || placeholder}
-                  alt={product.name}
-                  className="h-28 w-28 rounded-3xl object-cover shadow-sm"
-                />
-                <div className="space-y-1 text-sm text-slate-600">
-                  <p>Upload new images to replace the current ones.</p>
-                  <p className="text-xs font-medium text-slate-500">Max 5 images, JPG/PNG/GIF/WebP.</p>
+              <label className="block text-sm font-semibold text-slate-800">Product Images</label>
+              
+              {/* Existing Images */}
+              {existingImages.length > 0 && (
+                <div className="space-y-3">
+                  <p className="text-xs font-medium text-slate-600">Current images ({existingImages.length})</p>
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+                    {existingImages.map((image, index) => (
+                      <div key={index} className="relative group">
+                        <img
+                          src={image.url}
+                          alt={`Product ${index + 1}`}
+                          className="h-24 w-full rounded-xl object-cover shadow-sm"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeExistingImage(index)}
+                          className="absolute -top-2 -right-2 hidden rounded-full bg-red-500 p-1 text-white shadow-md transition group-hover:flex hover:bg-red-600"
+                          title="Remove image"
+                        >
+                          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
+              )}
+
+              {/* New Images Preview */}
+              {newImages.length > 0 && (
+                <div className="space-y-3">
+                  <p className="text-xs font-medium text-slate-600">New images to upload ({newImages.length})</p>
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+                    {newImages.map((file, index) => (
+                      <div key={index} className="relative group">
+                        <img
+                          src={URL.createObjectURL(file)}
+                          alt={`New ${index + 1}`}
+                          className="h-24 w-full rounded-xl object-cover shadow-sm border-2 border-green-300"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeNewImage(index)}
+                          className="absolute -top-2 -right-2 hidden rounded-full bg-red-500 p-1 text-white shadow-md transition group-hover:flex hover:bg-red-600"
+                          title="Remove image"
+                        >
+                          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <p className="text-sm text-slate-600">Upload new images or manage existing ones</p>
+                <p className="text-xs font-medium text-slate-500">Max 5 images total, JPG/PNG/GIF/WebP.</p>
               </div>
               <div className="rounded-2xl border border-[#d8caa7] bg-[#fcfaf7] px-4 py-3 shadow-sm">
-                <input type="file" multiple accept="image/*" onChange={handleImageChange} className="w-full cursor-pointer text-sm font-medium text-slate-800 file:mr-3 file:rounded-full file:border-0 file:bg-[#1b3a2b] file:px-3 file:py-2 file:text-sm file:font-semibold file:text-white file:shadow-sm" />
+                <input
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  className="w-full cursor-pointer text-sm font-medium text-slate-800 file:mr-3 file:rounded-full file:border-0 file:bg-[#1b3a2b] file:px-3 file:py-2 file:text-sm file:font-semibold file:text-white file:shadow-sm"
+                />
               </div>
             </div>
 

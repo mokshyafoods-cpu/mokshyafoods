@@ -28,6 +28,7 @@ interface CartState {
   addItem: (item: CartItem) => void;
   removeItem: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
+  updateItem: (item: CartItem) => void;
   clearCart: () => void;
   getTotalPrice: () => number;
   getTotalItems: () => number;
@@ -65,6 +66,19 @@ export const useCartStore = create<CartState>()(
             i.productId === productId ? { ...i, quantity } : i
           ),
         });
+      },
+      updateItem: (item) => {
+        const { items } = get();
+        const existingItem = items.find((i) => i.productId === item.productId);
+        if (existingItem) {
+          set({
+            items: items.map((i) =>
+              i.productId === item.productId
+                ? { ...item, quantity: i.quantity }
+                : i
+            ),
+          });
+        }
       },
       clearCart: () => set({ items: [] }),
       getTotalPrice: () =>
