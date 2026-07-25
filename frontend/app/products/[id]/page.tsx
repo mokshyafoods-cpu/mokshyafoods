@@ -10,6 +10,7 @@ import { orderAPI, productAPI, reviewAPI } from '@/services/api';
 import { useCartStore } from '@/context/cartStore';
 import { toast } from 'sonner';
 import { ArrowLeft, ShoppingCart, Star, Tag, Percent } from 'lucide-react';
+import { buildProductJsonLd } from '@/lib/seo';
 
 const normalizeImageUrl = (image: any): string => {
   if (!image) return '';
@@ -344,9 +345,11 @@ export default function ProductDetailPage() {
     : 0;
   const galleryImages = getGalleryImages(product);
   const productImage = galleryImages[0] || product.thumbnail || product.image || '/placeholder.jpg';
+  const productJsonLd = buildProductJsonLd(product, `${process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://mokshyafoods.com'}/products/${id}`);
 
   return (
     <div className="min-h-screen flex flex-col bg-[#f8f9fa]">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd) }} />
       <Navigation />
       <main className="flex-grow py-10 px-4">
         <div className="max-w-7xl mx-auto">

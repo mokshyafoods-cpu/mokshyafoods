@@ -30,6 +30,16 @@ export const authVerifyOtpValidator: ValidationChain[] = [
   body('otp').trim().notEmpty().withMessage('OTP is required').isLength({ min: 6, max: 6 }).withMessage('OTP must be 6 digits'),
 ];
 
+export const forgotPasswordValidator: ValidationChain[] = [
+  body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
+];
+
+export const resetPasswordValidator: ValidationChain[] = [
+  param('token').trim().notEmpty().withMessage('Reset token is required'),
+  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+  body('confirmPassword').trim().notEmpty().withMessage('Please confirm your password'),
+];
+
 export const contactMessageValidator: ValidationChain[] = [
   body('name').trim().notEmpty().withMessage('Name is required'),
   body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),

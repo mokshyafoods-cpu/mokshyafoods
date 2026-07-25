@@ -160,6 +160,12 @@ function LoginPageContent() {
                 showPasswordToggle
               />
 
+              <div className="flex items-center justify-end">
+                <Link href="/auth/forgot-password" className="text-sm font-semibold text-[#9b7a2f] hover:text-[#c9a227]">
+                  Forgot Password?
+                </Link>
+              </div>
+
               <Button
                 type="submit"
                 disabled={loading}

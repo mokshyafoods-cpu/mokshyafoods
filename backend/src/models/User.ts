@@ -21,6 +21,8 @@ export interface IUser extends Document {
   otpExpiresAt?: Date;
   otpAttempts: number;
   otpSentAt?: Date;
+  resetPasswordToken?: string;
+  resetPasswordExpires?: Date;
   notifications?: {
     orderUpdates?: boolean;
     promotions?: boolean;
@@ -98,6 +100,13 @@ const userSchema = new Schema<IUser, UserModel, IUserMethods>({
     default: 0,
   },
   otpSentAt: {
+    type: Date,
+  },
+  resetPasswordToken: {
+    type: String,
+    select: false,
+  },
+  resetPasswordExpires: {
     type: Date,
   },
   notifications: {

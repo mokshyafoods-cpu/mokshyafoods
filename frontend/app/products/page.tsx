@@ -25,7 +25,6 @@ function ProductsPageContent() {
   const [products, setProducts] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [categorySearch, setCategorySearch] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
@@ -178,10 +177,7 @@ function ProductsPageContent() {
     loadProducts();
   }, [selectedCategories, searchQuery, priceFilter.min, priceFilter.max, sortOption, showDiscounted, showFeatured, selectedTags, ratingFilter, packagingFilter, originFilter]);
 
-  const filteredCategories = useMemo(
-    () => (Array.isArray(categories) ? categories.filter((category) => (category.name || '').toLowerCase().includes(categorySearch.toLowerCase())) : []),
-    [categories, categorySearch]
-  );
+  const visibleCategories = useMemo(() => (Array.isArray(categories) ? categories : []), [categories]);
 
   const getCategoryValues = (category: any) => [
     category?._id,
@@ -199,7 +195,7 @@ function ProductsPageContent() {
 
   const handleCategoryToggle = (category: any) => {
     const values = getCategoryValues(category);
-    const categoryKey = values[0] || category?._id || category?.id || category?.slug || category?.name || '';
+    const categoryKey = category?.slug || category?.name || category?._id || category?.id || category?.value || category?.key || values[0] || '';
     setSelectedCategories((current) => {
       const isSelected = current.some((value) => values.includes(String(value).toLowerCase().trim()));
       if (isSelected) {
@@ -231,7 +227,6 @@ function ProductsPageContent() {
   const clearFilters = () => {
     setSearchQuery('');
     setSelectedCategories([]);
-    setCategorySearch('');
     setMinPrice('');
     setMaxPrice('');
     setPriceFilter({ min: null, max: null });
@@ -502,17 +497,8 @@ function ProductsPageContent() {
 
                 <div className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm">
                   <h2 className="text-lg font-semibold text-slate-950 mb-4">Categories</h2>
-                  <div className="mb-4">
-                    <input
-                      type="search"
-                      value={categorySearch}
-                      onChange={(event) => setCategorySearch(event.target.value)}
-                      placeholder="Search categories..."
-                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary"
-                    />
-                  </div>
                   <div className="space-y-3 max-h-[220px] overflow-y-auto pr-2">
-                    {filteredCategories.map((category: any) => {
+                    {visibleCategories.map((category: any) => {
                       const categoryId = category?._id || category?.id || category?.slug || category?.name || '';
                       return (
                         <label key={categoryId} className="flex items-center gap-3 text-sm text-slate-700">
@@ -526,7 +512,7 @@ function ProductsPageContent() {
                         </label>
                       );
                     })}
-                    {filteredCategories.length === 0 && (
+                    {visibleCategories.length === 0 && (
                       <p className="text-sm text-muted-foreground">No categories found.</p>
                     )}
                   </div>
@@ -710,15 +696,8 @@ function ProductsPageContent() {
                             </button>
                           )}
                         </h3>
-                        <input
-                          type="search"
-                          value={categorySearch}
-                          onChange={(event) => setCategorySearch(event.target.value)}
-                          placeholder="Search categories..."
-                          className="mb-4 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary"
-                        />
                         <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
-                          {filteredCategories.map((category: any) => {
+                          {visibleCategories.map((category: any) => {
                             const categoryId = category?._id || category?.id || category?.slug || category?.name || '';
                             const isSelected = isCategorySelected(category);
                             return (
@@ -733,7 +712,7 @@ function ProductsPageContent() {
                               </label>
                             );
                           })}
-                          {filteredCategories.length === 0 && (
+                          {visibleCategories.length === 0 && (
                             <p className="text-sm text-slate-500 py-4 text-center">No categories found.</p>
                           )}
                         </div>

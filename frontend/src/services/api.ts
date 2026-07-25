@@ -80,6 +80,8 @@ export const authAPI = {
   logout: () => apiClient.post('/auth/logout'),
   verifyEmail: (data: any) => apiClient.post('/auth/verify-email', data),
   resendOtp: () => apiClient.post('/auth/resend-otp'),
+  forgotPassword: (data: any) => apiClient.post('/auth/forgot-password', data),
+  resetPassword: (token: string, data: any) => apiClient.post(`/auth/reset-password/${token}`, data),
 };
 
 export const productAPI = {

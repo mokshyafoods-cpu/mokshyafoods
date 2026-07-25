@@ -250,6 +250,135 @@ export const resendOtp = async (req: Request & { userId?: string }, res: Respons
   }
 };
 
+const createResetToken = (): string => crypto.randomBytes(32).toString('hex');
+
+const hashToken = async (token: string): Promise<string> => bcrypt.hash(token, 10);
+
+const sendPasswordResetEmail = async (email: string, name: string, token: string): Promise<void> => {
+  const frontendBaseUrl = process.env.FRONTEND_URL?.trim() || process.env.FRONTEND_URLS?.split(',')[0]?.trim() || 'http://localhost:3000';
+  const resetUrl = `${frontendBaseUrl.replace(/\/$/, '')}/reset-password/${token}`;
+  const subject = 'Reset your Mokshya Foods password';
+  const { html, text } = buildBrandEmailTemplate({
+    title: 'Reset your password',
+    greeting: `Hello ${name},`,
+    intro: 'We received a request to reset your password for your Mokshya Foods account.',
+    bodyHtml: `
+      <div style="margin-top: 12px; padding: 18px 20px; background: #f8faf8; border: 1px solid #dce9df; border-radius: 14px; text-align: center;">
+        <p style="margin: 0 0 12px; font-size: 15px; color: #374151;">Use the button below to choose a new password.</p>
+        <a href="${resetUrl}" style="display: inline-block; background: #1f5f3b; color: #ffffff; text-decoration: none; padding: 12px 18px; border-radius: 999px; font-weight: 700;">Reset Password</a>
+      </div>
+      <p style="margin-top: 16px; margin-bottom: 8px;">This link will expire in 30 minutes.</p>
+      <p style="margin: 0; color: #6b7280;">If you did not request this password reset, you can safely ignore this email.</p>
+    `,
+    bodyText: `Hello ${name}. We received a request to reset your password for your Mokshya Foods account. Use this link to choose a new password: ${resetUrl}. This link will expire in 30 minutes. If you did not request this password reset, you can safely ignore this email.`,
+    footerNote: 'For your security, never share this link with anyone.',
+  });
+
+  await sendEmail({ to: email, subject, html, text, replyTo: 'support@mokshyafoods.com' });
+};
+
+export const forgotPassword = async (req: Request, res: Response): Promise<Response> => {
+  try {
+    const { email } = req.body as { email?: string };
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide your email address',
+      });
+    }
+
+    const user = await User.findOne({ email: email.toLowerCase().trim() });
+
+    if (user) {
+      const token = createResetToken();
+      const hashedToken = await hashToken(token);
+      user.resetPasswordToken = hashedToken;
+      user.resetPasswordExpires = new Date(Date.now() + 30 * 60 * 1000);
+      await user.save();
+      await sendPasswordResetEmail(user.email, user.name, token);
+    }
+
+    return res.json({
+      success: true,
+      message: 'If an account exists with this email, a password reset link has been sent.',
+    });
+  } catch (error: unknown) {
+    console.error('Forgot password error:', error);
+    const message = error instanceof Error ? error.message : 'Failed to process password reset request';
+    return res.status(500).json({
+      success: false,
+      message,
+    });
+  }
+};
+
+export const resetPassword = async (req: Request, res: Response): Promise<Response> => {
+  try {
+    const rawToken = req.params.token;
+    const token = Array.isArray(rawToken) ? rawToken[0] : rawToken;
+    const { password, confirmPassword } = req.body as { password?: string; confirmPassword?: string };
+
+    if (!password || !confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide a new password and confirm it',
+      });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password must be at least 6 characters',
+      });
+    }
+
+    if (password !== confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Passwords do not match',
+      });
+    }
+
+    if (!token) {
+      return res.status(400).json({
+        success: false,
+        message: 'Reset token is required',
+      });
+    }
+
+    const hashedToken = await hashToken(token);
+    const user = await User.findOne({
+      resetPasswordToken: hashedToken,
+      resetPasswordExpires: { $gt: new Date() },
+    }).select('+resetPasswordToken +resetPasswordExpires +password');
+
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: 'This password reset link is invalid or has expired.',
+      });
+    }
+
+    user.password = password;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+    await user.save();
+
+    return res.json({
+      success: true,
+      message: 'Password has been reset successfully.',
+    });
+  } catch (error: unknown) {
+    console.error('Reset password error:', error);
+    const message = error instanceof Error ? error.message : 'Failed to reset password';
+    return res.status(500).json({
+      success: false,
+      message,
+    });
+  }
+};
+
 export const logout = (_req: Request, res: Response): Response => {
   // Clear common auth cookies if present
   try {
