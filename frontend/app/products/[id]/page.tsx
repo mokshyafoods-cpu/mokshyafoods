@@ -314,7 +314,7 @@ export default function ProductDetailPage() {
   const galleryImages = getGalleryImages(product);
   const productImage = galleryImages[0] || product.thumbnail || product.image || '/placeholder.jpg';
   const slug = getProductSlug(product, id);
-  const productJsonLd = buildProductJsonLd(product, `${process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://mokshyafoods.com'}/products/${slug}`);
+  const productJsonLd = buildProductJsonLd(product, `${process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://mokshyafood.com.np'}/products/${slug}`);
 
   return (
     <div className="min-h-screen flex flex-col bg-[#f8f9fa]">
