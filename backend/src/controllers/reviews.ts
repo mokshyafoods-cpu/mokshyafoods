@@ -117,6 +117,10 @@ export const getProductReviews = async (req: Request, res: Response): Promise<Re
   try {
     const productId = req.query.productId ? String(req.query.productId) : '';
     const statusFilter = typeof req.query.status === 'string' ? req.query.status : '';
+    const page = Math.max(1, parseInt(String(req.query.page || '1'), 10) || 1);
+    const limit = Math.min(50, Math.max(1, parseInt(String(req.query.limit || '6'), 10) || 6));
+    const skip = (page - 1) * limit;
+
     const reviewsColl = mongoose.connection.collection('reviews');
     const filter: Record<string, any> = {};
     if (productId) filter.productId = productId;
@@ -125,9 +129,40 @@ export const getProductReviews = async (req: Request, res: Response): Promise<Re
     } else {
       filter.status = 'approved';
     }
-    const reviews = await reviewsColl.find(filter).sort({ createdAt: -1 }).toArray();
+
+    const [total, reviews] = await Promise.all([
+      reviewsColl.countDocuments(filter),
+      reviewsColl.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).toArray(),
+    ]);
+
     const hydratedReviews = await Promise.all(reviews.map((review) => hydrateReview(review)));
-    return res.json({ success: true, message: 'Product reviews loaded', data: hydratedReviews });
+    const reviewSummary = {
+      total,
+      average: total > 0
+        ? hydratedReviews.reduce((sum, review: any) => sum + Number(review.rating || 0), 0) / total
+        : 0,
+      distribution: [5, 4, 3, 2, 1].map((star) => {
+        const count = hydratedReviews.filter((review: any) => Number(review.rating || 0) === star).length;
+        return {
+          star,
+          count,
+          percent: total > 0 ? (count / total) * 100 : 0,
+        };
+      }),
+    };
+
+    return res.json({
+      success: true,
+      message: 'Product reviews loaded',
+      data: hydratedReviews,
+      pagination: {
+        page,
+        limit,
+        total,
+        hasMore: skip + hydratedReviews.length < total,
+      },
+      summary: reviewSummary,
+    });
   } catch (error: any) {
     console.error('getProductReviews error:', error);
     return res.status(500).json({ success: false, message: error.message || 'Failed to load product reviews' });
@@ -206,7 +241,9 @@ export const deleteReview = async (req: AuthenticatedRequest, res: Response): Pr
       return res.status(404).json({ success: false, message: 'Review not found' });
     }
 
-    if (!isOwnedByUser(existingReview, req.userId)) {
+    const normalizedRole = String(req.userRole || '').trim().toLowerCase();
+    const isAdmin = normalizedRole === 'admin' || normalizedRole === 'superadmin' || normalizedRole === 'administrator' || normalizedRole.includes('admin');
+    if (!isAdmin && !isOwnedByUser(existingReview, req.userId)) {
       return res.status(403).json({ success: false, message: 'You can only delete your own reviews' });
     }
 

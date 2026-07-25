@@ -155,7 +155,7 @@ export const paymentLedgerAPI = {
 
 export const reviewAPI = {
   create: (data: any) => apiClient.post('/reviews', data),
-  getByProduct: (productId: string) => apiClient.get(`/reviews?productId=${productId}`),
+  getByProduct: (productId: string, params?: any) => apiClient.get('/reviews', { params: { productId, ...params } }),
   getUserReviews: () => apiClient.get('/reviews/user'),
   getAllAdmin: () => apiClient.get('/reviews/admin'),
   update: (id: string, data: any) => apiClient.put(`/reviews/${id}`, data),

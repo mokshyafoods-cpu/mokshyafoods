@@ -19,9 +19,21 @@ export const authMiddleware = (req: AuthenticatedRequest, res: Response, next: N
       return;
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as JwtPayload & { id?: string; role?: string };
-    req.userId = decoded.id;
-    req.userRole = decoded.role;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as JwtPayload & {
+      id?: string;
+      userId?: string;
+      _id?: string;
+      role?: string;
+      userRole?: string;
+      roles?: string[];
+    };
+
+    const normalizedRole = [decoded.role, decoded.userRole, Array.isArray(decoded.roles) ? decoded.roles[0] : undefined]
+      .find((value): value is string => Boolean(value)) || '';
+    const normalizedUserId = decoded.id || decoded.userId || decoded._id || '';
+
+    req.userId = normalizedUserId;
+    req.userRole = normalizedRole;
     next();
   } catch (error) {
     res.status(401).json({
@@ -33,7 +45,10 @@ export const authMiddleware = (req: AuthenticatedRequest, res: Response, next: N
 
 export const adminMiddleware = (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
   authMiddleware(req, res, () => {
-    if (req.userRole !== 'admin') {
+    const normalizedRole = String(req.userRole || '').trim().toLowerCase();
+    const isAdmin = normalizedRole === 'admin' || normalizedRole === 'superadmin' || normalizedRole === 'administrator' || normalizedRole.includes('admin');
+
+    if (!isAdmin) {
       res.status(403).json({
         success: false,
         message: 'Admin access required',

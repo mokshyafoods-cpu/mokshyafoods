@@ -52,6 +52,9 @@ const normalizeReviewPayload = (payload: any) => {
   return Array.isArray(reviewsPayload) ? reviewsPayload : [];
 };
 
+const normalizeReviewPagination = (payload: any) => payload?.pagination ?? payload?.meta ?? {};
+const normalizeReviewSummary = (payload: any) => payload?.summary ?? payload?.stats ?? null;
+
 const getReviewAuthorName = (review: any) => review?.user?.name || review?.user?.fullName || review?.user?.displayName || review?.userName || review?.name || 'Customer';
 const getReviewAuthorAvatar = (review: any) => review?.user?.avatar || review?.user?.profileImage || review?.user?.photo || review?.avatar || review?.profileImage || '/placeholder.jpg';
 const getReviewText = (review: any) => review?.comment || review?.text || review?.review || 'No comment provided.';
@@ -68,10 +71,15 @@ export default function ProductDetailPage() {
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewSubmitting, setReviewSubmitting] = useState(false);
   const [reviewSorting, setReviewSorting] = useState<'recent' | 'highest' | 'lowest'>('recent');
-  const [visibleReviewCount, setVisibleReviewCount] = useState(4);
+  const [visibleReviewCount, setVisibleReviewCount] = useState(6);
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [editingReviewId, setEditingReviewId] = useState<string | null>(null);
   const [verifiedPurchase, setVerifiedPurchase] = useState(false);
+  const [reviewPage, setReviewPage] = useState(1);
+  const [reviewHasMore, setReviewHasMore] = useState(false);
+  const [reviewLoadingMore, setReviewLoadingMore] = useState(false);
+  const [reviewSummary, setReviewSummary] = useState<any>(null);
+  const [reviewTotal, setReviewTotal] = useState(0);
   const { isAuthenticated, user } = useAuth();
   const router = useRouter();
 
@@ -85,12 +93,12 @@ export default function ProductDetailPage() {
   }, [currentUserId, reviews]);
 
   const reviewStats = useMemo(() => {
-    const total = reviews.length;
-    const average = total > 0
+    const total = reviewSummary?.total ?? reviewTotal ?? reviews.length;
+    const average = reviewSummary?.average ?? (total > 0
       ? reviews.reduce((sum, review: any) => sum + Number(review.rating || 0), 0) / total
-      : 0;
+      : 0);
 
-    const distribution = [5, 4, 3, 2, 1].map((star) => {
+    const distribution = reviewSummary?.distribution ?? [5, 4, 3, 2, 1].map((star) => {
       const count = reviews.filter((review: any) => Number(review.rating || 0) === star).length;
       return {
         star,
@@ -100,7 +108,7 @@ export default function ProductDetailPage() {
     });
 
     return { average, total, distribution };
-  }, [reviews]);
+  }, [reviewSummary, reviewTotal, reviews]);
 
   const sortedReviews = useMemo(() => {
     const nextReviews = [...reviews];
@@ -116,22 +124,45 @@ export default function ProductDetailPage() {
 
   const visibleReviews = useMemo(() => sortedReviews.slice(0, visibleReviewCount), [sortedReviews, visibleReviewCount]);
 
+  const loadReviews = async (productIdToUse: string, page = 1, append = false) => {
+    try {
+      const reviewsResult = await reviewAPI.getByProduct(productIdToUse, { page, limit: 6 });
+      const payload = reviewsResult?.data ?? reviewsResult;
+      const nextReviews = normalizeReviewPayload(payload);
+      const pagination = normalizeReviewPagination(payload);
+      const summary = normalizeReviewSummary(payload);
+
+      setReviews((current) => append ? [...current, ...nextReviews] : nextReviews);
+      setReviewPage(page);
+      setReviewHasMore(Boolean(pagination?.hasMore));
+      setReviewSummary(summary);
+      setReviewTotal(Number(pagination?.total || summary?.total || nextReviews.length || 0));
+    } catch (error) {
+      console.error('Failed to load reviews:', error);
+      toast.error('Unable to load reviews.');
+    }
+  };
+
   useEffect(() => {
     if (!id) return;
 
     const loadProduct = async () => {
       try {
         setLoading(true);
-        const [productResult, reviewsResult] = await Promise.all([
-          productAPI.getById(id),
-          reviewAPI.getByProduct(id),
-        ]);
+        const productResult = await productAPI.getById(id);
         const payload = productResult.data;
         const nextProduct = payload?.data ?? payload ?? null;
         const nextProductId = String(nextProduct?._id || nextProduct?.id || id || '');
+
         setProduct(nextProduct);
         setProductId(nextProductId);
-        setReviews(normalizeReviewPayload(reviewsResult?.data ?? reviewsResult));
+        setReviews([]);
+        setVisibleReviewCount(6);
+        setReviewPage(1);
+        setReviewHasMore(false);
+        setReviewSummary(null);
+        setReviewTotal(0);
+        await loadReviews(nextProductId || id, 1, false);
       } catch (error) {
         console.error('Failed to load product:', error);
         toast.error('Unable to load product details.');
@@ -140,7 +171,7 @@ export default function ProductDetailPage() {
       }
     };
 
-    setVisibleReviewCount(4);
+    setVisibleReviewCount(6);
     setShowReviewForm(false);
     setEditingReviewId(null);
     setReviewComment('');
@@ -197,11 +228,19 @@ export default function ProductDetailPage() {
 
   const refreshReviews = async () => {
     if (!productId) return;
+    setVisibleReviewCount(6);
+    await loadReviews(productId, 1, false);
+  };
+
+  const handleLoadMoreReviews = async () => {
+    if (!productId || reviewLoadingMore || !reviewHasMore) return;
+
+    setReviewLoadingMore(true);
     try {
-      const reviewsResult = await reviewAPI.getByProduct(productId);
-      setReviews(normalizeReviewPayload(reviewsResult?.data ?? reviewsResult));
-    } catch (error) {
-      console.error('Failed to refresh reviews:', error);
+      await loadReviews(productId, reviewPage + 1, true);
+      setVisibleReviewCount((count) => count + 6);
+    } finally {
+      setReviewLoadingMore(false);
     }
   };
 
@@ -210,7 +249,6 @@ export default function ProductDetailPage() {
 
     if (!isAuthenticated) {
       toast.error('Please login first to submit a review.');
-      router.push(`/auth/login?redirect=/products/${id}`);
       return;
     }
 
@@ -242,7 +280,7 @@ export default function ProductDetailPage() {
       setReviewRating(5);
       setShowReviewForm(false);
       setEditingReviewId(null);
-      setVisibleReviewCount(4);
+      setVisibleReviewCount(6);
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to submit review.');
     } finally {
@@ -453,7 +491,7 @@ export default function ProductDetailPage() {
                         value={reviewSorting}
                         onChange={(event) => {
                           setReviewSorting(event.target.value as 'recent' | 'highest' | 'lowest');
-                          setVisibleReviewCount(4);
+                          setVisibleReviewCount(6);
                         }}
                         className="rounded-full border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700"
                       >
@@ -587,9 +625,9 @@ export default function ProductDetailPage() {
                       </div>
                     )}
 
-                    {sortedReviews.length > visibleReviewCount && (
-                      <button type="button" onClick={() => setVisibleReviewCount((count) => count + 4)} className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
-                        Load More Reviews
+                    {reviewHasMore && (
+                      <button type="button" onClick={handleLoadMoreReviews} disabled={reviewLoadingMore} className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60">
+                        {reviewLoadingMore ? 'Loading reviews...' : `Load More Reviews (${Math.max(0, reviewTotal - visibleReviewCount)} left)`}
                       </button>
                     )}
                   </div>
