@@ -7,12 +7,12 @@ import Footer from '@/components/Footer';
 import Link from 'next/link';
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useAuth } from '@/context/AuthContext';
-import { productAPI, categoryAPI, wishlistAPI } from '@/services/api';
-import { useCartStore } from '@/context/cartStore';
+import { productAPI, categoryAPI } from '@/services/api';
 import { toast } from 'sonner';
-import { ShoppingCart, Heart, Grid, List, Search, X } from 'lucide-react';
-import { addGuestWishlistItem } from '@/lib/wishlist';
+import { Grid, List, Search, X } from 'lucide-react';
+import { getProductUrl } from '@/lib/productRoutes';
+import WishlistButton from '@/components/WishlistButton';
+import AddToCartButton from '@/components/AddToCartButton';
 
 const sortOptions = [
   { value: 'latest', label: 'Latest Products' },
@@ -39,12 +39,10 @@ function ProductsPageContent() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [loading, setLoading] = useState(true);
-  const { isAuthenticated } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialQuerySync = useRef(true);
   const [queryReady, setQueryReady] = useState(false);
-  const { addItem } = useCartStore();
 
   useEffect(() => {
     const loadCategories = async () => {
@@ -353,52 +351,6 @@ function ProductsPageContent() {
   const resultCount = displayedProducts.length;
 
   const getProductImage = (product: any) => product.thumbnail || product.images?.[0]?.url || '/placeholder.jpg';
-
-  const handleAddToCart = (product: any) => {
-    if (product.quantity === 0) {
-      toast.error('This product is currently out of stock.');
-      return;
-    }
-
-    addItem({
-      productId: product._id,
-      name: product.name,
-      price: product.computedPrice,
-      quantity: 1,
-      image: getProductImage(product),
-      description: product.description,
-      category: typeof product.category === 'string' ? product.category : product.category?.name || 'Uncategorized',
-      sku: product.sku,
-      weight: product.weight,
-      stock: product.quantity,
-      thumbnail: getProductImage(product),
-      images: (product.images || []).map((img: any) => img?.url || img?.secure_url || img?.path).filter(Boolean),
-      discountPrice: product.discountPrice,
-      compareAtPrice: product.price,
-      onSale: product.onSale,
-      rating: product.rating,
-      reviewCount: product.reviewCount,
-      packaging: product.packaging,
-      origin: product.origin,
-    });
-    toast.success('Added to cart!');
-  };
-
-  const handleAddToWishlist = async (product: any) => {
-    if (!isAuthenticated) {
-      addGuestWishlistItem(product);
-      toast.success('Added to your wishlist');
-      return;
-    }
-
-    try {
-      await wishlistAPI.addToWishlist(product._id || product.id);
-      toast.success('Added to wishlist');
-    } catch (error) {
-      console.error('Failed to add product to wishlist:', error);
-      toast.error('Unable to add to wishlist right now');
-    }
-  };
 
   return (
     <div className="min-h-screen flex flex-col bg-[#f8f9fa]">
@@ -746,7 +698,7 @@ function ProductsPageContent() {
                   {displayedProducts.map((product) => (
                   <Link
                     key={product._id}
-                    href={`/products/${product._id}`}
+                    href={getProductUrl(product, product._id)}
                     className={`group block overflow-hidden rounded-[1.75rem] border border-border bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl ${
                       viewMode === 'list' ? 'sm:flex sm:items-center' : ''
                     }`}
@@ -759,31 +711,15 @@ function ProductsPageContent() {
                       />
                       <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition duration-300 group-hover:bg-black/10"></div>
                       <div className="absolute inset-x-4 bottom-4 z-20 flex gap-2 sm:inset-auto sm:right-4 sm:top-4 sm:flex-col sm:gap-3 sm:opacity-100 sm:group-hover:opacity-100">
-                        <button
-                          type="button"
-                          onClick={(event) => {
-                            event.preventDefault();
-                            event.stopPropagation();
-                            handleAddToWishlist(product);
-                          }}
-                          className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/95 text-slate-900 shadow-sm backdrop-blur-sm transition hover:bg-white"
-                        >
-                          <Heart className="h-5 w-5 text-rose-600" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(event) => {
-                            event.preventDefault();
-                            event.stopPropagation();
-                            handleAddToCart(product);
-                          }}
+                        <WishlistButton product={product} className="h-10 w-10" iconClassName="h-5 w-5" />
+                        <AddToCartButton
+                          product={product}
+                          price={product.computedPrice}
+                          image={getProductImage(product)}
+                          compact
                           disabled={product.quantity === 0}
-                          className={`inline-flex h-10 w-10 items-center justify-center rounded-full bg-secondary text-secondary-foreground shadow-sm transition ${
-                            product.quantity === 0 ? 'cursor-not-allowed opacity-60' : 'hover:bg-secondary/90'
-                          }`}
-                        >
-                          <ShoppingCart className="h-5 w-5" />
-                        </button>
+                          className="h-10 w-10"
+                        />
                       </div>
                       {product.quantity === 0 && (
                         <div className="absolute inset-0 flex items-center justify-center bg-black/40 p-4">

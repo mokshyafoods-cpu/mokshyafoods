@@ -7,10 +7,12 @@ import { useAuth } from '@/context/AuthContext';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { orderAPI, productAPI, reviewAPI } from '@/services/api';
-import { useCartStore } from '@/context/cartStore';
 import { toast } from 'sonner';
-import { ArrowLeft, ShoppingCart, Star, Tag, Percent } from 'lucide-react';
+import { ArrowLeft, Star, Tag, Percent } from 'lucide-react';
 import { buildProductJsonLd } from '@/lib/seo';
+import { getProductSlug } from '@/lib/productRoutes';
+import WishlistButton from '@/components/WishlistButton';
+import AddToCartButton from '@/components/AddToCartButton';
 
 const normalizeImageUrl = (image: any): string => {
   if (!image) return '';
@@ -71,7 +73,6 @@ export default function ProductDetailPage() {
   const [verifiedPurchase, setVerifiedPurchase] = useState(false);
   const { isAuthenticated, user } = useAuth();
   const router = useRouter();
-  const { addItem } = useCartStore();
 
   const currentUserId = user?._id || user?.id || '';
   const myReview = useMemo(() => {
@@ -190,39 +191,6 @@ export default function ProductDetailPage() {
       active = false;
     };
   }, [id, isAuthenticated, user?._id, user?.id]);
-
-  const handleAddToCart = () => {
-    if (!product) return;
-    const galleryImages = getGalleryImages(product);
-    const productImage = galleryImages[0] || product.thumbnail || product.image || '/placeholder.jpg';
-    if (product.quantity === 0) {
-      toast.error('This product is currently out of stock.');
-      return;
-    }
-
-    addItem({
-      productId: product._id,
-      name: product.name,
-      price,
-      quantity: 1,
-      image: productImage,
-      description: product.description,
-      category: typeof product.category === 'string' ? product.category : product.category?.name || 'Uncategorized',
-      sku: product.sku,
-      weight: product.weight,
-      stock: product.quantity,
-      thumbnail: productImage,
-      images: galleryImages,
-      discountPrice: product.discountPrice,
-      compareAtPrice: product.price,
-      onSale: saleActive,
-      rating: product.rating,
-      reviewCount: product.reviewCount,
-      packaging: product.packaging,
-      origin: product.origin,
-    });
-    toast.success('Added to cart');
-  };
 
   const refreshReviews = async () => {
     if (!id) return;
@@ -345,7 +313,8 @@ export default function ProductDetailPage() {
     : 0;
   const galleryImages = getGalleryImages(product);
   const productImage = galleryImages[0] || product.thumbnail || product.image || '/placeholder.jpg';
-  const productJsonLd = buildProductJsonLd(product, `${process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://mokshyafoods.com'}/products/${id}`);
+  const slug = getProductSlug(product, id);
+  const productJsonLd = buildProductJsonLd(product, `${process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://mokshyafoods.com'}/products/${slug}`);
 
   return (
     <div className="min-h-screen flex flex-col bg-[#f8f9fa]">
@@ -361,13 +330,10 @@ export default function ProductDetailPage() {
               <h1 className="text-4xl font-bold text-slate-950">{product.name}</h1>
               <p className="text-sm text-muted-foreground">{typeof product.category === 'string' ? product.category : product.category?.name || 'Uncategorized'}</p>
             </div>
-            <button
-              type="button"
-              onClick={handleAddToCart}
-              className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-xs sm:px-6 sm:py-3 sm:text-sm font-semibold text-white transition hover:bg-primary/90"
-            >
-              <ShoppingCart className="w-3 h-3 sm:w-4 sm:h-4" /> Add to cart
-            </button>
+            <div className="flex items-center gap-3">
+              <WishlistButton product={product} className="h-11 w-11" iconClassName="h-5 w-5" />
+              <AddToCartButton product={product} price={price} image={productImage} className="rounded-full px-4 py-2.5 text-xs sm:px-6 sm:py-3 sm:text-sm" />
+            </div>
           </div>
 
           <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr]">

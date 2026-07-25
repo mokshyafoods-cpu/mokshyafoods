@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 
 const SITE_NAME = 'Mokshya Foods';
 const DEFAULT_DESCRIPTION = 'Premium organic dried fruits from Nepal with natural flavor, quality packaging, and fast delivery.';
-const DEFAULT_IMAGE = '/1.jpeg';
+const DEFAULT_IMAGE = '/logo.jpeg';
 const DEFAULT_SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://mokshyafoods.com';
 
 export function buildMetadata(overrides: Metadata = {}): Metadata {
@@ -63,7 +63,7 @@ export function buildMetadata(overrides: Metadata = {}): Metadata {
       },
     },
     icons: {
-      icon: '/favicon.ico',
+      icon: '/icon.svg',
       shortcut: '/icon.svg',
       apple: '/apple-icon.png',
     },

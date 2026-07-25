@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { Camera, PhoneCall, ChevronRight, Home, ShieldCheck, Info, ShoppingBag, Lock, FileText, Sparkles } from 'lucide-react';
 
 const footerLinks = [
@@ -16,9 +17,16 @@ export default function Footer() {
       <div className="mx-auto max-w-7xl px-3 py-8 sm:px-6 sm:py-12 lg:px-8 lg:py-20">
         <div className="mb-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 lg:gap-8">
           <div className="max-w-full">
-            <Link href="/" className="inline-flex items-center gap-3 sm:gap-4">
-              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-3xl bg-[#b77f22] text-lg font-bold text-slate-950 shadow-md shadow-black/10 sm:h-16 sm:w-16">
-                M
+            <Link href="/" className="inline-flex items-center gap-3 sm:gap-4" aria-label="Mokshya Foods home">
+              <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-3xl bg-white shadow-md shadow-black/10 sm:h-16 sm:w-16">
+                <Image
+                  src="/logo.jpeg"
+                  alt="Mokshya Foods"
+                  width={64}
+                  height={64}
+                  className="h-full w-full object-cover"
+                  sizes="(max-width: 640px) 56px, 64px"
+                />
               </div>
               <div className="min-w-0">
                 <p className="text-lg font-bold text-slate-950 sm:text-xl">Mokshya Foods</p>

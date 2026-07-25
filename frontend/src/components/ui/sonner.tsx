@@ -30,24 +30,30 @@ const Toaster = ({ ...props }: ToasterProps) => {
       }}
       style={
         {
-          "--normal-bg": "var(--popover)",
-          "--normal-text": "var(--popover-foreground)",
-          "--normal-border": "var(--border)",
-          "--success-bg": "color-mix(in srgb, var(--primary) 12%, white 88%)",
-          "--success-text": "var(--primary)",
-          "--success-border": "color-mix(in srgb, var(--primary) 25%, var(--border))",
-          "--error-bg": "color-mix(in srgb, var(--destructive) 12%, white 88%)",
-          "--error-text": "var(--destructive)",
-          "--error-border": "color-mix(in srgb, var(--destructive) 25%, var(--border))",
-          "--info-bg": "color-mix(in srgb, var(--accent) 12%, white 88%)",
-          "--info-text": "var(--accent)",
-          "--info-border": "color-mix(in srgb, var(--accent) 25%, var(--border))",
-          "--border-radius": "var(--radius)",
+          "--normal-bg": "#fdfbf7",
+          "--normal-text": "#1f2937",
+          "--normal-border": "rgba(27, 58, 43, 0.15)",
+          "--success-bg": "#f5fbf6",
+          "--success-text": "#1f5f3a",
+          "--success-border": "rgba(31, 95, 58, 0.2)",
+          "--error-bg": "#fff6f6",
+          "--error-text": "#b42318",
+          "--error-border": "rgba(180, 35, 24, 0.2)",
+          "--info-bg": "#faf7ef",
+          "--info-text": "#7a5b1b",
+          "--info-border": "rgba(122, 91, 27, 0.2)",
+          "--border-radius": "1rem",
+          "--shadow": "0 18px 45px -20px rgba(15, 23, 42, 0.28)",
         } as React.CSSProperties
       }
       toastOptions={{
         classNames: {
-          toast: "cn-toast",
+          toast: "group toast group-[.toaster]:bg-[var(--normal-bg)] group-[.toaster]:text-[var(--normal-text)] group-[.toaster]:border group-[.toaster]:shadow-lg group-[.toaster]:backdrop-blur-sm",
+          title: "text-sm font-semibold",
+          description: "text-sm text-slate-600",
+          closeButton: "bg-white/80 text-slate-600 hover:bg-white",
+          actionButton: "bg-primary text-white",
+          cancelButton: "bg-slate-100 text-slate-700",
         },
       }}
       {...props}

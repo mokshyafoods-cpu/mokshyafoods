@@ -218,6 +218,18 @@
     transform: translateY(-1px);
   }
 
+  button:focus-visible,
+  [type='button']:focus-visible,
+  [type='submit']:focus-visible,
+  [type='reset']:focus-visible,
+  a:focus-visible,
+  input:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.22);
+  }
+
   label {
     color: #111827;
   }

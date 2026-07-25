@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { ShoppingCart, User, LogOut, Menu, X, Heart, Search, House, Phone, Package2, BadgeInfo, BadgeCheck, ShieldCheck } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
@@ -87,9 +88,17 @@ export default function Navigation() {
         <div className="mx-auto max-w-7xl px-3 sm:px-6 lg:px-8">
           <div className="flex h-10 items-center justify-between gap-2 py-0 sm:h-16 sm:gap-3 sm:py-3 lg:h-20">
             <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-              <Link href="/" className="flex min-w-0 items-center gap-2 sm:gap-3">
-                <div className="relative h-9 w-9 rounded-2xl overflow-hidden ring-1 ring-accent/20 bg-accent/10 sm:h-12 sm:w-12">
-                  <img src="/logo.jpeg" alt="Mokshya Foods Logo" className="object-cover w-full h-full" />
+              <Link href="/" className="flex min-w-0 items-center gap-2 sm:gap-3" aria-label="Mokshya Foods home">
+                <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-2xl ring-1 ring-accent/20 bg-accent/10 sm:h-12 sm:w-12">
+                  <Image
+                    src="/logo.jpeg"
+                    alt="Mokshya Foods"
+                    width={48}
+                    height={48}
+                    priority
+                    className="h-full w-full object-cover"
+                    sizes="(max-width: 640px) 36px, 48px"
+                  />
                 </div>
                 <div className="hidden sm:block">
                   <p className="text-xs font-semibold uppercase tracking-[0.3em] text-accent">Mokshya</p>

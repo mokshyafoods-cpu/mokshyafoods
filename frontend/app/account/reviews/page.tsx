@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { orderAPI, reviewAPI } from '@/services/api';
 import { toast } from 'sonner';
+import { getProductUrl } from '@/lib/productRoutes';
 import { ExternalLink, Pencil, Star, Trash2, CircleCheckBig } from 'lucide-react';
 
 const emptyForm = {
@@ -249,7 +250,7 @@ export default function ReviewsPage() {
                             </button>
                             {review.product?._id && (
                               <Link
-                                href={`/products/${review.product._id}`}
+                                href={getProductUrl(review.product, review.product?._id)}
                                 className="inline-flex items-center gap-2 rounded-full bg-primary px-3 py-2 text-sm font-semibold text-white transition hover:bg-primary/90"
                               >
                                 <ExternalLink className="h-4 w-4" /> View Product

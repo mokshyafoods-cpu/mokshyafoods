@@ -4,13 +4,13 @@ import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowRight, Award, Heart, Leaf, Play, ShoppingCart, Sparkles, Truck } from 'lucide-react';
+import { ArrowRight, Award, Leaf, Play, Sparkles, Truck } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { useAuth } from '@/context/AuthContext';
-import { productAPI, wishlistAPI } from '@/services/api';
-import { useCartStore } from '@/context/cartStore';
+import { productAPI } from '@/services/api';
 import { toast } from 'sonner';
-import { addGuestWishlistItem } from '@/lib/wishlist';
+import { getProductUrl } from '@/lib/productRoutes';
+import WishlistButton from '@/components/WishlistButton';
+import AddToCartButton from '@/components/AddToCartButton';
 
 const featureItems = [
   { title: 'No sugar added', description: 'Naturally sweet dried fruits.' },
@@ -28,8 +28,6 @@ const whyItems = [
 export default function HomePage() {
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const { isAuthenticated } = useAuth();
-  const { addItem } = useCartStore();
 
   useEffect(() => {
     const loadHomeData = async () => {
@@ -85,48 +83,6 @@ export default function HomePage() {
     const price = Number(saleActive ? item.discountPrice : item.price || item.amount || 0);
     const compareAtPrice = Number(item.price || item.amount || 0);
     return { price, compareAtPrice, saleActive };
-  };
-
-  const handleAddToCart = (item: any) => {
-    const { price } = getSalePricing(item);
-    addItem({
-      productId: item._id || item.id,
-      name: item.name,
-      price,
-      quantity: 1,
-      image: getItemImage(item),
-      description: item.description,
-      category: typeof item.category === 'string' ? item.category : item.category?.name || 'Uncategorized',
-      sku: item.sku,
-      weight: item.weight,
-      stock: item.quantity,
-      thumbnail: getItemImage(item),
-      images: (item.images || []).map((img: any) => img?.url || img?.secure_url || img?.path).filter(Boolean),
-      discountPrice: item.discountPrice,
-      compareAtPrice: item.price,
-      onSale: item.onSale,
-      rating: item.rating,
-      reviewCount: item.reviewCount,
-      packaging: item.packaging,
-      origin: item.origin,
-    });
-    toast.success('Added to cart');
-  };
-
-  const handleAddToWishlist = async (item: any) => {
-    if (!isAuthenticated) {
-      addGuestWishlistItem(item);
-      toast.success('Added to your wishlist');
-      return;
-    }
-
-    try {
-      await wishlistAPI.addToWishlist(item._id || item.id);
-      toast.success('Added to wishlist');
-    } catch (error) {
-      console.error('Failed to add item to wishlist:', error);
-      toast.error('Unable to add to wishlist right now');
-    }
   };
 
   const [isHydrated, setIsHydrated] = useState(false);
@@ -248,7 +204,7 @@ export default function HomePage() {
                   return (
                     <Link
                       key={item._id || item.id || item.name}
-                      href={`/products/${item._id || item.id}`}
+                      href={getProductUrl(item, item._id || item.id)}
                       className="group block overflow-hidden rounded-[1.75rem] border border-border bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
                     >
                       <div className="relative overflow-hidden">
@@ -259,17 +215,9 @@ export default function HomePage() {
                           height={420}
                           className="h-72 w-full object-cover transition duration-300 group-hover:scale-105"
                         />
-                        <button
-                          type="button"
-                          onClick={(event) => {
-                            event.preventDefault();
-                            event.stopPropagation();
-                            handleAddToWishlist(item);
-                          }}
-                          className="absolute left-4 top-4 inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-primary shadow-sm transition hover:bg-white"
-                        >
-                          <Heart className="w-4 h-4" />
-                        </button>
+                        <div className="absolute left-4 top-4">
+                          <WishlistButton product={item} className="h-10 w-10" iconClassName="w-4 h-4" />
+                        </div>
                         {item.status && (
                           <span className="absolute right-4 top-4 rounded-full bg-black/70 px-3 py-1 text-xs font-semibold text-white">
                             {item.status}
@@ -290,17 +238,13 @@ export default function HomePage() {
                               <div className="text-xs text-slate-500 line-through">RS {compareAtPrice.toFixed(0)}</div>
                             )}
                           </div>
-                          <button
-                            type="button"
-                            onClick={(event) => {
-                              event.preventDefault();
-                              event.stopPropagation();
-                              handleAddToCart(item);
-                            }}
-                            className="rounded-full bg-secondary px-4 py-2 text-sm font-semibold text-secondary-foreground transition hover:bg-secondary/90"
-                          >
-                            Add To Cart
-                          </button>
+                          <AddToCartButton
+                            product={item}
+                            price={price}
+                            image={getItemImage(item)}
+                            className="rounded-full px-4 py-2"
+                            labelClassName="text-sm"
+                          />
                         </div>
                       </div>
                     </Link>
@@ -341,7 +285,7 @@ export default function HomePage() {
                   return (
                     <Link
                       key={item._id || item.id || item.name}
-                      href={`/products/${item._id || item.id}`}
+                      href={getProductUrl(item, item._id || item.id)}
                       className="group block overflow-hidden rounded-[1.75rem] border border-border bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
                     >
                       <div className="relative overflow-hidden h-72">
@@ -352,28 +296,8 @@ export default function HomePage() {
                           className="object-cover transition duration-300 group-hover:scale-105"
                         />
                         <div className="absolute right-4 top-4 flex gap-2 opacity-0 transition duration-200 group-hover:opacity-100">
-                          <button
-                            type="button"
-                            onClick={(event) => {
-                              event.preventDefault();
-                              event.stopPropagation();
-                              handleAddToWishlist(item);
-                            }}
-                            className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-rose-600 shadow-sm transition hover:bg-white"
-                          >
-                            <Heart className="h-5 w-5" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={(event) => {
-                              event.preventDefault();
-                              event.stopPropagation();
-                              handleAddToCart(item);
-                            }}
-                            className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-secondary text-secondary-foreground shadow-sm transition hover:bg-secondary/90"
-                          >
-                            <ShoppingCart className="h-5 w-5" />
-                          </button>
+                          <WishlistButton product={item} className="h-10 w-10" iconClassName="h-5 w-5" />
+                          <AddToCartButton product={item} price={price} image={getItemImage(item)} compact />
                         </div>
                       </div>
                       <div className="space-y-3 p-5">

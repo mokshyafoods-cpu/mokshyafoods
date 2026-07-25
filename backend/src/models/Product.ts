@@ -7,6 +7,7 @@ export interface IImage {
 
 export interface IProduct extends Document {
   name: string;
+  slug?: string;
   sku?: string;
   description?: string;
   category?: Types.ObjectId | string | null;
@@ -38,6 +39,7 @@ const imageSchema = new Schema<IImage>({
 
 const productSchema = new Schema<IProduct>({
   name: { type: String, required: true },
+  slug: { type: String, trim: true, unique: true, sparse: true },
   sku: { type: String },
   description: { type: String },
   category: { type: Schema.Types.Mixed, default: null },

@@ -2,6 +2,17 @@ import { Request, Response } from 'express';
 import mongoose from 'mongoose';
 import Product from '../models/Product';
 
+const createSlug = (value?: string | null) => {
+  if (!value) return '';
+  return String(value)
+    .toLowerCase()
+    .trim()
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
+};
+
 export const getAllProducts = async (req: Request, res: Response): Promise<Response> => {
   try {
     const search = typeof req.query.search === 'string' ? req.query.search.trim() : '';
@@ -115,8 +126,9 @@ export const getProductById = async (req: Request, res: Response): Promise<Respo
   const rawId = req.params.id;
   const id = Array.isArray(rawId) ? rawId[0] : rawId;
   const includeInactive = typeof req.query.includeInactive === 'string' && req.query.includeInactive === 'true';
+  const normalizedId = id?.trim();
   try {
-    const byId = mongoose.Types.ObjectId.isValid(id) ? await Product.findById(id).lean().exec() : null;
+    const byId = mongoose.Types.ObjectId.isValid(normalizedId || '') ? await Product.findById(normalizedId).lean().exec() : null;
     if (byId) {
       if (!includeInactive && byId.isActive === false) {
         return res.status(404).json({ success: false, message: 'Product not found' });
@@ -124,12 +136,35 @@ export const getProductById = async (req: Request, res: Response): Promise<Respo
       return res.json({ success: true, message: 'Product retrieved', data: byId });
     }
 
-    const byCustomId = await Product.findOne({ id }).lean().exec();
+    const bySlug = normalizedId
+      ? await Product.findOne({ slug: normalizedId }).lean().exec()
+      : null;
+    if (bySlug) {
+      if (!includeInactive && bySlug.isActive === false) {
+        return res.status(404).json({ success: false, message: 'Product not found' });
+      }
+      return res.json({ success: true, message: 'Product retrieved', data: bySlug });
+    }
+
+    const byCustomId = normalizedId
+      ? await Product.findOne({ id: normalizedId }).lean().exec()
+      : null;
     if (byCustomId) {
       if (!includeInactive && byCustomId.isActive === false) {
         return res.status(404).json({ success: false, message: 'Product not found' });
       }
       return res.json({ success: true, message: 'Product retrieved', data: byCustomId });
+    }
+
+    const fallbackProducts = normalizedId
+      ? await Product.find({}).lean().exec()
+      : [];
+    const fallbackMatch = fallbackProducts.find((product: any) => createSlug(product.name || product.title || '') === normalizedId);
+    if (fallbackMatch) {
+      if (!includeInactive && fallbackMatch.isActive === false) {
+        return res.status(404).json({ success: false, message: 'Product not found' });
+      }
+      return res.json({ success: true, message: 'Product retrieved', data: fallbackMatch });
     }
 
     return res.status(404).json({ success: false, message: 'Product not found' });
@@ -169,6 +204,12 @@ export const createProduct = async (req: Request, res: Response): Promise<Respon
       }
       return String(value);
     };
+
+    if (body.name && !body.slug) {
+      body.slug = createSlug(body.name);
+    } else if (body.slug) {
+      body.slug = createSlug(body.slug);
+    }
 
     if (body.category !== undefined) {
       const normalizedCategory = normalizeCategory(body.category);
@@ -239,6 +280,12 @@ export const updateProduct = async (req: Request, res: Response): Promise<Respon
       }
       return String(value);
     };
+
+    if (update.name && !update.slug) {
+      update.slug = createSlug(update.name);
+    } else if (update.slug) {
+      update.slug = createSlug(update.slug);
+    }
 
     if (update.category !== undefined) {
       const normalizedCategory = normalizeCategory(update.category);

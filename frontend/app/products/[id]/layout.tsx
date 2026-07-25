@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { buildProductMetadata } from '@/lib/seo';
 import { productAPI } from '@/services/api';
+import { getProductSlug } from '@/lib/productRoutes';
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
@@ -9,7 +10,8 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     const response = await productAPI.getById(id);
     const payload = response?.data?.data ?? response?.data ?? null;
     const product = payload && typeof payload === 'object' ? payload : null;
-    const url = `${process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://mokshyafoods.com'}/products/${id}`;
+    const slug = getProductSlug(product, id);
+    const url = `${process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://mokshyafoods.com'}/products/${slug}`;
 
     if (!product) {
       return buildProductMetadata(null, url);
