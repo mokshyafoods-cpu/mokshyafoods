@@ -41,6 +41,19 @@ export default function AdminReviewsPage() {
     });
   }, [reviews, search]);
 
+  const handleDeleteReview = async (reviewId: string) => {
+    if (!window.confirm('Delete this review?')) return;
+
+    try {
+      await reviewAPI.delete(reviewId);
+      setReviews((current) => current.filter((review) => review._id !== reviewId));
+      toast.success('Review deleted');
+    } catch (error) {
+      console.error('Failed to delete review', error);
+      toast.error('Unable to delete review.');
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="rounded-[2rem] border border-slate-800/70 bg-slate-950/70 p-6 text-white shadow-xl">
@@ -77,6 +90,7 @@ export default function AdminReviewsPage() {
                   <th className="px-3 py-3 font-semibold">Review</th>
                   <th className="px-3 py-3 font-semibold">Rating</th>
                   <th className="px-3 py-3 font-semibold">Date</th>
+                  <th className="px-3 py-3 font-semibold">Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -108,6 +122,15 @@ export default function AdminReviewsPage() {
                       </td>
                       <td className="px-3 py-4 whitespace-nowrap text-sm text-slate-500">
                         {review?.createdAt ? new Date(review.createdAt).toLocaleDateString('en-IN') : '—'}
+                      </td>
+                      <td className="px-3 py-4">
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteReview(review._id)}
+                          className="rounded-full border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-100"
+                        >
+                          Delete
+                        </button>
                       </td>
                     </tr>
                   );

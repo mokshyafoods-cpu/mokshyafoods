@@ -471,14 +471,6 @@ export default function ProductDetailPage() {
                               <p className="font-semibold text-emerald-900">Your review</p>
                               <p className="text-sm text-emerald-700">You already shared feedback for this product.</p>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <button type="button" onClick={handleEditReview} className="rounded-full border border-emerald-200 bg-white px-3 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100">
-                                Edit Review
-                              </button>
-                              <button type="button" onClick={handleDeleteReview} className="rounded-full border border-rose-200 bg-white px-3 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-50">
-                                Delete Review
-                              </button>
-                            </div>
                           </div>
                           <div className="mt-3 rounded-[1.25rem] border border-white/80 bg-white/80 p-4">
                             <div className="flex items-start justify-between gap-3">
