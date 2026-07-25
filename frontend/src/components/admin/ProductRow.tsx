@@ -50,11 +50,11 @@ export default function ProductRow({ product, onDelete, onToggleStatus }: Props)
       </div>
       <div className="text-slate-900">{product.discountPrice ? (
         <div>
-          <div className="text-sm line-through text-slate-500">Rs. {product.price?.toFixed?.(0) || 0}</div>
-          <div className="font-semibold text-secondary">Rs. {product.discountPrice?.toFixed?.(0)}</div>
+          <div className="text-sm line-through text-slate-500">RS {product.price?.toFixed?.(0) || 0}</div>
+          <div className="font-semibold text-secondary">RS {product.discountPrice?.toFixed?.(0)}</div>
         </div>
       ) : (
-        <>Rs. {product.price?.toFixed?.(0) || 0}</>
+        <>RS {product.price?.toFixed?.(0) || 0}</>
       )}</div>
       <div className="text-slate-900">{product.quantity ?? 0}</div>
       <div className="flex justify-end gap-2">

@@ -1,25 +1,6 @@
 import { Request, Response } from 'express';
 import mongoose from 'mongoose';
 
-const getProductDetails = async (productId?: string) => {
-  if (!productId) return null;
-  const productsColl = mongoose.connection.collection('products');
-  const normalizedId = mongoose.Types.ObjectId.isValid(String(productId))
-    ? new mongoose.Types.ObjectId(String(productId))
-    : String(productId);
-  const product = await productsColl.findOne({ _id: normalizedId } as any).catch(() => null);
-  if (!product) return null;
-  return {
-    _id: product._id?.toString?.() ?? product._id,
-    id: product._id?.toString?.() ?? product._id,
-    name: product.name,
-    thumbnail: product.thumbnail || product.image || product.images?.[0]?.url || '/placeholder.jpg',
-    price: product.price,
-    discountPrice: product.discountPrice,
-    sku: product.sku,
-  };
-};
-
 const hydrateReview = async (review: any): Promise<any> => {
   if (!review?.productId) return review;
   const productsColl = mongoose.connection.collection('products');
@@ -43,24 +24,62 @@ const normalizeReviewId = (value: string | string[] | undefined): string | null 
   return id && mongoose.Types.ObjectId.isValid(id) ? id : null;
 };
 
+const ensureReviewIndex = async (reviewsColl: any): Promise<void> => {
+  try {
+    await reviewsColl.createIndex({ userId: 1, productId: 1 }, { unique: true, name: 'unique_user_product_review' });
+  } catch (error: any) {
+    if (!/already exists/i.test(error?.message || '')) {
+      console.warn('Review index warning:', error?.message || error);
+    }
+  }
+};
+
+const isOwnedByUser = (review: any, userId?: string): boolean => {
+  if (!review || !userId) return false;
+  return review.userId === userId || review.user?.id === userId || review.user?._id === userId;
+};
+
 export const createReview = async (req: AuthenticatedRequest, res: Response): Promise<Response> => {
   try {
     const { productId, rating, title, comment } = req.body || {};
+    if (!req.userId) {
+      return res.status(401).json({ success: false, message: 'Authentication required' });
+    }
+    if (!productId) {
+      return res.status(400).json({ success: false, message: 'Product ID is required' });
+    }
+
     const reviewsColl = mongoose.connection.collection('reviews');
+    await ensureReviewIndex(reviewsColl);
+
     const reviewDoc = {
       userId: req.userId,
       productId,
       rating: Number(rating) || 5,
       title: title || 'Product review',
       comment: comment || '',
-      status: 'pending',
+      status: 'approved',
       createdAt: new Date(),
       updatedAt: new Date(),
     };
+
+    const existingReview = await reviewsColl.findOne({ userId: req.userId, productId });
+    if (existingReview) {
+      const updatedReview = await reviewsColl.findOneAndUpdate(
+        { _id: existingReview._id },
+        { $set: { ...reviewDoc, updatedAt: new Date() } },
+        { returnDocument: 'after' as any }
+      );
+      return res.status(200).json({ success: true, message: 'Review updated', data: updatedReview });
+    }
+
     const result = await reviewsColl.insertOne(reviewDoc);
     return res.status(201).json({ success: true, message: 'Review created', data: { ...reviewDoc, _id: result.insertedId } });
   } catch (error: any) {
     console.error('createReview error:', error);
+    if (error?.code === 11000) {
+      return res.status(409).json({ success: false, message: 'You have already reviewed this product' });
+    }
     return res.status(500).json({ success: false, message: error.message || 'Failed to create review' });
   }
 };
@@ -68,8 +87,15 @@ export const createReview = async (req: AuthenticatedRequest, res: Response): Pr
 export const getProductReviews = async (req: Request, res: Response): Promise<Response> => {
   try {
     const productId = req.query.productId ? String(req.query.productId) : '';
+    const statusFilter = typeof req.query.status === 'string' ? req.query.status : '';
     const reviewsColl = mongoose.connection.collection('reviews');
-    const filter = productId ? { productId } : {};
+    const filter: Record<string, any> = {};
+    if (productId) filter.productId = productId;
+    if (statusFilter) {
+      filter.status = statusFilter;
+    } else {
+      filter.status = 'approved';
+    }
     const reviews = await reviewsColl.find(filter).sort({ createdAt: -1 }).toArray();
     const hydratedReviews = await Promise.all(reviews.map((review) => hydrateReview(review)));
     return res.json({ success: true, message: 'Product reviews loaded', data: hydratedReviews });
@@ -113,7 +139,7 @@ export const updateReview = async (req: AuthenticatedRequest, res: Response): Pr
       return res.status(404).json({ success: false, message: 'Review not found' });
     }
 
-    if (existingReview.userId !== req.userId && existingReview.user?.id !== req.userId && existingReview.user?._id !== req.userId) {
+    if (!isOwnedByUser(existingReview, req.userId)) {
       return res.status(403).json({ success: false, message: 'You can only edit your own reviews' });
     }
 
@@ -151,7 +177,7 @@ export const deleteReview = async (req: AuthenticatedRequest, res: Response): Pr
       return res.status(404).json({ success: false, message: 'Review not found' });
     }
 
-    if (existingReview.userId !== req.userId && existingReview.user?.id !== req.userId && existingReview.user?._id !== req.userId) {
+    if (!isOwnedByUser(existingReview, req.userId)) {
       return res.status(403).json({ success: false, message: 'You can only delete your own reviews' });
     }
 
@@ -164,15 +190,59 @@ export const deleteReview = async (req: AuthenticatedRequest, res: Response): Pr
 };
 
 export const getPendingReviews = async (_req: Request, res: Response): Promise<Response> => {
-  return res.json({ success: true, message: 'Pending reviews loaded', data: [] });
+  try {
+    const reviewsColl = mongoose.connection.collection('reviews');
+    const pendingReviews = await reviewsColl.find({ status: 'pending' }).sort({ createdAt: -1 }).toArray();
+    const hydratedReviews = await Promise.all(pendingReviews.map((review) => hydrateReview(review)));
+    return res.json({ success: true, message: 'Pending reviews loaded', data: hydratedReviews });
+  } catch (error: any) {
+    console.error('getPendingReviews error:', error);
+    return res.status(500).json({ success: false, message: error.message || 'Failed to load pending reviews' });
+  }
 };
 
-export const approveReview = async (_req: Request, res: Response): Promise<Response> => {
-  return res.json({ success: true, message: 'Review approved', data: { approved: true } });
+export const approveReview = async (req: Request, res: Response): Promise<Response> => {
+  try {
+    const reviewId = normalizeReviewId(req.params.id);
+    if (!reviewId) {
+      return res.status(400).json({ success: false, message: 'Valid review ID is required' });
+    }
+    const reviewsColl = mongoose.connection.collection('reviews');
+    const updatedReview = await reviewsColl.findOneAndUpdate(
+      { _id: new mongoose.Types.ObjectId(reviewId) },
+      { $set: { status: 'approved', updatedAt: new Date() } },
+      { returnDocument: 'after' as any }
+    );
+    if (!updatedReview) {
+      return res.status(404).json({ success: false, message: 'Review not found' });
+    }
+    return res.json({ success: true, message: 'Review approved', data: updatedReview });
+  } catch (error: any) {
+    console.error('approveReview error:', error);
+    return res.status(500).json({ success: false, message: error.message || 'Failed to approve review' });
+  }
 };
 
-export const rejectReview = async (_req: Request, res: Response): Promise<Response> => {
-  return res.json({ success: true, message: 'Review rejected', data: { rejected: true } });
+export const rejectReview = async (req: Request, res: Response): Promise<Response> => {
+  try {
+    const reviewId = normalizeReviewId(req.params.id);
+    if (!reviewId) {
+      return res.status(400).json({ success: false, message: 'Valid review ID is required' });
+    }
+    const reviewsColl = mongoose.connection.collection('reviews');
+    const updatedReview = await reviewsColl.findOneAndUpdate(
+      { _id: new mongoose.Types.ObjectId(reviewId) },
+      { $set: { status: 'rejected', updatedAt: new Date() } },
+      { returnDocument: 'after' as any }
+    );
+    if (!updatedReview) {
+      return res.status(404).json({ success: false, message: 'Review not found' });
+    }
+    return res.json({ success: true, message: 'Review rejected', data: updatedReview });
+  } catch (error: any) {
+    console.error('rejectReview error:', error);
+    return res.status(500).json({ success: false, message: error.message || 'Failed to reject review' });
+  }
 };
 
 export default {

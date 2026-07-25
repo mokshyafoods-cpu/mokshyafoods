@@ -44,6 +44,7 @@ export default function FormInput({
           id={name}
           name={name}
           type={resolvedType}
+          inputMode={type === 'number' ? 'numeric' : undefined}
           value={value}
           onChange={onChange}
           placeholder={placeholder}

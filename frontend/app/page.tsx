@@ -285,9 +285,9 @@ export default function HomePage() {
                         {item.description && <p className="text-sm text-slate-600 line-clamp-2">{item.description}</p>}
                         <div className="flex items-center justify-between gap-4">
                           <div>
-                            <div className="text-lg font-bold text-secondary">Rs {price.toFixed(0)}</div>
+                            <div className="text-lg font-bold text-secondary">RS {price.toFixed(0)}</div>
                             {saleActive && compareAtPrice > price && (
-                              <div className="text-xs text-slate-500 line-through">Rs {compareAtPrice.toFixed(0)}</div>
+                              <div className="text-xs text-slate-500 line-through">RS {compareAtPrice.toFixed(0)}</div>
                             )}
                           </div>
                           <button
@@ -385,9 +385,9 @@ export default function HomePage() {
                         {item.description && <p className="text-sm text-slate-600 line-clamp-2">{item.description}</p>}
                         <div className="flex items-center justify-between gap-4">
                           <div>
-                            <div className="text-lg font-bold text-secondary">Rs {price.toFixed(0)}</div>
+                            <div className="text-lg font-bold text-secondary">RS {price.toFixed(0)}</div>
                             {saleActive && compareAtPrice > price && (
-                              <div className="text-xs text-slate-500 line-through">Rs {compareAtPrice.toFixed(0)}</div>
+                              <div className="text-xs text-slate-500 line-through">RS {compareAtPrice.toFixed(0)}</div>
                             )}
                           </div>
                         </div>

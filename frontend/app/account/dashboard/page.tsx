@@ -152,7 +152,7 @@ export default function AccountDashboardPage() {
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-3 text-sm text-slate-600">
-                  <span>Rs. {order.total ?? order.subtotal ?? 0}</span>
+                  <span>RS {order.total ?? order.subtotal ?? 0}</span>
                   <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-700">
                     {(order.orderStatus || order.status || 'pending').toString().charAt(0).toUpperCase() + (order.orderStatus || order.status || 'pending').toString().slice(1)}
                   </span>
@@ -161,8 +161,52 @@ export default function AccountDashboardPage() {
             ))}
           </div>
         )}
-        </div>
       </div>
+
+      <div className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-xl font-semibold text-slate-950">My Reviews</h2>
+            <p className="mt-1 text-sm text-slate-600">See your recent feedback and open the full review manager.</p>
+          </div>
+          <Link href="/account/reviews" className="text-sm font-semibold text-primary hover:text-secondary">
+            Manage all reviews
+          </Link>
+        </div>
+
+        {isLoadingReviews ? (
+          <div className="mt-6 rounded-[1.75rem] border border-slate-200 bg-slate-50 p-6 text-center text-slate-600">Loading your review history…</div>
+        ) : reviewsError ? (
+          <div className="mt-6 rounded-[1.75rem] border border-rose-200 bg-rose-50 p-6 text-center text-rose-700">{reviewsError}</div>
+        ) : recentReviews.length === 0 ? (
+          <div className="mt-6 rounded-[1.75rem] border border-slate-200 bg-slate-50 p-6 text-center text-slate-600">
+            You haven&apos;t written any reviews yet.
+          </div>
+        ) : (
+          <div className="mt-6 space-y-4">
+            {recentReviews.map((review: any) => (
+              <div key={review._id} className="flex flex-col gap-3 rounded-[1.75rem] border border-slate-200 p-5 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-3">
+                  <img
+                    src={review.product?.thumbnail || '/placeholder.jpg'}
+                    alt={review.product?.name || 'Product image'}
+                    className="h-12 w-12 rounded-2xl object-cover"
+                  />
+                  <div>
+                    <p className="text-sm font-semibold text-slate-950">{review.product?.name || 'Product review'}</p>
+                    <p className="text-sm text-slate-600">{review.comment?.slice(0, 90)}{review.comment?.length > 90 ? '…' : ''}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 text-sm text-slate-600">
+                  <span className="rounded-full bg-amber-100 px-3 py-1 font-semibold text-amber-700">{review.rating} ★</span>
+                  <span>{new Date(review.createdAt).toLocaleDateString()}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
     </section>
   );
 }

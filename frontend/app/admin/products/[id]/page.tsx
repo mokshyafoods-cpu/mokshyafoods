@@ -268,7 +268,7 @@ export default function EditProductPage() {
                 )}
               </div>
               <FormInput
-                label="Price (Rs)"
+                label="Price (रू)"
                 name="price"
                 type="number"
                 value={formData.price}

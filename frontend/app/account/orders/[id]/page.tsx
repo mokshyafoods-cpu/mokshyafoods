@@ -116,7 +116,7 @@ export default function OrderDetailPage() {
             </div>
             <div className="rounded-[1.75rem] border border-slate-200 bg-slate-50 p-5">
               <p className="text-sm text-slate-500">Order Total</p>
-              <p className="mt-3 text-2xl font-semibold text-slate-950">Rs {orderTotal}</p>
+              <p className="mt-3 text-2xl font-semibold text-slate-950">RS {orderTotal}</p>
               <p className="mt-3 text-sm text-slate-600">{order.items?.length ?? 0} item(s)</p>
             </div>
           </div>
@@ -137,7 +137,7 @@ export default function OrderDetailPage() {
                     <div className="flex-1">
                       <p className="font-semibold text-slate-950">{product.name || item.name || 'Product'}</p>
                       <p className="text-sm text-slate-600">Qty {item.quantity}</p>
-                      <p className="mt-2 text-sm font-semibold text-slate-900">Rs {item.price}</p>
+                      <p className="mt-2 text-sm font-semibold text-slate-900">RS {item.price}</p>
                       {product?.description && <p className="mt-2 text-sm text-slate-600 line-clamp-2">{product.description}</p>}
                     </div>
                   </div>
@@ -176,11 +176,11 @@ export default function OrderDetailPage() {
             <div className="rounded-[2rem] border border-border bg-white p-6 shadow-sm">
               <h3 className="text-xl font-semibold text-slate-950">Order summary</h3>
               <div className="mt-4 space-y-3 text-sm text-slate-700">
-                <div className="flex justify-between"><span>Subtotal</span><span>Rs {orderSubtotal}</span></div>
-                <div className="flex justify-between"><span>Shipping</span><span>Rs {shippingCost}</span></div>
-                <div className="flex justify-between"><span>Tax</span><span>Rs {taxAmount}</span></div>
-                <div className="flex justify-between"><span>Discount</span><span>-Rs {discountAmount}</span></div>
-                <div className="flex justify-between border-t border-slate-200 pt-3 font-semibold"><span>Total</span><span>Rs {orderTotal}</span></div>
+                <div className="flex justify-between"><span>Subtotal</span><span>RS {orderSubtotal}</span></div>
+                <div className="flex justify-between"><span>Shipping</span><span>RS {shippingCost}</span></div>
+                <div className="flex justify-between"><span>Tax</span><span>RS {taxAmount}</span></div>
+                <div className="flex justify-between"><span>Discount</span><span>-RS {discountAmount}</span></div>
+                <div className="flex justify-between border-t border-slate-200 pt-3 font-semibold"><span>Total</span><span>RS {orderTotal}</span></div>
               </div>
             </div>
           </div>

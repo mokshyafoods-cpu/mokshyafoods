@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { AlertTriangle, ArrowLeft, BarChart3, Package, ShoppingBag, Users, Settings, LogOut, Menu, X, PlusCircle, BookOpenCheck, Factory, FileBarChart, Boxes } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
-type SectionKey = 'overview' | 'orders' | 'products' | 'low-stock' | 'customers' | 'payment-ledger' | 'raw-materials' | 'production' | 'reports' | 'operations' | 'settings';
+type SectionKey = 'overview' | 'orders' | 'products' | 'low-stock' | 'customers' | 'reviews' | 'payment-ledger' | 'raw-materials' | 'production' | 'reports' | 'operations' | 'settings';
 
 const getSectionFromPath = (pathname?: string | null): SectionKey => {
   const normalized = pathname?.replace(/\/+$/, '') || '/admin';
@@ -15,6 +15,7 @@ const getSectionFromPath = (pathname?: string | null): SectionKey => {
   if (normalized.startsWith('/admin/products')) return 'products';
   if (normalized.startsWith('/admin/low-stock')) return 'low-stock';
   if (normalized.startsWith('/admin/customers')) return 'customers';
+  if (normalized.startsWith('/admin/reviews')) return 'reviews';
   if (normalized.startsWith('/admin/payment-ledger')) return 'payment-ledger';
   if (normalized.startsWith('/admin/raw-materials')) return 'raw-materials';
   if (normalized.startsWith('/admin/production')) return 'production';
@@ -30,6 +31,7 @@ const navItems: Array<{ label: string; key: SectionKey; href: string; icon: Reac
   { label: 'Products', key: 'products', href: '/admin/products', icon: <Package className="w-5 h-5" /> },
   { label: 'Low stock', key: 'low-stock', href: '/admin/low-stock', icon: <AlertTriangle className="w-5 h-5" /> },
   { label: 'Customers', key: 'customers', href: '/admin/customers', icon: <Users className="w-5 h-5" /> },
+  { label: 'Reviews Approval', key: 'reviews', href: '/admin/reviews', icon: <BookOpenCheck className="w-5 h-5" /> },
   { label: 'Payment Ledger', key: 'payment-ledger', href: '/admin/payment-ledger', icon: <BookOpenCheck className="w-5 h-5" /> },
   { label: 'Raw Materials', key: 'raw-materials', href: '/admin/raw-materials', icon: <Boxes className="w-5 h-5" /> },
   { label: 'Production', key: 'production', href: '/admin/production', icon: <Factory className="w-5 h-5" /> },
@@ -101,6 +103,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       return children;
     }
     if (pathname === '/admin/customers') {
+      return children;
+    }
+    if (pathname === '/admin/reviews') {
       return children;
     }
     if (pathname === '/admin/payment-ledger') {

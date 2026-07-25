@@ -13,7 +13,7 @@ export default function AboutPage() {
           </div>
           <div className="space-y-4 text-slate-700">
             <p>
-              Mero is dedicated to bringing pure, high-quality Nepali dried fruits and natural snacks to your table.
+              Mokshhyafoods is dedicated to bringing pure, high-quality Nepali dried fruits and natural snacks to your table.
               We source from local growers and craft every product with care so you can enjoy authentic taste and healthy convenience.
             </p>
             <p>

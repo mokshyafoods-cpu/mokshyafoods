@@ -74,7 +74,7 @@ export default function AdminRawMaterialsPage() {
       <div className="grid gap-4 md:grid-cols-3">
         <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
           <p className="text-sm uppercase tracking-[0.3em] text-slate-400">This month</p>
-          <p className="mt-3 text-3xl font-semibold text-slate-900">Rs. {totalSpend}</p>
+          <p className="mt-3 text-3xl font-semibold text-slate-900">RS {totalSpend}</p>
         </div>
         <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
           <p className="text-sm uppercase tracking-[0.3em] text-slate-400">Total records</p>
@@ -119,7 +119,7 @@ export default function AdminRawMaterialsPage() {
                     <p className="text-sm text-slate-500">{item.supplier || 'No supplier'} • {item.quantityPurchased} {item.unit}</p>
                   </div>
                   <div className="text-right text-sm text-slate-600">
-                    <p>Rs. {item.totalCost}</p>
+                    <p>RS {item.totalCost}</p>
                     <p>{new Date(item.purchaseDate).toLocaleDateString('en-IN')}</p>
                   </div>
                 </div>

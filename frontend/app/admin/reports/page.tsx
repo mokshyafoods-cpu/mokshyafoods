@@ -63,7 +63,7 @@ export default function AdminReportsPage() {
       <div className="grid gap-4 md:grid-cols-4">
         <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
           <p className="text-sm uppercase tracking-[0.3em] text-slate-400">Raw spend</p>
-          <p className="mt-3 text-3xl font-semibold text-slate-900">Rs. {report?.rawMaterialSpend || 0}</p>
+          <p className="mt-3 text-3xl font-semibold text-slate-900">RS {report?.rawMaterialSpend || 0}</p>
         </div>
         <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
           <p className="text-sm uppercase tracking-[0.3em] text-slate-400">Produced</p>
@@ -71,11 +71,11 @@ export default function AdminReportsPage() {
         </div>
         <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
           <p className="text-sm uppercase tracking-[0.3em] text-slate-400">Website sales</p>
-          <p className="mt-3 text-3xl font-semibold text-slate-900">Rs. {report?.websiteSales || 0}</p>
+          <p className="mt-3 text-3xl font-semibold text-slate-900">RS {report?.websiteSales || 0}</p>
         </div>
         <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
           <p className="text-sm uppercase tracking-[0.3em] text-slate-400">POS sales</p>
-          <p className="mt-3 text-3xl font-semibold text-slate-900">Rs. {report?.posSales || 0}</p>
+          <p className="mt-3 text-3xl font-semibold text-slate-900">RS {report?.posSales || 0}</p>
         </div>
       </div>
 
@@ -86,7 +86,7 @@ export default function AdminReportsPage() {
             {breakdownEntries.length === 0 ? <p className="text-sm text-slate-500">No data for selected range.</p> : breakdownEntries.map(([name, value]) => (
               <div key={name} className="flex items-center justify-between rounded-2xl bg-slate-50 px-3 py-2 text-sm text-slate-700">
                 <span>{name}</span>
-                <span>Rs. {value}</span>
+                <span>RS {value}</span>
               </div>
             ))}
           </div>

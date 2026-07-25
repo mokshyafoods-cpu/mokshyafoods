@@ -69,7 +69,7 @@ export default function AdminPage() {
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   }, [analyticsData]);
 
-  const formatCurrency = (value?: number) => `Rs. ${Number(value ?? 0).toLocaleString('en-IN')}`;
+  const formatCurrency = (value?: number) => `RS ${Number(value ?? 0).toLocaleString('en-IN')}`;
   const getStatusBadge = (status: string) => {
     const normalized = status?.toLowerCase() ?? 'pending';
     const base = 'rounded-full border border-white/10 px-3 py-1 text-xs font-semibold';
@@ -200,7 +200,7 @@ export default function AdminPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="text-sm font-semibold text-slate-200">Rs. {order.total}</span>
+                  <span className="text-sm font-semibold text-slate-200">RS {order.total}</span>
                   <span className={getStatusBadge(order.orderStatus)}>{order.orderStatus}</span>
                 </div>
               </div>

@@ -155,6 +155,11 @@ export const reviewAPI = {
   create: (data: any) => apiClient.post('/reviews', data),
   getByProduct: (productId: string) => apiClient.get(`/reviews?productId=${productId}`),
   getUserReviews: () => apiClient.get('/reviews/user'),
+  update: (id: string, data: any) => apiClient.put(`/reviews/${id}`, data),
+  delete: (id: string) => apiClient.delete(`/reviews/${id}`),
+  getPending: () => apiClient.get('/reviews/pending'),
+  approve: (id: string) => apiClient.put(`/reviews/${id}/approve`),
+  reject: (id: string) => apiClient.put(`/reviews/${id}/reject`),
 };
 
 export const contactAPI = {

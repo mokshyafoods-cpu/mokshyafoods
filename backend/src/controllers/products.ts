@@ -7,31 +7,102 @@ export const getAllProducts = async (req: Request, res: Response): Promise<Respo
     const search = typeof req.query.search === 'string' ? req.query.search.trim() : '';
     const category = typeof req.query.category === 'string' ? req.query.category.trim() : '';
     const includeInactive = typeof req.query.includeInactive === 'string' && req.query.includeInactive === 'true';
-    const query: Record<string, any> = {};
+    const minPrice = typeof req.query.minPrice === 'string' ? Number(req.query.minPrice) : null;
+    const maxPrice = typeof req.query.maxPrice === 'string' ? Number(req.query.maxPrice) : null;
+    const sortOption = typeof req.query.sort === 'string' ? req.query.sort : 'latest';
+    const rating = typeof req.query.rating === 'string' ? Number(req.query.rating) : null;
+    const discounted = typeof req.query.discounted === 'string' && req.query.discounted === 'true';
+    const featured = typeof req.query.featured === 'string' && req.query.featured === 'true';
+    const tags = typeof req.query.tags === 'string' ? req.query.tags : '';
+    const packaging = typeof req.query.packaging === 'string' ? req.query.packaging.trim() : '';
+    const origin = typeof req.query.origin === 'string' ? req.query.origin.trim() : '';
+    const queryFilters: Record<string, any>[] = [];
 
     if (!includeInactive) {
-      query.isActive = { $ne: false };
+      queryFilters.push({ isActive: { $ne: false } });
     }
 
     if (search) {
       const escaped = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      query.$or = [
-        { name: { $regex: escaped, $options: 'i' } },
-        { sku: { $regex: escaped, $options: 'i' } },
-        { description: { $regex: escaped, $options: 'i' } },
-        { packaging: { $regex: escaped, $options: 'i' } },
-        { tags: { $elemMatch: { $regex: escaped, $options: 'i' } } },
-        { seoKeywords: { $elemMatch: { $regex: escaped, $options: 'i' } } },
-      ];
+      queryFilters.push({
+        $or: [
+          { name: { $regex: escaped, $options: 'i' } },
+          { sku: { $regex: escaped, $options: 'i' } },
+          { description: { $regex: escaped, $options: 'i' } },
+          { packaging: { $regex: escaped, $options: 'i' } },
+          { tags: { $elemMatch: { $regex: escaped, $options: 'i' } } },
+          { seoKeywords: { $elemMatch: { $regex: escaped, $options: 'i' } } },
+        ],
+      });
     }
 
     if (category) {
-      if (mongoose.Types.ObjectId.isValid(category)) {
-        query.category = new mongoose.Types.ObjectId(category);
+      const categoryValues = category.split(',').map((value) => value.trim()).filter(Boolean);
+      if (categoryValues.length > 0) {
+        const categoryConditions = categoryValues.map((value) => {
+          if (mongoose.Types.ObjectId.isValid(value)) {
+            return { category: new mongoose.Types.ObjectId(value) };
+          }
+          return {
+            $or: [
+              { category: value },
+              { categoryName: value },
+              { categorySlug: value },
+            ],
+          };
+        });
+        queryFilters.push({ $or: categoryConditions });
       }
     }
 
-    const products = await Product.find(query).sort({ createdAt: -1 }).lean().limit(100).exec();
+    if (minPrice !== null && !Number.isNaN(minPrice)) {
+      queryFilters.push({ price: { $gte: minPrice } });
+    }
+
+    if (maxPrice !== null && !Number.isNaN(maxPrice)) {
+      queryFilters.push({ price: { $lte: maxPrice } });
+    }
+
+    if (rating !== null && !Number.isNaN(rating)) {
+      queryFilters.push({ rating: { $gte: rating } });
+    }
+
+    if (discounted) {
+      queryFilters.push({
+        $or: [
+          { discountPrice: { $exists: true, $ne: null, $gt: 0 } },
+          { onSale: true },
+        ],
+      });
+    }
+
+    if (featured) {
+      queryFilters.push({ featured: true });
+    }
+
+    if (packaging) {
+      queryFilters.push({ packaging: { $regex: packaging.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' } });
+    }
+
+    if (origin) {
+      queryFilters.push({ origin: { $regex: origin.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' } });
+    }
+
+    if (tags) {
+      const tagValues = tags.split(',').map((value) => value.trim()).filter(Boolean);
+      if (tagValues.length > 0) {
+        queryFilters.push({ tags: { $elemMatch: { $in: tagValues } } });
+      }
+    }
+
+    const query = queryFilters.length > 0 ? { $and: queryFilters } : {};
+    const sortMap: Record<string, Record<string, 1 | -1>> = {
+      'price-low': { price: 1 },
+      'price-high': { price: -1 },
+      rating: { rating: -1, reviewCount: -1, createdAt: -1 },
+      latest: { createdAt: -1 },
+    };
+    const products = await Product.find(query).sort(sortMap[sortOption] || sortMap.latest).lean().limit(100).exec();
     res.set('Cache-Control', 'public, max-age=60, s-maxage=60, stale-while-revalidate=300');
     return res.json({ success: true, message: 'Products loaded', data: products || [] });
   } catch (error: any) {

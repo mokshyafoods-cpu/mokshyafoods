@@ -220,9 +220,11 @@ function ProductsPageContent() {
   }, [categories, selectedCategories]);
 
   const applyPriceFilter = () => {
+    const nextMin = minPrice !== '' ? Number(minPrice) : null;
+    const nextMax = maxPrice !== '' ? Number(maxPrice) : null;
     setPriceFilter({
-      min: minPrice ? Number(minPrice) : null,
-      max: maxPrice ? Number(maxPrice) : null,
+      min: Number.isFinite(nextMin) ? nextMin : null,
+      max: Number.isFinite(nextMax) ? nextMax : null,
     });
   };
 
@@ -303,11 +305,22 @@ function ProductsPageContent() {
   const displayedProducts = useMemo(() => {
     const now = Date.now();
     const normalizedSearch = searchQuery.trim().toLowerCase();
+    const minFilter = priceFilter.min !== null ? priceFilter.min : null;
+    const maxFilter = priceFilter.max !== null ? priceFilter.max : null;
 
     return products
       .filter((product) => {
         const categoryMatches = selectedCategories.length === 0 || selectedCategories.some((categoryValue) => matchesSelectedCategory(product, categoryValue));
         if (!categoryMatches) return false;
+
+        const onSale = !!product.onSale;
+        const saleStart = product.saleStart ? new Date(product.saleStart).getTime() : null;
+        const saleEnd = product.saleEnd ? new Date(product.saleEnd).getTime() : null;
+        const saleActive = onSale && (!saleStart || saleStart <= now) && (!saleEnd || saleEnd >= now) && product.discountPrice;
+        const computedPrice = Number(saleActive ? product.discountPrice : product.price || 0);
+
+        if (minFilter !== null && computedPrice < minFilter) return false;
+        if (maxFilter !== null && computedPrice > maxFilter) return false;
 
         if (!normalizedSearch) return true;
         const categoryName = getDisplayCategoryLabel(product.category) || '';
@@ -333,8 +346,14 @@ function ProductsPageContent() {
         const saleActive = onSale && (!saleStart || saleStart <= now) && (!saleEnd || saleEnd >= now) && product.discountPrice;
         const computedPrice = Number(saleActive ? product.discountPrice : product.price || 0);
         return { ...product, computedPrice, saleActive };
+      })
+      .sort((left, right) => {
+        if (sortOption === 'price-low') return left.computedPrice - right.computedPrice;
+        if (sortOption === 'price-high') return right.computedPrice - left.computedPrice;
+        if (sortOption === 'rating') return (Number(right.rating) || 0) - (Number(left.rating) || 0);
+        return new Date(right.createdAt || 0).getTime() - new Date(left.createdAt || 0).getTime();
       });
-  }, [products, searchQuery, selectedCategories]);
+  }, [products, searchQuery, selectedCategories, priceFilter.min, priceFilter.max, sortOption]);
 
   const resultCount = displayedProducts.length;
 
@@ -453,20 +472,22 @@ function ProductsPageContent() {
                         <label className="block text-sm font-medium text-slate-700 mb-2">Min price</label>
                       <input
                         type="number"
+                        inputMode="numeric"
                         value={minPrice}
                         onChange={(event) => setMinPrice(event.target.value)}
                         placeholder="Min"
-                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary"
+                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary [appearance:textfield]"
                       />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-slate-700 mb-2">Max price</label>
                       <input
                         type="number"
+                        inputMode="numeric"
                         value={maxPrice}
                         onChange={(event) => setMaxPrice(event.target.value)}
                         placeholder="Max"
-                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary"
+                        className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary [appearance:textfield]"
                       />
                     </div>
                     <button
@@ -595,8 +616,8 @@ function ProductsPageContent() {
                   <span className="rounded-full bg-slate-100 px-3 py-2 text-sm text-slate-600">
                     {activeCategoryLabel}
                   </span>
-                  {priceFilter.min !== null && <span className="rounded-full bg-slate-100 px-3 py-2 text-sm text-slate-600">Min Rs {priceFilter.min}</span>}
-                  {priceFilter.max !== null && <span className="rounded-full bg-slate-100 px-3 py-2 text-sm text-slate-600">Max Rs {priceFilter.max}</span>}
+                  {priceFilter.min !== null && <span className="rounded-full bg-slate-100 px-3 py-2 text-sm text-slate-600">Min RS {priceFilter.min}</span>}
+                  {priceFilter.max !== null && <span className="rounded-full bg-slate-100 px-3 py-2 text-sm text-slate-600">Max RS {priceFilter.max}</span>}
                 </div>
               </div>
               {isFilterOpen && (
@@ -648,17 +669,19 @@ function ProductsPageContent() {
                         <div className="space-y-3">
                           <input
                             type="number"
+                            inputMode="numeric"
                             value={minPrice}
                             onChange={(event) => setMinPrice(event.target.value)}
                             placeholder="Min price"
-                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary"
+                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary [appearance:textfield]"
                           />
                           <input
                             type="number"
+                            inputMode="numeric"
                             value={maxPrice}
                             onChange={(event) => setMaxPrice(event.target.value)}
                             placeholder="Max price"
-                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary"
+                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary [appearance:textfield]"
                           />
                           <button
                             type="button"
@@ -812,9 +835,9 @@ function ProductsPageContent() {
                       )}
                       <div className="flex flex-wrap items-center justify-between gap-4">
                         <div>
-                          <p className="text-lg font-bold text-secondary">Rs. {product.computedPrice}</p>
+                          <p className="text-lg font-bold text-secondary">RS {product.computedPrice}</p>
                           {product.saleActive && product.discountPrice && product.price && Number(product.discountPrice) < Number(product.price) && (
-                            <p className="text-xs text-slate-500 line-through">Rs. {product.price}</p>
+                            <p className="text-xs text-slate-500 line-through">RS {product.price}</p>
                           )}
                         </div>
                       </div>

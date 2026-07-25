@@ -421,7 +421,7 @@ export default function POSPage() {
 
               <div className="inline-flex items-center gap-3 rounded-full bg-slate-100 px-4 py-3 text-sm text-slate-700">
                 <span>{cart.length} items</span>
-                <span className="font-semibold">Rs. {total}</span>
+                <span className="font-semibold">RS {total}</span>
               </div>
             </div>
           </div>
@@ -482,7 +482,7 @@ export default function POSPage() {
                     >
                       <div>
                         <p className="text-sm font-semibold text-slate-900">{product.name}</p>
-                        <p className="text-xs text-slate-500">Rs. {product.price} • {product.quantity} in stock</p>
+                        <p className="text-xs text-slate-500">RS {product.price} • {product.quantity} in stock</p>
                       </div>
                       <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">Add</span>
                     </button>
@@ -532,7 +532,7 @@ export default function POSPage() {
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="line-clamp-2 text-sm font-semibold text-slate-900">{product.name}</p>
-                        <p className="mt-1 text-xs text-slate-500">Rs. {product.price} • {product.quantity} in stock</p>
+                        <p className="mt-1 text-xs text-slate-500">RS {product.price} • {product.quantity} in stock</p>
                       </div>
                     </div>
                     {isSoldOut ? (
@@ -606,22 +606,22 @@ export default function POSPage() {
             <div className="mt-5 rounded-[1.75rem] bg-slate-900/80 p-5">
               <div className="flex items-center justify-between text-sm text-slate-400">
                 <span>Subtotal</span>
-                <span>Rs. {subtotal}</span>
+                <span>RS {subtotal}</span>
               </div>
               <div className="mt-3 flex items-center justify-between text-sm text-slate-400">
                 <span>Discount</span>
-                <span>- Rs. {discountAmount}</span>
+                <span>- RS {discountAmount}</span>
               </div>
               {taxAmount > 0 && (
                 <div className="mt-3 flex items-center justify-between text-sm text-slate-400">
                   <span>Tax</span>
-                  <span>Rs. {taxAmount}</span>
+                  <span>RS {taxAmount}</span>
                 </div>
               )}
               <div className="mt-4 border-t border-slate-800 pt-4 text-xl font-semibold text-white">
                 <div className="flex items-center justify-between">
                   <span>Total</span>
-                  <span>Rs. {total}</span>
+                  <span>RS {total}</span>
                 </div>
               </div>
             </div>
@@ -659,7 +659,7 @@ export default function POSPage() {
                   />
                   <div className="flex items-center justify-between text-sm text-slate-400">
                     <span>Change due</span>
-                    <span>Rs. {Math.max(0, tenderedAmount - total)}</span>
+                    <span>RS {Math.max(0, tenderedAmount - total)}</span>
                   </div>
                 </div>
               )}
@@ -679,7 +679,7 @@ export default function POSPage() {
                   disabled={cart.length === 0}
                   className="inline-flex w-full items-center justify-center rounded-[2rem] bg-blue-600 px-6 py-4 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  Pay Rs. {total}
+                  Pay RS {total}
                 </button>
               </div>
               <label className="inline-flex items-center gap-3 rounded-[2rem] border border-slate-800 bg-slate-900 px-4 py-3 text-sm text-slate-300">
@@ -706,7 +706,7 @@ export default function POSPage() {
                       <div key={item.productId} className="rounded-[1.75rem] border border-slate-200 p-4 sm:flex sm:items-center sm:justify-between">
                         <div>
                           <p className="font-semibold text-slate-900">{item.name}</p>
-                          <p className="mt-1 text-sm text-slate-500">Rs. {item.price} each</p>
+                          <p className="mt-1 text-sm text-slate-500">RS {item.price} each</p>
                           <div className="mt-3 flex flex-wrap items-center gap-2">
                             {remainingStock < 0 ? (
                               <span className="rounded-full bg-rose-100 px-3 py-1 text-xs font-semibold text-rose-700">Overstock</span>
@@ -735,7 +735,7 @@ export default function POSPage() {
                           </div>
                           <div className="min-w-[88px] text-right">
                             <p className="text-sm text-slate-500">Line total</p>
-                            <p className="font-semibold">Rs. {item.subtotal}</p>
+                            <p className="font-semibold">RS {item.subtotal}</p>
                           </div>
                           <button
                             type="button"
@@ -777,21 +777,21 @@ export default function POSPage() {
                   <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
                     <div className="flex items-center justify-between text-sm text-slate-600">
                       <span>Subtotal</span>
-                      <span>Rs. {subtotal}</span>
+                      <span>RS {subtotal}</span>
                     </div>
                     <div className="mt-3 flex items-center justify-between text-sm text-slate-600">
                       <span>Discount</span>
-                      <span>- Rs. {discountAmount}</span>
+                      <span>- RS {discountAmount}</span>
                     </div>
                     {taxAmount > 0 && (
                       <div className="mt-3 flex items-center justify-between text-sm text-slate-600">
                         <span>Tax</span>
-                        <span>Rs. {taxAmount}</span>
+                        <span>RS {taxAmount}</span>
                       </div>
                     )}
                     <div className="mt-4 flex items-center justify-between border-t border-slate-200 pt-4 text-2xl font-semibold text-slate-900">
                       <span>Total</span>
-                      <span>Rs. {total}</span>
+                      <span>RS {total}</span>
                     </div>
                   </div>
 
@@ -810,7 +810,7 @@ export default function POSPage() {
                       </div>
                       <div className="mt-4 flex items-center justify-between text-sm text-slate-600">
                         <span>Change due</span>
-                        <span className="font-semibold">Rs. {Math.max(0, tenderedAmount - total)}</span>
+                        <span className="font-semibold">RS {Math.max(0, tenderedAmount - total)}</span>
                       </div>
                     </div>
                   ) : (
@@ -823,7 +823,7 @@ export default function POSPage() {
 
                 <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
                   <p className="text-sm uppercase tracking-[0.3em] text-slate-400">Ready to charge</p>
-                  <p className="mt-3 text-3xl font-semibold text-slate-900">Rs. {total}</p>
+                  <p className="mt-3 text-3xl font-semibold text-slate-900">RS {total}</p>
                   <button
                     type="button"
                     onClick={confirmPayment}
@@ -882,9 +882,9 @@ export default function POSPage() {
                   <div key={productId} className="mb-3 flex justify-between gap-2">
                     <div>
                       <p className="font-medium">{productName}</p>
-                      <p className="text-xs text-slate-500">{item.quantity} × Rs. {item.price}</p>
+                      <p className="text-xs text-slate-500">{item.quantity} × RS {item.price}</p>
                     </div>
-                    <p className="font-semibold">Rs. {item.subtotal}</p>
+                    <p className="font-semibold">RS {item.subtotal}</p>
                   </div>
                 );
               })}
@@ -892,21 +892,21 @@ export default function POSPage() {
             <div className="space-y-2 border-t border-slate-200 pt-4 text-sm">
               <div className="flex justify-between">
                 <span>Subtotal</span>
-                <span>Rs. {receiptOrder.subtotal}</span>
+                <span>RS {receiptOrder.subtotal}</span>
               </div>
               <div className="flex justify-between">
                 <span>Discount</span>
-                <span>- Rs. {receiptOrder.discountAmount}</span>
+                <span>- RS {receiptOrder.discountAmount}</span>
               </div>
               {receiptOrder.taxAmount > 0 && (
                 <div className="flex justify-between">
                   <span>Tax</span>
-                  <span>Rs. {receiptOrder.taxAmount}</span>
+                  <span>RS {receiptOrder.taxAmount}</span>
                 </div>
               )}
               <div className="flex justify-between text-base font-semibold">
                 <span>Total</span>
-                <span>Rs. {receiptOrder.total}</span>
+                <span>RS {receiptOrder.total}</span>
               </div>
               <div className="flex justify-between text-sm text-slate-600">
                 <span>Payment</span>
@@ -916,11 +916,11 @@ export default function POSPage() {
                 <>
                   <div className="flex justify-between text-sm text-slate-600">
                     <span>Tendered</span>
-                    <span>Rs. {receiptOrder.tenderedAmount}</span>
+                    <span>RS {receiptOrder.tenderedAmount}</span>
                   </div>
                   <div className="flex justify-between text-sm text-slate-600">
                     <span>Change</span>
-                    <span>Rs. {receiptOrder.changeDue}</span>
+                    <span>RS {receiptOrder.changeDue}</span>
                   </div>
                 </>
               )}

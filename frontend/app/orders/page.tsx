@@ -107,7 +107,7 @@ export default function OrdersPage() {
                               {status.charAt(0).toUpperCase() + status.slice(1)}
                             </span>
                           </td>
-                          <td className="px-4 py-4 font-semibold text-slate-900">Rs. {order.total}</td>
+                          <td className="px-4 py-4 font-semibold text-slate-900">RS {order.total}</td>
                           <td className="px-4 py-4">
                             <Link href={`/orders/${order._id}`} className="inline-flex rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary/90">
                               View Details
@@ -146,7 +146,7 @@ export default function OrdersPage() {
                         </div>
                         <div>
                           <p className="text-xs uppercase tracking-[0.25em] text-slate-400">Total</p>
-                          <p className="mt-1 font-medium text-slate-900">Rs. {order.total}</p>
+                          <p className="mt-1 font-medium text-slate-900">RS {order.total}</p>
                         </div>
                       </div>
                       <div className="mt-4">

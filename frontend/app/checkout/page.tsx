@@ -308,7 +308,7 @@ export default function CheckoutPage() {
                         <p className="font-medium text-slate-950 break-words">{item.name}</p>
                         <p className="text-slate-600">Qty: {item.quantity}</p>
                       </div>
-                      <p className="font-semibold text-slate-950 whitespace-nowrap">Rs. {item.price * item.quantity}</p>
+                      <p className="font-semibold text-slate-950 whitespace-nowrap">RS {item.price * item.quantity}</p>
                     </div>
                   ))}
                 </div>
@@ -316,19 +316,19 @@ export default function CheckoutPage() {
                 <div className="border-t border-slate-300 pt-4 space-y-2">
                   <div className="flex justify-between text-slate-700">
                     <span>Subtotal</span>
-                    <span className="font-semibold text-slate-950">Rs. {getTotalPrice()}</span>
+                    <span className="font-semibold text-slate-950">RS {getTotalPrice()}</span>
                   </div>
                   <div className="flex justify-between text-slate-700">
                     <span>Shipping</span>
-                    <span className="font-semibold text-slate-950">Rs. 0</span>
+                    <span className="font-semibold text-slate-950">RS 0</span>
                   </div>
                   <div className="flex justify-between text-slate-700">
                     <span>Tax</span>
-                    <span className="font-semibold text-slate-950">Rs. 0</span>
+                    <span className="font-semibold text-slate-950">RS 0</span>
                   </div>
                   <div className="border-t border-slate-300 pt-2 flex justify-between text-lg font-bold text-slate-950">
                     <span>Total</span>
-                    <span>Rs. {getTotalPrice()}</span>
+                    <span>RS {getTotalPrice()}</span>
                   </div>
                 </div>
               </div>

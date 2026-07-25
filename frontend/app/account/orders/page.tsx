@@ -140,7 +140,7 @@ export default function OrdersPage() {
                   <div className="space-y-2 text-sm text-slate-600">
                     <div>
                       <p className="text-slate-500">Total</p>
-                      <p className="font-semibold text-slate-950">Rs. {order.total}</p>
+                      <p className="font-semibold text-slate-950">RS {order.total}</p>
                     </div>
                     <div>
                       <p className="text-slate-500">Payment</p>

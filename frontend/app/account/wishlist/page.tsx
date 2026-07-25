@@ -118,7 +118,7 @@ export default function WishlistPage() {
                   <div className="p-5">
                     <div className="flex items-center justify-between gap-2 text-sm text-slate-500">
                       <span className="font-semibold text-slate-950 line-clamp-2">{item.name}</span>
-                      <span className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-600">Rs {item.discountPrice ?? item.price}</span>
+                      <span className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-600">RS {item.discountPrice ?? item.price}</span>
                     </div>
                     {item.description && <p className="mt-3 text-sm leading-6 text-slate-600 line-clamp-3">{item.description}</p>}
                   </div>

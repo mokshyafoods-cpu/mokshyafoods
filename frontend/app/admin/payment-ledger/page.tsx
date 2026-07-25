@@ -69,7 +69,7 @@ export default function PaymentLedgerPage() {
                   <div className="font-semibold text-slate-900">{entry.orderNumber || entry.orderId || 'Manual'}</div>
                   <div className="text-slate-800">{entry.customerName || 'Walk-in'}</div>
                   <div className="text-sm text-slate-700">{entry.products || '—'}</div>
-                  <div className="font-semibold text-slate-900">Rs. {Number(entry.amount || 0).toLocaleString()}</div>
+                  <div className="font-semibold text-slate-900">RS {Number(entry.amount || 0).toLocaleString()}</div>
                   <div className="text-slate-700">{entry.paymentMethod || 'cash'}</div>
                   <div className="text-slate-700">{entry.paymentDate || new Date(entry.createdAt).toLocaleDateString()}</div>
                   <div className="text-sm text-slate-600">{entry.notes || '—'}</div>

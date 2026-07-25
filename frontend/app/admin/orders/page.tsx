@@ -224,7 +224,7 @@ export default function AdminOrdersPage() {
                       <p>Status: {order.orderStatus}</p>
                       <p>Payment: {order.paymentMethod || 'N/A'}</p>
                     </div>
-                    <p className="mt-4 text-lg font-semibold text-slate-900">Rs. {order.total?.toFixed?.(0) ?? order.total ?? 0}</p>
+                    <p className="mt-4 text-lg font-semibold text-slate-900">RS {order.total?.toFixed?.(0) ?? order.total ?? 0}</p>
                   </div>
                 ))}
               </div>
@@ -284,7 +284,7 @@ export default function AdminOrdersPage() {
                         <span>Ledger</span>
                       </button>
                     </div>
-                    <div className="text-right font-semibold text-slate-900">Rs. {order.total?.toFixed?.(0) ?? order.total ?? 0}</div>
+                    <div className="text-right font-semibold text-slate-900">RS {order.total?.toFixed?.(0) ?? order.total ?? 0}</div>
                   </div>
                 ))}
               </div>

@@ -132,7 +132,7 @@ export default function AdminOperationsPage() {
       <div className="grid gap-6 xl:grid-cols-3">
         <div className="rounded-[2rem] border border-slate-800/70 bg-white p-6 shadow-sm">
           <p className="text-sm uppercase tracking-[0.3em] text-slate-400">Raw material spend</p>
-          <p className="mt-3 text-3xl font-semibold text-slate-900">Rs. {rawMaterialSpend}</p>
+          <p className="mt-3 text-3xl font-semibold text-slate-900">RS {rawMaterialSpend}</p>
         </div>
         <div className="rounded-[2rem] border border-slate-800/70 bg-white p-6 shadow-sm">
           <p className="text-sm uppercase tracking-[0.3em] text-slate-400">Production batches</p>
@@ -140,7 +140,7 @@ export default function AdminOperationsPage() {
         </div>
         <div className="rounded-[2rem] border border-slate-800/70 bg-white p-6 shadow-sm">
           <p className="text-sm uppercase tracking-[0.3em] text-slate-400">Monthly sales</p>
-          <p className="mt-3 text-3xl font-semibold text-slate-900">Rs. {report?.totalSales ?? 0}</p>
+          <p className="mt-3 text-3xl font-semibold text-slate-900">RS {report?.totalSales ?? 0}</p>
         </div>
       </div>
 
@@ -188,7 +188,7 @@ export default function AdminOperationsPage() {
                   </div>
                   <div className="text-right text-sm text-slate-600">
                     <p>{item.quantity} {item.unit}</p>
-                    <p>Rs. {item.totalCost}</p>
+                    <p>RS {item.totalCost}</p>
                   </div>
                 </div>
               </div>
@@ -222,19 +222,19 @@ export default function AdminOperationsPage() {
         <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <div className="rounded-2xl bg-slate-50 p-4">
             <p className="text-sm text-slate-500">Raw material spend</p>
-            <p className="mt-2 text-2xl font-semibold text-slate-900">Rs. {report?.rawMaterialSpend ?? 0}</p>
+            <p className="mt-2 text-2xl font-semibold text-slate-900">RS {report?.rawMaterialSpend ?? 0}</p>
           </div>
           <div className="rounded-2xl bg-slate-50 p-4">
             <p className="text-sm text-slate-500">Total sales</p>
-            <p className="mt-2 text-2xl font-semibold text-slate-900">Rs. {report?.totalSales ?? 0}</p>
+            <p className="mt-2 text-2xl font-semibold text-slate-900">RS {report?.totalSales ?? 0}</p>
           </div>
           <div className="rounded-2xl bg-slate-50 p-4">
             <p className="text-sm text-slate-500">Website sales</p>
-            <p className="mt-2 text-2xl font-semibold text-slate-900">Rs. {report?.websiteSales ?? 0}</p>
+            <p className="mt-2 text-2xl font-semibold text-slate-900">RS {report?.websiteSales ?? 0}</p>
           </div>
           <div className="rounded-2xl bg-slate-50 p-4">
             <p className="text-sm text-slate-500">POS sales</p>
-            <p className="mt-2 text-2xl font-semibold text-slate-900">Rs. {report?.posSales ?? 0}</p>
+            <p className="mt-2 text-2xl font-semibold text-slate-900">RS {report?.posSales ?? 0}</p>
           </div>
         </div>
         <div className="mt-6 rounded-2xl border border-slate-200 p-4">

@@ -121,10 +121,10 @@ export default function CartPage() {
                         </div>
                         {detailDescription ? <p className="mt-3 text-sm leading-6 text-slate-600 line-clamp-3">{detailDescription}</p> : null}
                         <div className="mt-3 flex flex-wrap items-center gap-3 text-sm">
-                          <span className="font-semibold text-slate-950">Rs. {detailPrice}</span>
+                          <span className="font-semibold text-slate-950">RS {detailPrice}</span>
                           {detailCompareAtPrice > detailPrice ? (
                             <>
-                              <span className="text-slate-500 line-through">Rs. {detailCompareAtPrice}</span>
+                              <span className="text-slate-500 line-through">RS {detailCompareAtPrice}</span>
                               {discountPercentage > 0 && (
                                 <div className="inline-flex items-center gap-1 rounded-full bg-rose-100 px-3 py-1 font-semibold text-rose-700">
                                   <Percent className="h-3 w-3" /> {discountPercentage}% OFF
@@ -189,7 +189,7 @@ export default function CartPage() {
                         <span className="text-emerald-600 font-semibold flex items-center gap-1">
                           <Percent className="h-3 w-3" /> Total Discount
                         </span>
-                        <span className="font-semibold text-emerald-600">-Rs. {totalDiscount.toFixed(0)}</span>
+                        <span className="font-semibold text-emerald-600">-RS {totalDiscount.toFixed(0)}</span>
                       </div>
                     ) : null;
                   })()}
@@ -197,7 +197,7 @@ export default function CartPage() {
 
                 <div className="flex justify-between text-lg font-bold text-primary">
                   <span>Subtotal</span>
-                  <span>Rs. {getTotalPrice().toFixed(0)}</span>
+                  <span>RS {getTotalPrice().toFixed(0)}</span>
                 </div>
 
                 <Link
