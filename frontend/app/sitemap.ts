@@ -2,7 +2,7 @@ import type { MetadataRoute } from 'next';
 import { productAPI } from '@/services/api';
 import { getProductSlug } from '@/lib/productRoutes';
 
-const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://mokshyafood.com.np';
+const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://www.mokshyafoods.com.np';
 
 const staticRoutes = [
   '',

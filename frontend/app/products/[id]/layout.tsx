@@ -11,7 +11,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     const payload = response?.data?.data ?? response?.data ?? null;
     const product = payload && typeof payload === 'object' ? payload : null;
     const slug = getProductSlug(product, id);
-    const url = `${process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://mokshyafood.com.np'}/products/${slug}`;
+    const url = `${process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://www.mokshyafoods.com.np'}/products/${slug}`;
 
     if (!product) {
       return buildProductMetadata(null, url);
@@ -19,7 +19,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
     return buildProductMetadata(product, url);
   } catch {
-    return buildProductMetadata(null, `${process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://mokshyafoods.com'}/products/${id}`);
+    return buildProductMetadata(null, `${process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://www.mokshyafoods.com.np'}/products/${id}`);
   }
 }
 
