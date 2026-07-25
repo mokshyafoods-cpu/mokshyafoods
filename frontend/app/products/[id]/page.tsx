@@ -61,6 +61,7 @@ export default function ProductDetailPage() {
   const id = Array.isArray(params.id) ? params.id[0] : params.id;
   const [product, setProduct] = useState<any>(null);
   const [reviews, setReviews] = useState<any[]>([]);
+  const [productId, setProductId] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState('/placeholder.jpg');
   const [reviewComment, setReviewComment] = useState('');
@@ -127,7 +128,9 @@ export default function ProductDetailPage() {
         ]);
         const payload = productResult.data;
         const nextProduct = payload?.data ?? payload ?? null;
+        const nextProductId = String(nextProduct?._id || nextProduct?.id || id || '');
         setProduct(nextProduct);
+        setProductId(nextProductId);
         setReviews(normalizeReviewPayload(reviewsResult?.data ?? reviewsResult));
       } catch (error) {
         console.error('Failed to load product:', error);
@@ -193,9 +196,9 @@ export default function ProductDetailPage() {
   }, [id, isAuthenticated, user?._id, user?.id]);
 
   const refreshReviews = async () => {
-    if (!id) return;
+    if (!productId) return;
     try {
-      const reviewsResult = await reviewAPI.getByProduct(id);
+      const reviewsResult = await reviewAPI.getByProduct(productId);
       setReviews(normalizeReviewPayload(reviewsResult?.data ?? reviewsResult));
     } catch (error) {
       console.error('Failed to refresh reviews:', error);
@@ -227,7 +230,7 @@ export default function ProductDetailPage() {
         toast.success('Your review has been updated.');
       } else {
         await reviewAPI.create({
-          productId: id,
+          productId: productId || id,
           rating: reviewRating,
           comment: reviewComment.trim(),
         });

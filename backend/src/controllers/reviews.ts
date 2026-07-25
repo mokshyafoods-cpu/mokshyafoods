@@ -2,11 +2,40 @@ import { Request, Response } from 'express';
 import mongoose from 'mongoose';
 
 const hydrateReview = async (review: any): Promise<any> => {
-  if (!review?.productId) return review;
-  const productsColl = mongoose.connection.collection('products');
-  const product = await productsColl.findOne({ _id: new mongoose.Types.ObjectId(review.productId) as any }).catch(() => null);
+  let product = null;
+  let user = review?.user || null;
+
+  if (review?.productId) {
+    const productsColl = mongoose.connection.collection('products');
+    product = await productsColl.findOne({ _id: new mongoose.Types.ObjectId(review.productId) as any }).catch(() => null);
+  }
+
+  if (review?.userId || review?.user?.id || review?.user?._id) {
+    const lookupId = review?.userId || review?.user?.id || review?.user?._id;
+    const usersColl = mongoose.connection.collection('users');
+
+    try {
+      const query = mongoose.Types.ObjectId.isValid(String(lookupId))
+        ? { _id: new mongoose.Types.ObjectId(String(lookupId)) }
+        : { $or: [{ _id: String(lookupId) }, { email: String(lookupId) }] };
+
+      const foundUser = await usersColl.findOne(query as any).catch(() => null);
+      if (foundUser) {
+        user = {
+          _id: foundUser._id?.toString?.() || foundUser._id,
+          name: foundUser.name || foundUser.fullName || foundUser.displayName || 'Customer',
+          email: foundUser.email,
+          phone: foundUser.phone,
+        };
+      }
+    } catch (error) {
+      console.warn('Failed to hydrate review user data:', error);
+    }
+  }
+
   return {
     ...review,
+    user,
     product: product ? {
       _id: product._id?.toString?.() || product._id,
       name: product.name,
@@ -189,6 +218,18 @@ export const deleteReview = async (req: AuthenticatedRequest, res: Response): Pr
   }
 };
 
+export const getAdminReviews = async (_req: Request, res: Response): Promise<Response> => {
+  try {
+    const reviewsColl = mongoose.connection.collection('reviews');
+    const allReviews = await reviewsColl.find({}).sort({ createdAt: -1 }).toArray();
+    const hydratedReviews = await Promise.all(allReviews.map((review) => hydrateReview(review)));
+    return res.json({ success: true, message: 'Reviews loaded', data: hydratedReviews });
+  } catch (error: any) {
+    console.error('getAdminReviews error:', error);
+    return res.status(500).json({ success: false, message: error.message || 'Failed to load reviews' });
+  }
+};
+
 export const getPendingReviews = async (_req: Request, res: Response): Promise<Response> => {
   try {
     const reviewsColl = mongoose.connection.collection('reviews');
@@ -251,6 +292,7 @@ export default {
   getUserReviews,
   updateReview,
   deleteReview,
+  getAdminReviews,
   getPendingReviews,
   approveReview,
   rejectReview,

@@ -31,7 +31,7 @@ const navItems: Array<{ label: string; key: SectionKey; href: string; icon: Reac
   { label: 'Products', key: 'products', href: '/admin/products', icon: <Package className="w-5 h-5" /> },
   { label: 'Low stock', key: 'low-stock', href: '/admin/low-stock', icon: <AlertTriangle className="w-5 h-5" /> },
   { label: 'Customers', key: 'customers', href: '/admin/customers', icon: <Users className="w-5 h-5" /> },
-  { label: 'Reviews Approval', key: 'reviews', href: '/admin/reviews', icon: <BookOpenCheck className="w-5 h-5" /> },
+  { label: 'Reviews', key: 'reviews', href: '/admin/reviews', icon: <BookOpenCheck className="w-5 h-5" /> },
   { label: 'Payment Ledger', key: 'payment-ledger', href: '/admin/payment-ledger', icon: <BookOpenCheck className="w-5 h-5" /> },
   { label: 'Raw Materials', key: 'raw-materials', href: '/admin/raw-materials', icon: <Boxes className="w-5 h-5" /> },
   { label: 'Production', key: 'production', href: '/admin/production', icon: <Factory className="w-5 h-5" /> },

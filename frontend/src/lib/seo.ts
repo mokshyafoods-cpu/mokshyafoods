@@ -63,9 +63,7 @@ export function buildMetadata(overrides: Metadata = {}): Metadata {
       },
     },
     icons: {
-      icon: '/icon.svg',
-      shortcut: '/icon.svg',
-      apple: '/apple-icon.png',
+      icon: '/favicon.png',
     },
     ...overrides,
   };

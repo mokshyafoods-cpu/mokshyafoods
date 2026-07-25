@@ -15,6 +15,9 @@ export const metadata: Metadata = buildMetadata({
   },
   description: 'High-quality organic dried fruits from Nepal. Premium taste, natural goodness.',
   generator: 'v0.app',
+  icons: {
+    icon: '/favicon.png',
+  },
 })
 
 export const viewport: Viewport = {

@@ -1,23 +1,25 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { reviewAPI } from '@/services/api';
 import { toast } from 'sonner';
+import { Star } from 'lucide-react';
 
-export default function ReviewsApprovalPage() {
+export default function AdminReviewsPage() {
   const [reviews, setReviews] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
 
   const loadReviews = async () => {
     try {
       setLoading(true);
-      const response = await reviewAPI.getPending();
+      const response = await reviewAPI.getAllAdmin();
       const payload = response?.data ?? response;
       const nextReviews = Array.isArray(payload?.data) ? payload.data : Array.isArray(payload) ? payload : [];
       setReviews(nextReviews);
     } catch (error) {
-      console.error('Failed to load pending reviews', error);
-      toast.error('Unable to load pending reviews.');
+      console.error('Failed to load reviews', error);
+      toast.error('Unable to load reviews.');
     } finally {
       setLoading(false);
     }
@@ -27,57 +29,94 @@ export default function ReviewsApprovalPage() {
     loadReviews();
   }, []);
 
-  const handleAction = async (id: string, action: 'approve' | 'reject') => {
-    try {
-      if (action === 'approve') {
-        await reviewAPI.approve(id);
-        toast.success('Review approved');
-      } else {
-        await reviewAPI.reject(id);
-        toast.success('Review rejected');
-      }
-      setReviews((current) => current.filter((review) => review._id !== id));
-    } catch (error) {
-      console.error('Failed to update review', error);
-      toast.error('Unable to update review.');
-    }
-  };
+  const filteredReviews = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    if (!query) return reviews;
+
+    return reviews.filter((review) => {
+      const userName = review?.user?.name || review?.user?.fullName || review?.user?.displayName || 'Customer';
+      const productName = review?.product?.name || 'Unknown product';
+      const text = `${review?.title || ''} ${review?.comment || ''} ${userName} ${productName}`.toLowerCase();
+      return text.includes(query);
+    });
+  }, [reviews, search]);
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(56,189,248,0.14),_transparent_24%),linear-gradient(135deg,_#020617_0%,_#08111f_48%,_#0f172a_100%)] px-4 py-8 text-slate-100 sm:px-6 lg:px-8">
-      <main className="mx-auto max-w-6xl">
-        <div className="rounded-[2rem] border border-slate-800/70 bg-slate-900/80 p-8 shadow-2xl backdrop-blur">
-          <div className="mb-8 flex flex-col gap-2">
-            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-sky-300">Moderation</p>
-            <h1 className="text-3xl font-semibold text-white">Review approvals</h1>
-            <p className="text-sm text-slate-400">Approve or reject customer reviews before they appear publicly.</p>
-          </div>
+    <div className="space-y-6">
+      <div className="rounded-[2rem] border border-slate-800/70 bg-slate-950/70 p-6 text-white shadow-xl">
+        <p className="text-sm uppercase tracking-[0.3em] text-slate-400">Reviews</p>
+        <h1 className="mt-2 text-3xl font-semibold">Customer reviews</h1>
+        <p className="mt-2 text-sm text-slate-400">View all customer reviews with user and product details.</p>
+      </div>
 
-          {loading ? (
-            <div className="rounded-2xl border border-slate-800/70 bg-slate-950/60 p-8 text-center text-sm text-slate-400">Loading pending reviews...</div>
-          ) : reviews.length === 0 ? (
-            <div className="rounded-2xl border border-slate-800/70 bg-slate-950/60 p-8 text-center text-sm text-slate-400">No pending reviews right now.</div>
-          ) : (
-            <div className="space-y-4">
-              {reviews.map((review) => (
-                <div key={review._id} className="rounded-2xl border border-slate-800/70 bg-slate-950/60 p-5">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                    <div>
-                      <p className="text-sm font-semibold text-slate-100">{review.title || 'Product review'}</p>
-                      <p className="mt-2 text-sm text-slate-400">{review.comment || 'No comment provided.'}</p>
-                      <p className="mt-3 text-xs uppercase tracking-[0.24em] text-slate-500">Rating: {review.rating || 5} / 5</p>
-                    </div>
-                    <div className="flex gap-2">
-                      <button type="button" onClick={() => handleAction(review._id, 'approve')} className="rounded-full bg-green-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-green-500">Approve</button>
-                      <button type="button" onClick={() => handleAction(review._id, 'reject')} className="rounded-full bg-rose-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-500">Reject</button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+      <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h2 className="text-xl font-semibold text-slate-900">All reviews</h2>
+            <p className="text-sm text-slate-500">{reviews.length} total review{reviews.length === 1 ? '' : 's'}</p>
+          </div>
+          <input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search by user, product, or review"
+            className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-500 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200 md:max-w-sm"
+          />
         </div>
-      </main>
+
+        {loading ? (
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-8 text-center text-sm text-slate-500">Loading reviews...</div>
+        ) : filteredReviews.length === 0 ? (
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-8 text-center text-sm text-slate-500">No reviews found.</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full border-collapse text-left text-sm">
+              <thead>
+                <tr className="border-b border-slate-200 text-slate-600">
+                  <th className="px-3 py-3 font-semibold">User</th>
+                  <th className="px-3 py-3 font-semibold">Product</th>
+                  <th className="px-3 py-3 font-semibold">Review</th>
+                  <th className="px-3 py-3 font-semibold">Rating</th>
+                  <th className="px-3 py-3 font-semibold">Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredReviews.map((review) => {
+                  const user = review?.user || {};
+                  const product = review?.product || {};
+                  const reviewText = review?.comment || review?.title || 'No comment provided.';
+
+                  return (
+                    <tr key={review._id} className="border-b border-slate-200 align-top text-slate-700">
+                      <td className="px-3 py-4">
+                        <div className="font-semibold text-slate-900">{user.name || user.fullName || user.displayName || 'Customer'}</div>
+                        <div className="mt-1 text-xs text-slate-500">{user.email || 'No email'}</div>
+                        {user.phone ? <div className="text-xs text-slate-500">{user.phone}</div> : null}
+                      </td>
+                      <td className="px-3 py-4">
+                        <div className="font-semibold text-slate-900">{product.name || 'Unknown product'}</div>
+                        <div className="mt-1 text-xs text-slate-500">{review?.productId || '—'}</div>
+                      </td>
+                      <td className="max-w-[320px] px-3 py-4">
+                        <div className="font-semibold text-slate-900">{review?.title || 'Product review'}</div>
+                        <p className="mt-1 text-sm text-slate-600">{reviewText}</p>
+                      </td>
+                      <td className="px-3 py-4">
+                        <div className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-3 py-1 text-sm font-semibold text-amber-600">
+                          <Star className="h-4 w-4 fill-current" />
+                          {Number(review?.rating || 0)}/5
+                        </div>
+                      </td>
+                      <td className="px-3 py-4 whitespace-nowrap text-sm text-slate-500">
+                        {review?.createdAt ? new Date(review.createdAt).toLocaleDateString('en-IN') : '—'}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -157,6 +157,7 @@ export const reviewAPI = {
   create: (data: any) => apiClient.post('/reviews', data),
   getByProduct: (productId: string) => apiClient.get(`/reviews?productId=${productId}`),
   getUserReviews: () => apiClient.get('/reviews/user'),
+  getAllAdmin: () => apiClient.get('/reviews/admin'),
   update: (id: string, data: any) => apiClient.put(`/reviews/${id}`, data),
   delete: (id: string) => apiClient.delete(`/reviews/${id}`),
   getPending: () => apiClient.get('/reviews/pending'),
