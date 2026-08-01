@@ -13,28 +13,28 @@ export default function AboutPage() {
           </div>
           <div className="space-y-4 text-slate-700">
             <p>
-              Mokshya Foods is a Nepali food brand focused on naturally dried fruits and wholesome snacks that bring the taste of local orchards into everyday homes.
-              We work closely with trusted growers and prepare each product with care so families can enjoy simple, honest ingredients.
+              Mokshya Foods was created to share naturally prepared food products from Nepal with families looking for dependable everyday essentials.
+              Our focus is on products that feel practical, trustworthy, and easy to enjoy at home or on the go.
             </p>
             <p>
-              Our mission is to celebrate Nepali produce, support responsible sourcing, and offer premium snacks that feel good to share and easy to enjoy.
-              Every pack reflects our commitment to quality, freshness, and a more thoughtful way of snacking.
+              We work with carefully selected ingredients and present products in a way that makes quality, origin, and usage clear for customers.
+              Our range includes naturally dried fruits and food powders prepared for daily cooking, snacking, and gifting.
             </p>
             <p>
-              Whether you are shopping for a family snack, a gift, or a daily staple, we are here to help you discover products that are practical, delicious, and made with care.
+              Whether you are shopping for a pantry staple, a thoughtful gift, or a reliable everyday ingredient, Mokshya Foods is here to support simple and mindful purchasing decisions.
             </p>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="rounded-3xl border border-border bg-[#f8f9fa] p-6">
               <h2 className="text-xl font-semibold text-slate-950">What We Offer</h2>
-              <p className="mt-3 text-slate-600">Naturally dried fruits, wholesome snacks, and premium gift-ready packs designed for everyday routines and special occasions.</p>
+              <p className="mt-3 text-slate-600">Naturally dried fruits and food powders made for everyday use, practical storage, and trusted family routines.</p>
             </div>
             <div className="rounded-3xl border border-border bg-[#f8f9fa] p-6">
               <h2 className="text-xl font-semibold text-slate-950">What Sets Us Apart</h2>
               <ul className="mt-3 space-y-2 text-sm text-slate-600">
-                <li>• Carefully sourced ingredients from trusted Nepali growers</li>
-                <li>• Simple, honest packaging with clear product details</li>
-                <li>• Friendly support for retail and bulk orders</li>
+                <li>• Thoughtful product selection with clear product information</li>
+                <li>• Practical packaging designed for daily use and easier storage</li>
+                <li>• Helpful support for retail orders and product questions</li>
               </ul>
             </div>
           </div>

@@ -13,16 +13,16 @@ import WishlistButton from '@/components/WishlistButton';
 import AddToCartButton from '@/components/AddToCartButton';
 
 const featureItems = [
-  { title: 'No sugar added', description: 'Naturally sweet dried fruits.' },
-  { title: 'Farm fresh', description: 'From Nepali orchards and spice farms.' },
-  { title: 'Gift-ready packs', description: 'Premium packaging for every occasion.' },
+  { title: 'Naturally dried', description: 'Prepared for everyday snacking and simple pantry use.' },
+  { title: 'Food powders', description: 'A practical range for daily cooking and wellness routines.' },
+  { title: 'Made in Nepal', description: 'Thoughtfully sourced and packed for trusted everyday use.' },
 ];
 
 const whyItems = [
-  { title: 'Naturally Dried', description: 'Carefully dried to preserve flavor, texture, and nutrition.', icon: Leaf },
-  { title: 'Crafted for Quality', description: 'Carefully selected and packed with attention to detail.', icon: Award },
-  { title: 'Fast Delivery', description: 'Reliable delivery across Nepal for everyday convenience.', icon: Truck },
-  { title: 'Trusted by Families', description: 'Simple, wholesome snacks made for daily routines.', icon: Sparkles },
+  { title: 'Naturally Prepared', description: 'Carefully selected ingredients and dependable preparation methods.', icon: Leaf },
+  { title: 'Quality Focused', description: 'Clear product care, thoughtful packaging, and practical presentation.', icon: Award },
+  { title: 'Reliable Delivery', description: 'Support for convenient orders and delivery across Nepal.', icon: Truck },
+  { title: 'Everyday Use', description: 'A dependable choice for homes, gifting, and daily routines.', icon: Sparkles },
 ];
 
 export default function HomePage() {
@@ -111,10 +111,10 @@ export default function HomePage() {
                       Mokshya Foods
                     </p>
                     <h1 className="text-4xl font-bold tracking-tight text-slate-950 sm:text-5xl lg:text-6xl">
-                      Pure Taste, Naturally Preserved.
+                      Pure Goodness, Naturally Preserved.
                     </h1>
                     <p className="text-lg leading-8 text-slate-700">
-                      Naturally dried fruits and wholesome snacks from Nepal — carefully prepared for everyday family use, gifting, and simple pantry staples.
+                      Mokshya Foods offers naturally dried fruits and wholesome food powders from Nepal for everyday cooking, snacking, and gifting.
                     </p>
                     <div className="flex flex-col gap-4 sm:flex-row">
                       <Link href="/products" className="inline-flex items-center justify-center gap-2 rounded-full bg-slate-950 px-8 py-3 text-sm font-semibold text-white shadow-xl shadow-slate-200/20 transition hover:bg-slate-800">
@@ -128,7 +128,7 @@ export default function HomePage() {
                 </div>
 
                 <div className="mt-8 grid gap-3 sm:grid-cols-3 sm:gap-4">
-                  {['Naturally Dried', 'Thoughtful Packaging', 'Delivered with Care'].map((label) => (
+                  {['Naturally Dried', 'Food Powders', 'Delivered with Care'].map((label) => (
                     <div key={label} className="rounded-3xl border border-slate-200 bg-white px-4 py-5 text-center shadow-sm">
                       <p className="text-sm font-semibold text-slate-950">{label}</p>
                     </div>
@@ -160,10 +160,10 @@ export default function HomePage() {
 
             <div className="mt-8 grid gap-4 sm:grid-cols-2 sm:gap-5 xl:grid-cols-4">
               {[
-                { label: 'Batch Checked', description: 'Packed with care' },
-                { label: 'Made in Nepal', description: 'Local sourcing' },
-                { label: '100% Natural', description: 'No additives' },
-                { label: 'Resealable Pouch', description: 'Practical packaging' },
+                { label: 'Made in Nepal', description: 'Thoughtfully sourced and prepared' },
+                { label: 'Reliable Quality', description: 'Clear details for confident purchase' },
+                { label: 'Convenient Packaging', description: 'Easy to store and enjoy' },
+                { label: 'Delivered Across Nepal', description: 'Practical doorstep support' },
               ].map((item) => (
                 <div key={item.label} className="rounded-[1.75rem] border border-slate-200 bg-white p-6 text-center shadow-sm">
                   <p className="text-sm font-semibold uppercase tracking-[0.2em] text-secondary">{item.label}</p>
@@ -178,11 +178,11 @@ export default function HomePage() {
           <div className="max-w-7xl mx-auto">
             <div className="mb-10 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
               <div>
-                <p className="text-sm uppercase tracking-[0.25em] text-secondary">Top Selling</p>
-                <h2 className="mt-2 text-3xl font-bold text-primary">Best sellers this week</h2>
+                <p className="text-sm uppercase tracking-[0.25em] text-secondary">Featured Products</p>
+                <h2 className="mt-2 text-3xl font-bold text-primary">Our Best Picks</h2>
               </div>
               <p className="max-w-2xl text-sm text-muted-foreground">
-                Browse our most popular products, loved by customers for taste and freshness.
+                Discover products that balance everyday utility, pleasant flavor, and trusted presentation.
               </p>
             </div>
 
@@ -260,10 +260,10 @@ export default function HomePage() {
             <div className="mb-10 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
               <div>
                 <p className="text-sm uppercase tracking-[0.25em] text-secondary">Everyday healthy bites</p>
-                <h2 className="mt-2 text-3xl font-bold text-primary">Snacks for every day</h2>
+                <h2 className="mt-2 text-3xl font-bold text-primary">From Nepali Farms to Your Pack</h2>
               </div>
               <p className="max-w-2xl text-sm text-muted-foreground">
-                Light, tasty, and wholesome snacks that fit into daily routines and family meals.
+                Sourced from selected Nepali farms, carefully dried, and packed for convenient daily use.
               </p>
             </div>
 
@@ -356,11 +356,11 @@ export default function HomePage() {
           <div className="max-w-7xl mx-auto">
             <div className="mb-10 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
               <div>
-                <p className="text-sm uppercase tracking-[0.25em] text-secondary">Social stories</p>
-                <h2 className="mt-2 text-3xl font-bold text-primary">See how our products come to life</h2>
+                <p className="text-sm uppercase tracking-[0.25em] text-secondary">From Our Process</p>
+                <h2 className="mt-2 text-3xl font-bold text-primary">See real moments from drying to packing</h2>
               </div>
               <p className="max-w-2xl text-sm text-muted-foreground">
-                Behind-the-scenes packing, product handling, and daily work from the Mokshya team.
+                Behind-the-scenes clips from product preparation, quality checks, and daily operations.
               </p>
             </div>
 

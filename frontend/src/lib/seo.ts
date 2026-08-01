@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 
 const SITE_NAME = 'Mokshya Foods';
-const DEFAULT_DESCRIPTION = 'Naturally dried fruits and wholesome snacks from Nepal, crafted with care for daily snacking, gifting, and family routines.';
+const DEFAULT_DESCRIPTION = 'Mokshya Foods offers naturally dried fruits and pure food powders from Nepal for everyday cooking, snacking, and gifting.';
 const DEFAULT_IMAGE = '/logo.jpeg';
 const DEFAULT_SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://www.mokshyafoods.com.np';
 
@@ -17,13 +17,14 @@ export function buildMetadata(overrides: Metadata = {}): Metadata {
     description: overrides.description ?? DEFAULT_DESCRIPTION,
     keywords: [
       'Mokshya Foods',
-      'Nepalese dried fruits',
-      'organic snacks Nepal',
+      'dried fruits Nepal',
       'dried mango Nepal',
       'dried kiwi Nepal',
+      'food powders Nepal',
+      'beetroot powder Nepal',
+      'moringa powder Nepal',
       'healthy snacks Nepal',
-      'premium food gifts',
-      'wholesome snacks Nepal',
+      'natural food products Nepal',
     ],
     alternates: {
       canonical: DEFAULT_SITE_URL,
@@ -200,7 +201,7 @@ export function buildProductJsonLd(product: any, url: string) {
     '@context': 'https://schema.org',
     '@type': 'Product',
     name: product?.name || 'Mokshya Foods Product',
-    description: product?.description || 'Premium organic dried fruits from Nepal.',
+    description: product?.description || 'Naturally prepared food products from Nepal, designed for everyday use and gifting.',
     image: images,
     url,
     sku,

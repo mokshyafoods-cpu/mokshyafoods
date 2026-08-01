@@ -6,6 +6,7 @@ import { contactAPI } from '@/services/api';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { Mail, Phone, MapPin, Clock } from 'lucide-react';
+import { siteConfig } from '@/lib/business';
 
 export default function ContactPage() {
   const [loading, setLoading] = useState(false);
@@ -42,7 +43,7 @@ export default function ContactPage() {
           <div className="mb-8 text-center space-y-3">
             <h1 className="text-3xl md:text-4xl font-bold text-primary">Contact Us</h1>
             <p className="text-base text-muted-foreground max-w-2xl mx-auto">
-              We’d love to hear from you about orders, bulk requests, or product questions.
+              Reach out for product questions, order support, or general enquiries about our naturally dried fruits and food powders.
             </p>
           </div>
 
@@ -52,24 +53,24 @@ export default function ContactPage() {
               <ContactInfoCard
                 icon={<Phone className="w-6 h-6" />}
                 title="Phone"
-                content="+977 9745298975"
-                link="tel:+9779745298975"
+                content={siteConfig.phoneDisplay}
+                link={`tel:${siteConfig.phone.replace(/\s+/g, '')}`}
               />
               <ContactInfoCard
                 icon={<Mail className="w-6 h-6" />}
                 title="Email"
-                content="hello@mokshyafoods.com.np"
-                link="mailto:hello@mokshyafoods.com.np"
+                content={siteConfig.email}
+                link={`mailto:${siteConfig.email}`}
               />
               <ContactInfoCard
                 icon={<MapPin className="w-6 h-6" />}
                 title="Location"
-                content="Butwal, Lumbini Province, Nepal"
+                content={siteConfig.location}
               />
               <ContactInfoCard
                 icon={<Clock className="w-6 h-6" />}
                 title="Business Hours"
-                content="Mon - Fri: 9:00 AM - 6:00 PM"
+                content={siteConfig.hours}
               />
             </div>
 

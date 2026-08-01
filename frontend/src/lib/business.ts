@@ -1,0 +1,15 @@
+export const siteConfig = {
+  brandName: 'Mokshya Foods',
+  tagline: 'Naturally dried fruits & pure food powders from Nepal',
+  description: 'Mokshya Foods offers naturally dried fruits and carefully prepared food powders made with care in Nepal.',
+  email: 'hello@mokshyafoods.com.np',
+  phone: '+977 9745298975',
+  phoneDisplay: '+977 9745298975',
+  location: 'Butwal, Lumbini Province, Nepal',
+  hours: 'Mon - Fri: 9:00 AM - 6:00 PM',
+  whatsapp: 'https://wa.me/9745298975',
+  instagram: 'https://www.instagram.com/mokshyafoods?igsh=ZGx5dXUwaTJybWpy',
+  facebook: 'https://www.facebook.com/mokshyafoods',
+  shippingNote: 'We dispatch orders promptly and aim to deliver across Nepal through trusted delivery partners.',
+  refundNote: 'Please contact us promptly for order concerns, returns, or product issues.',
+};

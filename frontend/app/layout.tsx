@@ -10,10 +10,10 @@ const geistMono = Geist_Mono({ subsets: ['latin'] })
 
 export const metadata: Metadata = buildMetadata({
   title: {
-    default: 'Mokshya Foods - Premium Organic Dried Fruits',
+    default: 'Mokshya Foods | Naturally Dried Fruits & Food Powders in Nepal',
     template: '%s | Mokshya Foods',
   },
-  description: 'High-quality organic dried fruits from Nepal. Premium taste, natural goodness.',
+  description: 'Mokshya Foods brings naturally dried fruits and pure food powders from Nepal to homes, kitchens, and everyday gifting.',
   generator: 'v0.app',
   icons: {
     icon: '/favicon.png',

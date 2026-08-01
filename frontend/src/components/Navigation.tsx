@@ -81,7 +81,7 @@ export default function Navigation() {
     <div className="sticky top-0 z-50 w-full overflow-x-hidden pb-20 pt-0 supports-[padding-top:env(safe-area-inset-top)]:pt-[env(safe-area-inset-top,0px)] lg:pb-0">
       <div className="bg-primary px-3 py-1 text-center text-[11px] font-semibold leading-3 text-primary-foreground sm:px-4 sm:py-1.5 sm:text-sm sm:leading-4">
         <span className="block truncate sm:whitespace-normal">
-          Pure Nepali dried fruits, naturally crafted for your family.
+          Naturally dried fruits and wholesome food powders from Nepal, crafted with care.
         </span>
       </div>
       <nav className="border-b border-border/80 bg-white/95 backdrop-blur will-change-transform">
@@ -110,7 +110,21 @@ export default function Navigation() {
                 <Link href="/products" onClick={closeNav} className="flex items-center gap-2 text-slate-950 group">
                   <Package2 className="h-4 w-4 text-primary" />
                   <span className="relative inline-block transform transition-transform duration-150 ease-out group-hover:-translate-y-1">
-                    All Products
+                    Shop
+                    <span className="absolute left-0 -bottom-1 h-[3px] w-full bg-primary origin-left scale-x-0 transition-transform duration-150 ease-out group-hover:scale-x-100" />
+                  </span>
+                </Link>
+                <Link href="/about" onClick={closeNav} className="flex items-center gap-2 text-slate-950 group">
+                  <BadgeInfo className="h-4 w-4 text-primary" />
+                  <span className="relative inline-block transform transition-transform duration-150 ease-out group-hover:-translate-y-1">
+                    About
+                    <span className="absolute left-0 -bottom-1 h-[3px] w-full bg-primary origin-left scale-x-0 transition-transform duration-150 ease-out group-hover:scale-x-100" />
+                  </span>
+                </Link>
+                <Link href="/faq" onClick={closeNav} className="flex items-center gap-2 text-slate-950 group">
+                  <BadgeCheck className="h-4 w-4 text-primary" />
+                  <span className="relative inline-block transform transition-transform duration-150 ease-out group-hover:-translate-y-1">
+                    FAQ
                     <span className="absolute left-0 -bottom-1 h-[3px] w-full bg-primary origin-left scale-x-0 transition-transform duration-150 ease-out group-hover:scale-x-100" />
                   </span>
                 </Link>
