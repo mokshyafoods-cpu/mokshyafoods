@@ -39,6 +39,7 @@ function ProductsPageContent() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialQuerySync = useRef(true);
@@ -118,6 +119,7 @@ function ProductsPageContent() {
   useEffect(() => {
     const loadProducts = async () => {
       setLoading(true);
+      setLoadError(null);
       try {
         const params: any = {
           limit: 100,
@@ -166,6 +168,7 @@ function ProductsPageContent() {
         setProducts(nextProducts);
       } catch (error) {
         console.error('Error loading products:', error);
+        setLoadError('We could not load the products right now. Please refresh the page or try again in a moment.');
         toast.error('Failed to load products');
       } finally {
         setLoading(false);
@@ -686,8 +689,22 @@ function ProductsPageContent() {
               )}
 
               {loading ? (
-                <div className="text-center py-20">
-                  <div className="inline-block animate-spin">Loading...</div>
+                <div className="rounded-[1.75rem] border border-border bg-white p-12 text-center shadow-sm">
+                  <div className="mx-auto mb-4 inline-flex h-12 w-12 animate-spin items-center justify-center rounded-full border-4 border-primary/20 border-t-primary" />
+                  <p className="text-lg font-semibold text-slate-900">Loading products…</p>
+                  <p className="mt-2 text-sm text-slate-600">We’re gathering the latest products from our inventory.</p>
+                </div>
+              ) : loadError ? (
+                <div className="rounded-[1.75rem] border border-amber-200 bg-amber-50 p-12 text-center shadow-sm">
+                  <p className="text-lg font-semibold text-slate-900">We couldn’t load the catalog</p>
+                  <p className="mt-2 text-sm text-slate-600">{loadError}</p>
+                  <button
+                    type="button"
+                    onClick={() => window.location.reload()}
+                    className="mt-6 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-primary/90"
+                  >
+                    Retry
+                  </button>
                 </div>
               ) : displayedProducts.length === 0 ? (
                 <div className="rounded-[1.75rem] border border-border bg-white p-12 text-center">

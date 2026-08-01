@@ -5,7 +5,7 @@ import { reviewValidator, validateRequest } from '../middleware/validation';
 
 const router = express.Router();
 
-router.get('/', getProductReviews);
+router.get('/', authMiddleware, getProductReviews);
 router.get('/user', authMiddleware, getUserReviews);
 router.post('/', authMiddleware, reviewValidator, validateRequest, createReview);
 router.put('/:id', authMiddleware, updateReview);

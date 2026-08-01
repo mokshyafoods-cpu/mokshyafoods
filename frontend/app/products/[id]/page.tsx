@@ -125,6 +125,14 @@ export default function ProductDetailPage() {
   const visibleReviews = useMemo(() => sortedReviews.slice(0, visibleReviewCount), [sortedReviews, visibleReviewCount]);
 
   const loadReviews = async (productIdToUse: string, page = 1, append = false) => {
+    if (!isAuthenticated) {
+      setReviews([]);
+      setReviewHasMore(false);
+      setReviewSummary(null);
+      setReviewTotal(0);
+      return;
+    }
+
     try {
       const reviewsResult = await reviewAPI.getByProduct(productIdToUse, { page, limit: 6 });
       const payload = reviewsResult?.data ?? reviewsResult;
@@ -409,7 +417,13 @@ export default function ProductDetailPage() {
                     Sale active
                   </div>
                 )}
-                <p className="text-base leading-8 whitespace-pre-line text-slate-700">{product.description || 'No description available for this product.'}</p>
+                <p className="text-base leading-8 whitespace-pre-line text-slate-700">
+                  {product.description || 'No description available for this product.'}
+                </p>
+                <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-5 text-sm leading-7 text-slate-700">
+                  <p>Made with care and prepared for daily enjoyment, this product brings the natural flavor of Nepali produce into a convenient, pantry-friendly format.</p>
+                  <p className="mt-2">Whether you are sharing it with family or enjoying a quick snack at home, it offers a simple, wholesome choice for busy routines.</p>
+                </div>
                 <div className="mt-6 grid gap-4 sm:grid-cols-2">
                   <div className="rounded-3xl bg-slate-50 p-5">
                     <p className="text-sm uppercase tracking-[0.24em] text-slate-500">Price</p>
@@ -458,7 +472,16 @@ export default function ProductDetailPage() {
                   </div>
                 </div>
 
-                <div className="mt-8 grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
+                {!isAuthenticated ? (
+                  <div className="mt-8 rounded-[1.5rem] border border-slate-200 bg-slate-50 p-6 text-center">
+                    <p className="text-lg font-semibold text-slate-900">Please sign in to view customer reviews</p>
+                    <p className="mt-2 text-sm text-slate-600">Reviews are visible to signed-in customers only.</p>
+                    <div className="mt-3">
+                      <Link href={`/auth/login?redirect=/products/${id}`} className="inline-flex font-semibold text-primary hover:text-secondary">Sign in to view reviews</Link>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mt-8 grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
                   <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
                     <div className="flex items-center justify-between gap-3">
                       <div>
@@ -633,7 +656,7 @@ export default function ProductDetailPage() {
                   </div>
                 </div>
               </div>
-            </div>
+            )}
 
             <aside className="order-2 space-y-6 lg:order-none">
               <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">

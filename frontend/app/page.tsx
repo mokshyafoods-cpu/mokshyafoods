@@ -19,10 +19,10 @@ const featureItems = [
 ];
 
 const whyItems = [
-  { title: '100% Organic', description: 'Leafy freshness from farm to pack.', icon: Leaf },
-  { title: 'Crafted for Quality', description: 'Carefully selected, quality sealed.', icon: Award },
-  { title: 'Fast Delivery', description: 'Quick shipping across Nepal.', icon: Truck },
-  { title: 'Loved by Families', description: 'Trusted flavor in every bite.', icon: Sparkles },
+  { title: 'Naturally Dried', description: 'Carefully dried to preserve flavor, texture, and nutrition.', icon: Leaf },
+  { title: 'Crafted for Quality', description: 'Carefully selected and packed with attention to detail.', icon: Award },
+  { title: 'Fast Delivery', description: 'Reliable delivery across Nepal for everyday convenience.', icon: Truck },
+  { title: 'Trusted by Families', description: 'Simple, wholesome snacks made for daily routines.', icon: Sparkles },
 ];
 
 export default function HomePage() {
@@ -103,7 +103,7 @@ export default function HomePage() {
             <div className="grid items-center gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:gap-10">
               <div>
                 <div className="inline-flex items-center gap-2 rounded-full bg-secondary/10 px-4 py-2 text-sm font-semibold text-secondary">
-                  Premium Nepalese dried fruits
+                  Natural snacks from Nepal
                 </div>
                 <div className="mt-8">
                   <div className="space-y-6 max-w-3xl">
@@ -114,7 +114,7 @@ export default function HomePage() {
                       Pure Taste, Naturally Preserved.
                     </h1>
                     <p className="text-lg leading-8 text-slate-700">
-                      Dried mangoes and kiwis sourced from Nepal&apos;s finest orchards — no added sugar, no preservatives, just fruit in its most honest form.
+                      Naturally dried fruits and wholesome snacks from Nepal — carefully prepared for everyday family use, gifting, and simple pantry staples.
                     </p>
                     <div className="flex flex-col gap-4 sm:flex-row">
                       <Link href="/products" className="inline-flex items-center justify-center gap-2 rounded-full bg-slate-950 px-8 py-3 text-sm font-semibold text-white shadow-xl shadow-slate-200/20 transition hover:bg-slate-800">
@@ -128,7 +128,7 @@ export default function HomePage() {
                 </div>
 
                 <div className="mt-8 grid gap-3 sm:grid-cols-3 sm:gap-4">
-                  {['100% Natural', 'No Added Sugar', 'Made in Nepal'].map((label) => (
+                  {['Naturally Dried', 'Thoughtful Packaging', 'Delivered with Care'].map((label) => (
                     <div key={label} className="rounded-3xl border border-slate-200 bg-white px-4 py-5 text-center shadow-sm">
                       <p className="text-sm font-semibold text-slate-950">{label}</p>
                     </div>
@@ -160,10 +160,10 @@ export default function HomePage() {
 
             <div className="mt-8 grid gap-4 sm:grid-cols-2 sm:gap-5 xl:grid-cols-4">
               {[
-                { label: 'DFTQC Certified', description: 'Quality Assured' },
-                { label: 'Made in Nepal', description: 'Local Sourcing' },
-                { label: '100% Natural', description: 'No Additives' },
-                { label: 'Resealable Pouch', description: 'Premium Pack' },
+                { label: 'Batch Checked', description: 'Packed with care' },
+                { label: 'Made in Nepal', description: 'Local sourcing' },
+                { label: '100% Natural', description: 'No additives' },
+                { label: 'Resealable Pouch', description: 'Practical packaging' },
               ].map((item) => (
                 <div key={item.label} className="rounded-[1.75rem] border border-slate-200 bg-white p-6 text-center shadow-sm">
                   <p className="text-sm font-semibold uppercase tracking-[0.2em] text-secondary">{item.label}</p>
@@ -360,7 +360,7 @@ export default function HomePage() {
                 <h2 className="mt-2 text-3xl font-bold text-primary">See how our products come to life</h2>
               </div>
               <p className="max-w-2xl text-sm text-muted-foreground">
-                Short recipe clips, behind-the-scenes packing, and more from the Mokshya kitchen.
+                Behind-the-scenes packing, product handling, and daily work from the Mokshya team.
               </p>
             </div>
 
@@ -368,7 +368,7 @@ export default function HomePage() {
               {[
                 { video: '/video/video1.mp4', title: 'Production Process', desc: 'Watch our careful drying process' },
                 { video: '/video/video2.mp4', title: 'Quality Check', desc: 'How we ensure premium quality' },
-                { video: '/video/vidoe3.mp4', title: 'Behind the Scenes', desc: 'Life at Mokshya Foods' },
+                { video: '/video/video1.mp4', title: 'Behind the Scenes', desc: 'Life at Mokshya Foods' },
               ].map((item, index) => (
                 <div key={index} className="group overflow-hidden rounded-[1.75rem] bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
                   <div className="relative h-80 overflow-hidden bg-muted">

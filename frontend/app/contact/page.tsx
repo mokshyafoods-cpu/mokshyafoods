@@ -42,7 +42,7 @@ export default function ContactPage() {
           <div className="mb-8 text-center space-y-3">
             <h1 className="text-3xl md:text-4xl font-bold text-primary">Contact Us</h1>
             <p className="text-base text-muted-foreground max-w-2xl mx-auto">
-              Get in touch with our team. We&apos;d love to hear from you!
+              We’d love to hear from you about orders, bulk requests, or product questions.
             </p>
           </div>
 
@@ -52,19 +52,19 @@ export default function ContactPage() {
               <ContactInfoCard
                 icon={<Phone className="w-6 h-6" />}
                 title="Phone"
-                content="+977-71-540000"
-                link="tel:+97771540000"
+                content="+977 9745298975"
+                link="tel:+9779745298975"
               />
               <ContactInfoCard
                 icon={<Mail className="w-6 h-6" />}
                 title="Email"
-                content="mokshyafoods@gmail.com"
-                link="mailto:mokshyafoods@gmail.com"
+                content="hello@mokshyafoods.com.np"
+                link="mailto:hello@mokshyafoods.com.np"
               />
               <ContactInfoCard
                 icon={<MapPin className="w-6 h-6" />}
                 title="Location"
-                content="Butwal, Nepal"
+                content="Butwal, Lumbini Province, Nepal"
               />
               <ContactInfoCard
                 icon={<Clock className="w-6 h-6" />}

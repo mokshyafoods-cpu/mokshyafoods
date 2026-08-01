@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 
 const SITE_NAME = 'Mokshya Foods';
-const DEFAULT_DESCRIPTION = 'Premium organic dried fruits from Nepal with natural flavor, quality packaging, and fast delivery.';
+const DEFAULT_DESCRIPTION = 'Naturally dried fruits and wholesome snacks from Nepal, crafted with care for daily snacking, gifting, and family routines.';
 const DEFAULT_IMAGE = '/logo.jpeg';
 const DEFAULT_SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://www.mokshyafoods.com.np';
 
@@ -18,11 +18,12 @@ export function buildMetadata(overrides: Metadata = {}): Metadata {
     keywords: [
       'Mokshya Foods',
       'Nepalese dried fruits',
-      'organic snacks',
-      'dried mango',
-      'dried kiwi',
+      'organic snacks Nepal',
+      'dried mango Nepal',
+      'dried kiwi Nepal',
       'healthy snacks Nepal',
       'premium food gifts',
+      'wholesome snacks Nepal',
     ],
     alternates: {
       canonical: DEFAULT_SITE_URL,
@@ -159,8 +160,8 @@ export function buildOrganizationJsonLd() {
       addressRegion: 'Lumbini',
       addressCountry: 'NP',
     },
-    telephone: '+977-71-540000',
-    email: 'mokshyafoods@gmail.com',
+    telephone: '+977-9745298975',
+    email: 'hello@mokshyafoods.com.np',
     sameAs: [
       'https://www.facebook.com/mokshyafoods',
       'https://www.instagram.com/mokshyafoods',
@@ -182,7 +183,18 @@ export function buildProductJsonLd(product: any, url: string) {
         .filter(Boolean)
     : [];
   const primaryImage = product?.thumbnail || product?.image || galleryImages[0] || '/1.jpeg';
-  const images = [...galleryImages, primaryImage].filter(Boolean);
+  const images = [...galleryImages, primaryImage].filter(Boolean).map((img) => {
+    try {
+      // make image URLs absolute when they are site-relative
+      if (img && img.startsWith('/')) return `${DEFAULT_SITE_URL}${img}`;
+    } catch {
+      // ignore
+    }
+    return img;
+  });
+
+  const sku = product?.sku || product?._id || product?.id || undefined;
+  const priceCurrency = product?.currency || 'NPR';
 
   return {
     '@context': 'https://schema.org',
@@ -191,7 +203,7 @@ export function buildProductJsonLd(product: any, url: string) {
     description: product?.description || 'Premium organic dried fruits from Nepal.',
     image: images,
     url,
-    sku: product?.sku || undefined,
+    sku,
     brand: {
       '@type': 'Brand',
       name: 'Mokshya Foods',
@@ -199,12 +211,21 @@ export function buildProductJsonLd(product: any, url: string) {
     category: typeof product?.category === 'string' ? product.category : product?.category?.name || 'Food & Beverage',
     offers: {
       '@type': 'Offer',
-      priceCurrency: 'NPR',
-      price,
+      priceCurrency,
+      price: isFinite(price) ? price : undefined,
       availability: Number(product?.quantity ?? 0) > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
       url,
       priceValidUntil: product?.saleEnd ? new Date(product.saleEnd).toISOString() : undefined,
     },
+    ...(product?.rating || product?.reviewCount
+      ? {
+          aggregateRating: {
+            '@type': 'AggregateRating',
+            ratingValue: Number(product?.rating || 0),
+            reviewCount: Number(product?.reviewCount || 0),
+          },
+        }
+      : {}),
     ...(originalPrice > 0 && originalPrice > price
       ? {
           additionalProperty: [{

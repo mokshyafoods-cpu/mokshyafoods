@@ -30,12 +30,16 @@ export default function Footer() {
               </div>
               <div className="min-w-0">
                 <p className="text-lg font-bold text-slate-950 sm:text-xl">Mokshya Foods</p>
-                <p className="text-sm font-medium text-[#9f7b2f]">Foods and Spices</p>
+                <p className="text-sm font-medium text-[#9f7b2f]">Premium Nepali dried fruits</p>
               </div>
             </Link>
             <p className="mt-5 max-w-full text-sm leading-6 text-slate-700 sm:mt-6 sm:leading-7">
-              Mokshya Foods is one of Nepal’s leading dried fruits manufacturers, certified by DFTQC and approved by the Government of Nepal for quality and safety.
+              Mokshya Foods is a Nepali food brand specializing in naturally dried fruits and wholesome snacks, crafted with care for everyday enjoyment.
             </p>
+            <div className="mt-4 space-y-2 text-sm text-slate-700">
+              <p>Call / WhatsApp: +977 9745298975</p>
+              <a href="mailto:hello@mokshyafoods.com.np" className="transition hover:text-[#b77f22]">hello@mokshyafoods.com.np</a>
+            </div>
           </div>
 
           <div className="min-w-0">

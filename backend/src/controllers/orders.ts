@@ -254,7 +254,33 @@ export const createOrder = async (req: AuthenticatedRequest, res: Response): Pro
 
     const ordersColl = mongoose.connection.collection('orders');
 
+    const productsColl = mongoose.connection.collection('products');
+
     const normalizedItems = await Promise.all(items.map((item: any) => normalizeOrderItem(item)));
+
+    // Ensure requested quantities are available before creating the order
+    const productIds = normalizedItems
+      .map((item) => item.productId)
+      .filter(Boolean)
+      .filter((id, index, arr) => arr.indexOf(id) === index)
+      .map((id) => (mongoose.Types.ObjectId.isValid(String(id)) ? new mongoose.Types.ObjectId(String(id)) : null))
+      .filter(Boolean) as mongoose.Types.ObjectId[];
+
+    if (productIds.length) {
+      const products = await productsColl.find({ _id: { $in: productIds } }).toArray();
+      const productMap = new Map(products.map((p: any) => [p._id.toString(), p]));
+
+      for (const item of normalizedItems) {
+        if (!item.productId) continue;
+        const product = productMap.get(String(item.productId));
+        if (!product) {
+          return res.status(400).json({ success: false, message: `Product not found: ${item.name || item.productId}` });
+        }
+        if (Number(item.quantity || 0) > Number(product.quantity || 0)) {
+          return res.status(400).json({ success: false, message: `Insufficient stock for ${item.name || product.name}: requested ${item.quantity}, available ${product.quantity}` });
+        }
+      }
+    }
 
     const total = normalizedItems.reduce((sum, item) => sum + (Number(item.subtotal) || 0), 0);
     const orderNumber = buildOrderNumber();
@@ -289,6 +315,21 @@ export const createOrder = async (req: AuthenticatedRequest, res: Response): Pro
       await sendOrderNotifications(persistedOrder);
     } catch (emailError: any) {
       console.error('Order notification email failed:', emailError?.message || emailError);
+    }
+
+    // Decrement stock for ordered items (safe since availability was checked above)
+    try {
+      await Promise.all(
+        normalizedItems.map(async (item) => {
+          if (!item.productId || item.quantity <= 0) return;
+          const filter = mongoose.Types.ObjectId.isValid(item.productId)
+            ? { _id: new mongoose.Types.ObjectId(item.productId) }
+            : { _id: item.productId };
+          await productsColl.updateOne(filter as any, { $inc: { quantity: -item.quantity } });
+        })
+      );
+    } catch (decrErr: any) {
+      console.error('Failed to decrement product stock after order creation:', decrErr?.message || decrErr);
     }
 
     return res.status(201).json({

@@ -34,7 +34,7 @@ const getConfiguredEmailService = (): string => {
   return '';
 };
 const getSocialLinks = (): { label: string; url: string }[] => [
-  { label: 'Instagram', url: 'https://instagram.com/mokshyafoods' },
+  { label: 'Instagram', url: 'https://www.instagram.com/mokshyafoods?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==' },
   { label: 'Facebook', url: 'https://facebook.com/mokshyafoods' },
 ];
 
