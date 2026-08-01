@@ -368,7 +368,7 @@ export default function HomePage() {
               {[
                 { video: '/video/video1.mp4', title: 'Production Process', desc: 'Watch our careful drying process' },
                 { video: '/video/video2.mp4', title: 'Quality Check', desc: 'How we ensure premium quality' },
-                { video: '/video/video1.mp4', title: 'Behind the Scenes', desc: 'Life at Mokshya Foods' },
+                { video: '/video/video3.mp4', title: 'Behind the Scenes', desc: 'Life at Mokshya Foods' },
               ].map((item, index) => (
                 <div key={index} className="group overflow-hidden rounded-[1.75rem] bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
                   <div className="relative h-80 overflow-hidden bg-muted">
