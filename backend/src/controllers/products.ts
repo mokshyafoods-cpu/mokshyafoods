@@ -113,7 +113,18 @@ export const getAllProducts = async (req: Request, res: Response): Promise<Respo
       rating: { rating: -1, reviewCount: -1, createdAt: -1 },
       latest: { createdAt: -1 },
     };
-    const products = await Product.find(query).sort(sortMap[sortOption] || sortMap.latest).lean().limit(100).exec();
+
+    const page = typeof req.query.page === 'string' ? Math.max(1, Number(req.query.page) || 1) : 1;
+    const limit = typeof req.query.limit === 'string' ? Math.min(100, Math.max(1, Number(req.query.limit) || 100)) : 100;
+    const skip = (page - 1) * limit;
+
+    const products = await Product.find(query)
+      .sort(sortMap[sortOption] || sortMap.latest)
+      .skip(skip)
+      .limit(limit)
+      .lean()
+      .exec();
+
     res.set('Cache-Control', 'public, max-age=60, s-maxage=60, stale-while-revalidate=300');
     return res.json({ success: true, message: 'Products loaded', data: products || [] });
   } catch (error: any) {

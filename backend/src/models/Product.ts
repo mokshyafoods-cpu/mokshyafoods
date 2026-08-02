@@ -62,6 +62,28 @@ const productSchema = new Schema<IProduct>({
   seoKeywords: { type: [String], default: [] },
 }, { timestamps: true });
 
+productSchema.index({ isActive: 1, createdAt: -1 }, { background: true });
+productSchema.index({ featured: 1, createdAt: -1 }, { background: true });
+productSchema.index({ price: 1 }, { background: true });
+productSchema.index({ rating: -1, reviewCount: -1, createdAt: -1 }, { background: true });
+productSchema.index({ category: 1 }, { background: true });
+productSchema.index({ categorySlug: 1 }, { background: true });
+productSchema.index({ tags: 1 }, { background: true });
+productSchema.index({ seoKeywords: 1 }, { background: true });
+productSchema.index(
+  {
+    name: 'text',
+    sku: 'text',
+    description: 'text',
+    packaging: 'text',
+    tags: 'text',
+    seoKeywords: 'text',
+    categoryName: 'text',
+    categorySlug: 'text',
+  },
+  { background: true, name: 'ProductTextSearch' },
+);
+
 const Product: Model<IProduct> = mongoose.models.Product as Model<IProduct> || mongoose.model<IProduct>('Product', productSchema);
 
 export default Product;
