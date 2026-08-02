@@ -16,7 +16,7 @@ export interface ShippingAddress {
 export interface CreateOrderPayload {
   items: OrderItem[];
   shippingAddress: ShippingAddress;
-  paymentMethod: 'cash' | 'cod' | 'esewa' | 'khalti' | 'fonepay';
+  paymentMethod: 'cod' | 'cash';
   couponCode?: string;
   notes?: string;
 }
@@ -52,27 +52,7 @@ export const orderService = {
   // Get payment methods
   getPaymentMethods: async () => {
     return [
-      { id: 'cash', name: 'Cash on Delivery', description: 'Pay when you receive' },
-      { id: 'esewa', name: 'eSewa', description: 'Fast and secure payment' },
-      { id: 'khalti', name: 'Khalti', description: 'Mobile wallet payment' },
-      { id: 'fonepay', name: 'Fonepay', description: 'Mobile payment' },
+      { id: 'cod', name: 'Cash on Delivery', description: 'Pay in cash when your order is delivered.' },
     ];
-  },
-
-  // Initialize payment
-  initializePayment: async (orderId: string, method: string) => {
-    const { data } = await api.post(`/payments/initiate`, {
-      orderId,
-      method,
-    });
-    return data;
-  },
-
-  // Verify payment
-  verifyPayment: async (transactionId: string) => {
-    const { data } = await api.post(`/payments/verify`, {
-      transactionId,
-    });
-    return data;
   },
 };

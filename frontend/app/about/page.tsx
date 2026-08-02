@@ -13,15 +13,14 @@ export default function AboutPage() {
           </div>
           <div className="space-y-4 text-slate-700">
             <p>
-              Mokshya Foods was created to share naturally prepared food products from Nepal with families looking for dependable everyday essentials.
-              Our focus is on products that feel practical, trustworthy, and easy to enjoy at home or on the go.
+              Mokshya Foods is a Nepal-based food business focused on naturally dried food products and food powders for everyday use, gifting, and household routines.
+              We aim to present products clearly, support customers with practical information, and offer dependable service from order placement to delivery.
             </p>
             <p>
-              We work with carefully selected ingredients and present products in a way that makes quality, origin, and usage clear for customers.
-              Our range includes naturally dried fruits and food powders prepared for daily cooking, snacking, and gifting.
+              The business is led by Krishna Banjade, Ukesh Gyawali, and Bishal Banjade, who help guide operations, finance, and business growth with a focus on product quality and customer experience.
             </p>
             <p>
-              Whether you are shopping for a pantry staple, a thoughtful gift, or a reliable everyday ingredient, Mokshya Foods is here to support simple and mindful purchasing decisions.
+              Our product range includes naturally dried foods and food powders sourced and prepared with care in Nepal. We share clear product details so customers can make informed purchasing decisions.
             </p>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">

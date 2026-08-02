@@ -3,8 +3,9 @@
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, CheckCircle2, CreditCard } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, CreditCard, XCircle } from 'lucide-react';
 import { orderAPI } from '@/services/api';
+import { toast } from 'sonner';
 
 const statusSteps = [
   { key: 'pending', label: 'Placed', description: 'Order received' },
@@ -18,6 +19,7 @@ export default function OrderDetailPage() {
   const orderId = Array.isArray(params.id) ? params.id[0] : params.id;
   const [order, setOrder] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isCancelling, setIsCancelling] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -78,9 +80,40 @@ export default function OrderDetailPage() {
             )}
           </div>
           {order && (
-            <span className="rounded-full bg-sky-100 px-4 py-2 text-sm font-semibold text-sky-700">
-              {orderStatusLabel}
-            </span>
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="rounded-full bg-sky-100 px-4 py-2 text-sm font-semibold text-sky-700">
+                {orderStatusLabel}
+              </span>
+              {['pending', 'processing'].includes(String(order.orderStatus || order.status || '').toLowerCase()) && (
+                <button
+                  type="button"
+                  disabled={isCancelling}
+                  onClick={async () => {
+                    const reason = window.prompt('Please provide a cancellation reason.');
+                    if (!reason?.trim()) {
+                      toast.error('Cancellation reason is required');
+                      return;
+                    }
+                    setIsCancelling(true);
+                    try {
+                      const response = await orderAPI.cancel(orderId, reason.trim());
+                      const payload = response?.data?.data ?? response?.data ?? response;
+                      setOrder(payload ?? order);
+                      toast.success('Order cancelled successfully');
+                    } catch (cancelError: any) {
+                      const message = cancelError?.response?.data?.message || cancelError?.message || 'Unable to cancel order';
+                      toast.error(message);
+                    } finally {
+                      setIsCancelling(false);
+                    }
+                  }}
+                  className="inline-flex items-center gap-2 rounded-full bg-rose-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-600 disabled:opacity-50"
+                >
+                  <XCircle className="h-4 w-4" />
+                  {isCancelling ? 'Cancelling...' : 'Cancel order'}
+                </button>
+              )}
+            </div>
           )}
         </div>
 
@@ -113,6 +146,8 @@ export default function OrderDetailPage() {
               <p className="mt-1 rounded-full bg-slate-100 px-3 py-1 text-sm text-slate-700">
                 {String(order.paymentStatus || 'Pending').charAt(0).toUpperCase() + String(order.paymentStatus || 'Pending').slice(1)}
               </p>
+              <p className="mt-3 text-sm text-slate-500">Cash on delivery</p>
+              <p className="mt-1 text-sm font-medium text-slate-900">Please pay in cash when your order is delivered.</p>
             </div>
             <div className="rounded-[1.75rem] border border-slate-200 bg-slate-50 p-5">
               <p className="text-sm text-slate-500">Order Total</p>

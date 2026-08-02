@@ -43,6 +43,23 @@ export default function Navigation() {
     loadCategories();
   }, []);
 
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setMenuOpen(false);
+        setSearchOpen(false);
+      }
+    };
+
+    if (menuOpen || searchOpen) {
+      window.addEventListener('keydown', handleEscape);
+    }
+
+    return () => {
+      window.removeEventListener('keydown', handleEscape);
+    };
+  }, [menuOpen, searchOpen]);
+
   const cartItemsCount = isMounted ? getTotalItems() : 0;
   const cartTotal = 0; // hide money display by design
   const wishlistCount = isMounted ? (isAuthenticated ? ((user as any)?.wishlist ? (user as any).wishlist.length : 0) : readGuestWishlist().length) : 0;
@@ -81,7 +98,7 @@ export default function Navigation() {
     <div className="sticky top-0 z-50 w-full overflow-x-hidden pb-20 pt-0 supports-[padding-top:env(safe-area-inset-top)]:pt-[env(safe-area-inset-top,0px)] lg:pb-0">
       <div className="bg-primary px-3 py-1 text-center text-[11px] font-semibold leading-3 text-primary-foreground sm:px-4 sm:py-1.5 sm:text-sm sm:leading-4">
         <span className="block truncate sm:whitespace-normal">
-          Naturally dried fruits and wholesome food powders from Nepal, crafted with care.
+          Naturally dried foods and food powders from Nepal, prepared with care.
         </span>
       </div>
       <nav className="border-b border-border/80 bg-white/95 backdrop-blur will-change-transform">
@@ -207,14 +224,20 @@ export default function Navigation() {
                 type="button"
                 onClick={() => setSearchOpen((current) => !current)}
                 className="inline-flex h-10 w-10 items-center justify-center rounded-full transition hover:bg-slate-100"
-                aria-label="Open search"
+                aria-label={searchOpen ? 'Close search' : 'Open search'}
+                aria-expanded={searchOpen}
+                aria-controls="mobile-search"
               >
                 <Search className="h-5 w-5 text-primary" />
               </button>
               <button
+                type="button"
                 onClick={() => setMenuOpen(!menuOpen)}
                 className="inline-flex h-10 w-10 items-center justify-center rounded-full transition hover:bg-slate-100"
-                aria-label="Toggle menu"
+                aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+                aria-expanded={menuOpen}
+                aria-controls="mobile-menu"
+                aria-haspopup="dialog"
               >
                 {menuOpen ? <X className="h-5 w-5 text-primary" /> : <Menu className="h-5 w-5 text-primary" />}
               </button>
@@ -222,7 +245,7 @@ export default function Navigation() {
           </div>
 
           {menuOpen && (
-            <div className="lg:hidden max-h-[calc(100dvh-5.5rem)] overflow-y-auto overflow-x-hidden border-t border-border bg-white/95 py-4 shadow-[0_10px_35px_rgba(15,23,42,0.08)] transition-opacity duration-150 ease-out">
+            <div id="mobile-menu" role="dialog" aria-modal="true" aria-label="Mobile menu" className="lg:hidden max-h-[calc(100dvh-5.5rem)] overflow-y-auto overflow-x-hidden border-t border-border bg-white/95 py-4 shadow-[0_10px_35px_rgba(15,23,42,0.08)] transition-opacity duration-150 ease-out">
               <div className="flex flex-col gap-3 px-2">
                 <form onSubmit={handleSearchSubmit} className="flex items-center gap-2 rounded-3xl border border-slate-200 bg-slate-50 px-3 py-2">
                   <Search className="w-4 h-4 text-slate-500" />
@@ -296,7 +319,7 @@ export default function Navigation() {
             </div>
           )}
           {searchOpen && (
-            <div className="lg:hidden border-t border-border bg-white/95 py-4">
+            <div id="mobile-search" role="search" className="lg:hidden border-t border-border bg-white/95 py-4">
               <div className="flex flex-col gap-3 px-2">
                 <form onSubmit={handleSearchSubmit} className="flex items-center gap-2 rounded-3xl border border-slate-200 bg-slate-50 px-3 py-2">
                   <Search className="w-4 h-4 text-slate-500" />

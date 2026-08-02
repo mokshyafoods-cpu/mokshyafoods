@@ -7,7 +7,7 @@ const settings = [
   { category: 'Company Info', status: 'Configured', details: 'Business name, contact, brand assets' },
   { category: 'Homepage', status: 'Draft', details: 'Hero banner, featured products, testimonials' },
   { category: 'Shipping', status: 'Active', details: 'Delivery zones, rates, pickup options' },
-  { category: 'Payments', status: 'Active', details: 'COD, Stripe, UPI and offline payments' },
+  { category: 'Payments', status: 'Active', details: 'Cash on delivery only' },
   { category: 'Notifications', status: 'Pending', details: 'Order emails, SMS alerts, admin notifications' },
   { category: 'Legal', status: 'Configured', details: 'Terms, privacy policy, return policy' },
 ];

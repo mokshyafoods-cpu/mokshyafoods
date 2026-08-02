@@ -21,8 +21,8 @@ export const getProfile = async (req: AuthenticatedRequest, res: Response): Prom
 
 export const updateProfile = async (req: AuthenticatedRequest, res: Response): Promise<Response> => {
   try {
-    const id = req.userId || (req.body as any)?._id;
-    if (!id) return res.status(400).json({ success: false, message: 'User id missing' });
+    const id = req.userId;
+    if (!id) return res.status(401).json({ success: false, message: 'Authentication required' });
 
     const update: any = {};
     const body = req.body || {};

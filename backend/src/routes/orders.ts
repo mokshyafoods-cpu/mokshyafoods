@@ -1,6 +1,6 @@
-import express, { Request, Response, NextFunction } from 'express';
+import express, { Request, Response } from 'express';
 import { createOrder, getAllOrders, getUserOrders, getOrderById, updateOrderStatus } from '../controllers/orders';
-import { authMiddleware, adminMiddleware } from '../middleware/auth';
+import { authMiddleware } from '../middleware/auth';
 import { createOrderValidator, updateOrderValidator, validateRequest } from '../middleware/validation';
 
 interface AuthenticatedRequest extends Request {
@@ -18,6 +18,6 @@ router.get('/', authMiddleware, (req: AuthenticatedRequest, res: Response) => {
   return getUserOrders(req, res);
 });
 router.get('/:id', authMiddleware, getOrderById);
-router.put('/:id', adminMiddleware, updateOrderValidator, validateRequest, updateOrderStatus);
+router.put('/:id', authMiddleware, updateOrderValidator, validateRequest, updateOrderStatus);
 
 export default router;

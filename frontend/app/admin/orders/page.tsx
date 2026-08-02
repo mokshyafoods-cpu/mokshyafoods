@@ -272,7 +272,10 @@ export default function AdminOrdersPage() {
                         ))}
                       </select>
                     </div>
-                    <div className="text-slate-900">{order.paymentMethod || 'N/A'}</div>
+                    <div className="text-slate-900">
+                      <div>{order.paymentMethod === 'cod' ? 'Cash on Delivery' : order.paymentMethod || 'N/A'}</div>
+                      <div className="mt-1 text-xs text-slate-500">{order.paymentStatus || 'Pending'}</div>
+                    </div>
                     <div className="flex justify-start">
                       <button
                         type="button"

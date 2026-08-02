@@ -10,3 +10,14 @@ export const authLimiter = rateLimit({
     message: 'Too many requests from this IP, please try again later.',
   },
 });
+
+export const contactLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: 'Too many contact form submissions from this IP, please try again later.',
+  },
+});

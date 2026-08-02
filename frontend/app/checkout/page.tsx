@@ -48,36 +48,18 @@ export default function CheckoutPage() {
     return (
       <div className="min-h-screen flex flex-col bg-background">
         <Navigation />
-        <main className="flex-grow flex items-center justify-center py-12">
-          <div className="text-center space-y-4">
-            <h1 className="text-3xl font-bold text-primary">Please Log In</h1>
-            <p className="text-muted-foreground">You must be logged in to checkout</p>
-            <Link href="/auth/login?redirect=/checkout" className="inline-block px-8 py-3 bg-primary text-white rounded-lg hover:bg-opacity-90 transition font-semibold">
-              Go to Login
-            </Link>
-          </div>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
-
-  if (user && !user.isVerified) {
-    return (
-      <div className="min-h-screen flex flex-col bg-background">
-        <Navigation />
         <main className="flex-grow flex items-center justify-center py-12 px-4">
-          <div className="max-w-xl rounded-[2rem] border border-border bg-white p-10 text-center shadow-lg">
-            <h1 className="text-3xl font-bold text-primary mb-4">Verify your email to checkout</h1>
-            <p className="text-slate-600 mb-8">
-              We sent a verification code to your email. Please verify your account before placing an order.
+          <div className="w-full max-w-xl rounded-[2rem] border border-border bg-white p-8 text-center shadow-lg">
+            <h1 className="text-3xl font-bold text-primary">Continue to checkout</h1>
+            <p className="mt-3 text-slate-600">
+              Please sign in or create an account to place your order. Your cart will stay intact when you return.
             </p>
-            <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
-              <Link href="/auth/verify?redirect=/checkout" className="rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white transition hover:bg-primary/90">
-                Verify Email
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
+              <Link href="/auth/login?redirect=/checkout" className="rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white transition hover:bg-primary/90">
+                Login
               </Link>
-              <Link href="/account/dashboard" className="rounded-full border border-primary px-6 py-3 text-sm font-semibold text-primary transition hover:bg-primary/5">
-                Account Dashboard
+              <Link href="/auth/register?redirect=/checkout" className="rounded-full border border-primary px-6 py-3 text-sm font-semibold text-primary transition hover:bg-primary/5">
+                Create Account
               </Link>
             </div>
           </div>
@@ -106,6 +88,12 @@ export default function CheckoutPage() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+
+    if (!isAuthenticated) {
+      router.push('/auth/login?redirect=/checkout');
+      return;
+    }
+
     setLoading(true);
     setSubmitError(null);
 
@@ -132,9 +120,15 @@ export default function CheckoutPage() {
         paymentMethod: formData.paymentMethod,
       };
 
-      await orderAPI.create(orderData);
+      const response = await orderAPI.create(orderData);
+      const orderPayload = response?.data?.data ?? response?.data ?? response;
+      const orderId = orderPayload?._id || orderPayload?.data?._id || orderPayload?.id;
       clearCart();
       toast.success('Order placed successfully!');
+      if (orderId) {
+        router.push(`/checkout/success/${orderId}`);
+        return;
+      }
       router.push('/orders');
     } catch (error: any) {
       const message = error.response?.data?.message || error.message || 'Failed to place order';
@@ -152,6 +146,12 @@ export default function CheckoutPage() {
       <main className="flex-grow py-12 px-4">
         <div className="max-w-6xl mx-auto">
           <h1 className="text-4xl font-bold text-primary mb-8">Checkout</h1>
+
+          {user && !user.isVerified && (
+            <div className="mb-6 rounded-[1.5rem] border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+              Your email is not verified yet, but you can still continue checkout now. You can verify it later from your account.
+            </div>
+          )}
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Checkout Form */}
@@ -274,14 +274,14 @@ export default function CheckoutPage() {
                       />
                       <div>
                         <span className="font-semibold text-slate-950">Cash on Delivery</span>
-                        <p className="text-sm text-slate-600">Pay when your order arrives.</p>
+                        <p className="text-sm text-slate-600">Pay in cash when your order is delivered.</p>
                       </div>
                     </label>
                   </div>
                 </div>
 
                 {submitError && (
-                  <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                  <div role="alert" aria-live="assertive" className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                     {submitError}
                   </div>
                 )}

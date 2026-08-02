@@ -13,6 +13,7 @@ function LoginPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams?.get('redirect') || '/account/dashboard';
+  const shouldRequireVerification = (target: string) => target === '/account/dashboard' || target.startsWith('/account');
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -25,7 +26,7 @@ function LoginPageContent() {
 
     if (user?.role === 'admin') {
       router.replace('/admin');
-    } else if (!user?.isVerified) {
+    } else if (!user?.isVerified && shouldRequireVerification(redirectTo)) {
       router.replace('/auth/verify?redirect=' + encodeURIComponent(redirectTo));
     } else {
       router.replace(redirectTo || '/account/dashboard');
@@ -64,7 +65,7 @@ function LoginPageContent() {
       const loggedInUser = await login(formData.email, formData.password);
       if (loggedInUser?.role === 'admin') {
         router.replace('/admin');
-      } else if (!loggedInUser?.isVerified) {
+      } else if (!loggedInUser?.isVerified && shouldRequireVerification(redirectTo)) {
         router.replace('/auth/verify?redirect=' + encodeURIComponent(redirectTo));
       } else {
         router.replace(redirectTo || '/account/dashboard');

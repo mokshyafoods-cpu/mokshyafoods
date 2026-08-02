@@ -125,14 +125,6 @@ export default function ProductDetailPage() {
   const visibleReviews = useMemo(() => sortedReviews.slice(0, visibleReviewCount), [sortedReviews, visibleReviewCount]);
 
   const loadReviews = async (productIdToUse: string, page = 1, append = false) => {
-    if (!isAuthenticated) {
-      setReviews([]);
-      setReviewHasMore(false);
-      setReviewSummary(null);
-      setReviewTotal(0);
-      return;
-    }
-
     try {
       const reviewsResult = await reviewAPI.getByProduct(productIdToUse, { page, limit: 6 });
       const payload = reviewsResult?.data ?? reviewsResult;
@@ -257,6 +249,7 @@ export default function ProductDetailPage() {
 
     if (!isAuthenticated) {
       toast.error('Please login first to submit a review.');
+      router.push(`/auth/login?redirect=/products/${id}`);
       return;
     }
 
@@ -397,16 +390,21 @@ export default function ProductDetailPage() {
 
               {galleryImages.length > 0 && (
                 <div className="flex flex-wrap gap-3">
-                  {galleryImages.map((imageUrl: string, index: number) => (
-                    <button
-                      key={`${imageUrl}-${index}`}
-                      type="button"
-                      onClick={() => setSelectedImage(imageUrl)}
-                      className={`h-20 w-20 overflow-hidden rounded-2xl border-2 bg-white p-1 shadow-sm transition ${selectedImage === imageUrl ? 'border-secondary' : 'border-transparent'}`}
-                    >
-                      <img src={imageUrl} alt={`${product.name} ${index + 1}`} className="h-full w-full object-cover" />
-                    </button>
-                  ))}
+                  {galleryImages.map((imageUrl: string, index: number) => {
+                    const isActive = selectedImage === imageUrl;
+                    return (
+                      <button
+                        key={`${imageUrl}-${index}`}
+                        type="button"
+                        onClick={() => setSelectedImage(imageUrl)}
+                        aria-label={`${isActive ? 'Selected' : 'View'} image ${index + 1} for ${product.name}`}
+                        aria-pressed={isActive}
+                        className={`h-20 w-20 overflow-hidden rounded-2xl border-2 bg-white p-1 shadow-sm transition ${isActive ? 'border-secondary' : 'border-transparent hover:border-slate-300'}`}
+                      >
+                        <img src={imageUrl} alt={`${product.name} ${index + 1}`} className="h-full w-full object-cover" />
+                      </button>
+                    );
+                  })}
                 </div>
               )}
 
@@ -472,190 +470,181 @@ export default function ProductDetailPage() {
                   </div>
                 </div>
 
-                {!isAuthenticated ? (
-                  <div className="mt-8 rounded-[1.5rem] border border-slate-200 bg-slate-50 p-6 text-center">
-                    <p className="text-lg font-semibold text-slate-900">Please sign in to view customer reviews</p>
-                    <p className="mt-2 text-sm text-slate-600">Reviews are visible to signed-in customers only.</p>
-                    <div className="mt-3">
-                      <Link href={`/auth/login?redirect=/products/${id}`} className="inline-flex font-semibold text-primary hover:text-secondary">Sign in to view reviews</Link>
+                <div className="mt-8 grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
+                  <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-semibold text-slate-900">Overall rating</p>
+                        <p className="mt-1 text-sm text-slate-600">Based on {reviewStats.total} customer reviews</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-3xl font-semibold text-slate-950">{reviewStats.average.toFixed(1)}</p>
+                        <p className="text-sm text-slate-500">out of 5</p>
+                      </div>
+                    </div>
+
+                    <div className="mt-5 space-y-3">
+                      {reviewStats.distribution.map((item) => (
+                        <div key={item.star} className="flex items-center gap-3">
+                          <span className="w-10 text-sm font-semibold text-slate-600">{item.star}★</span>
+                          <div className="h-2.5 flex-1 rounded-full bg-slate-200">
+                            <div className="h-2.5 rounded-full bg-amber-500" style={{ width: `${item.percent}%` }} />
+                          </div>
+                          <span className="w-10 text-right text-sm text-slate-500">{item.count}</span>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                ) : (
-                  <div className="mt-8 grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
-                    <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
-                      <div className="flex items-center justify-between gap-3">
-                        <div>
-                          <p className="text-sm font-semibold text-slate-900">Overall rating</p>
-                          <p className="mt-1 text-sm text-slate-600">Based on {reviewStats.total} customer reviews</p>
+
+                  <div className="flex flex-col gap-4">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="text-sm text-slate-600">Sort reviews</div>
+                      <select
+                        value={reviewSorting}
+                        onChange={(event) => {
+                          setReviewSorting(event.target.value as 'recent' | 'highest' | 'lowest');
+                          setVisibleReviewCount(6);
+                        }}
+                        className="rounded-full border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700"
+                      >
+                        <option value="recent">Most Recent</option>
+                        <option value="highest">Highest Rating</option>
+                        <option value="lowest">Lowest Rating</option>
+                      </select>
+                    </div>
+
+                    {!isAuthenticated ? (
+                      <div className="rounded-[1.25rem] border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+                        <p className="font-semibold text-slate-900">Sign in to write a review</p>
+                        <p className="mt-1">You can still read existing reviews without an account.</p>
+                        <Link href={`/auth/login?redirect=/products/${id}`} className="mt-3 inline-flex font-semibold text-primary hover:text-secondary">
+                          Sign in now
+                        </Link>
+                      </div>
+                    ) : myReview ? (
+                      <div className="rounded-[1.5rem] border border-emerald-200 bg-emerald-50/80 p-4">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                          <div>
+                            <p className="font-semibold text-emerald-900">Your review</p>
+                            <p className="text-sm text-emerald-700">You already shared feedback for this product.</p>
+                          </div>
                         </div>
-                        <div className="text-right">
-                          <p className="text-3xl font-semibold text-slate-950">{reviewStats.average.toFixed(1)}</p>
-                          <p className="text-sm text-slate-500">out of 5</p>
+                        <div className="mt-3 rounded-[1.25rem] border border-white/80 bg-white/80 p-4">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex items-center gap-3">
+                              <img src={getReviewAuthorAvatar(myReview)} alt={getReviewAuthorName(myReview)} className="h-11 w-11 rounded-full object-cover" />
+                              <div>
+                                <p className="font-semibold text-slate-900">{getReviewAuthorName(myReview)}</p>
+                                <p className="text-sm text-slate-500">{new Date(myReview.createdAt || Date.now()).toLocaleDateString('en-IN')}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-sm font-semibold text-amber-700">
+                              <Star className="h-4 w-4 fill-current" /> {Number(myReview.rating || 0)}
+                            </div>
+                          </div>
+                          <p className="mt-3 text-sm leading-7 text-slate-700">{getReviewText(myReview)}</p>
+                          {verifiedPurchase && (
+                            <span className="mt-3 inline-flex items-center rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">
+                              Verified Purchase
+                            </span>
+                          )}
                         </div>
                       </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowReviewForm(true);
+                          setEditingReviewId(null);
+                          setReviewComment('');
+                          setReviewRating(5);
+                        }}
+                        className="inline-flex items-center justify-center rounded-full bg-primary px-4 py-3 text-sm font-semibold text-white transition hover:bg-primary/90"
+                      >
+                        Write a Review
+                      </button>
+                    )}
 
-                      <div className="mt-5 space-y-3">
-                        {reviewStats.distribution.map((item) => (
-                          <div key={item.star} className="flex items-center gap-3">
-                            <span className="w-10 text-sm font-semibold text-slate-600">{item.star}★</span>
-                            <div className="h-2.5 flex-1 rounded-full bg-slate-200">
-                              <div className="h-2.5 rounded-full bg-amber-500" style={{ width: `${item.percent}%` }} />
+                    {showReviewForm && (
+                      <form onSubmit={handleReviewSubmit} className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4">
+                        <div className="flex items-center justify-between gap-3">
+                          <p className="text-sm font-semibold text-slate-900">{editingReviewId ? 'Edit your review' : 'Share your experience'}</p>
+                          <button type="button" onClick={() => { setShowReviewForm(false); setEditingReviewId(null); setReviewComment(''); setReviewRating(5); }} className="text-sm font-semibold text-slate-500 hover:text-slate-700">
+                            Cancel
+                          </button>
+                        </div>
+                        <div className="mt-4 flex items-center gap-2">
+                          {Array.from({ length: 5 }).map((_, index) => {
+                            const starValue = index + 1;
+                            const isSelected = starValue <= reviewRating;
+                            return (
+                              <button
+                                key={starValue}
+                                type="button"
+                                onClick={() => setReviewRating(starValue)}
+                                aria-label={`Rate ${starValue} star${starValue === 1 ? '' : 's'}`}
+                                aria-pressed={isSelected}
+                                className="text-2xl text-amber-500"
+                              >
+                                <Star className={isSelected ? 'fill-current' : ''} />
+                              </button>
+                            );
+                          })}
+                        </div>
+                        <textarea
+                          value={reviewComment}
+                          onChange={(event) => setReviewComment(event.target.value)}
+                          rows={5}
+                          className="mt-4 w-full rounded-[1.25rem] border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                          placeholder="Tell others what you liked, what worked well, or what could be improved."
+                        />
+                        <div className="mt-4 flex justify-end">
+                          <button type="submit" disabled={reviewSubmitting} className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60">
+                            {reviewSubmitting ? 'Saving...' : editingReviewId ? 'Update Review' : 'Submit Review'}
+                          </button>
+                        </div>
+                      </form>
+                    )}
+
+                    {sortedReviews.length === 0 ? (
+                      <div className="rounded-[1.5rem] border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
+                        <p className="text-lg font-semibold text-slate-900">Be the first to review this product.</p>
+                        <p className="mt-2 text-sm text-slate-600">Share your experience and help other customers make a confident choice.</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {visibleReviews.map((review: any) => (
+                          <div key={review._id || review.id} className="rounded-[1.25rem] border border-slate-200 bg-white p-4 shadow-sm">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex items-center gap-3">
+                                <img src={getReviewAuthorAvatar(review)} alt={getReviewAuthorName(review)} className="h-11 w-11 rounded-full object-cover" />
+                                <div>
+                                  <p className="font-semibold text-slate-900">{getReviewAuthorName(review)}</p>
+                                  <p className="text-sm text-slate-500">{new Date(review.createdAt || Date.now()).toLocaleDateString('en-IN')}</p>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-sm font-semibold text-amber-700">
+                                <Star className="h-4 w-4 fill-current" /> {Number(review.rating || 0)}
+                              </div>
                             </div>
-                            <span className="w-10 text-right text-sm text-slate-500">{item.count}</span>
+                            <p className="mt-3 text-sm leading-7 text-slate-700">{getReviewText(review)}</p>
+                            {verifiedPurchase && (review.userId === currentUserId || review.user?._id === currentUserId || review.user?.id === currentUserId) && (
+                              <span className="mt-3 inline-flex items-center rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">
+                                Verified Purchase
+                              </span>
+                            )}
                           </div>
                         ))}
                       </div>
-                    </div>
+                    )}
 
-                    <div className="flex flex-col gap-4">
-                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                        <div className="text-sm text-slate-600">Sort reviews</div>
-                        <select
-                          value={reviewSorting}
-                          onChange={(event) => {
-                            setReviewSorting(event.target.value as 'recent' | 'highest' | 'lowest');
-                            setVisibleReviewCount(6);
-                          }}
-                          className="rounded-full border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700"
-                        >
-                          <option value="recent">Most Recent</option>
-                          <option value="highest">Highest Rating</option>
-                          <option value="lowest">Lowest Rating</option>
-                        </select>
-                      </div>
-
-                      {isAuthenticated ? (
-                        myReview ? (
-                          <div className="rounded-[1.5rem] border border-emerald-200 bg-emerald-50/80 p-4">
-                            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                              <div>
-                                <p className="font-semibold text-emerald-900">Your review</p>
-                                <p className="text-sm text-emerald-700">You already shared feedback for this product.</p>
-                              </div>
-                            </div>
-                            <div className="mt-3 rounded-[1.25rem] border border-white/80 bg-white/80 p-4">
-                              <div className="flex items-start justify-between gap-3">
-                                <div className="flex items-center gap-3">
-                                  <img src={getReviewAuthorAvatar(myReview)} alt={getReviewAuthorName(myReview)} className="h-11 w-11 rounded-full object-cover" />
-                                  <div>
-                                    <p className="font-semibold text-slate-900">{getReviewAuthorName(myReview)}</p>
-                                    <p className="text-sm text-slate-500">{new Date(myReview.createdAt || Date.now()).toLocaleDateString('en-IN')}</p>
-                                  </div>
-                                </div>
-                                <div className="flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-sm font-semibold text-amber-700">
-                                  <Star className="h-4 w-4 fill-current" /> {Number(myReview.rating || 0)}
-                                </div>
-                              </div>
-                              <p className="mt-3 text-sm leading-7 text-slate-700">{getReviewText(myReview)}</p>
-                              {verifiedPurchase && (
-                                <span className="mt-3 inline-flex items-center rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">
-                                  Verified Purchase
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setShowReviewForm(true);
-                              setEditingReviewId(null);
-                              setReviewComment('');
-                              setReviewRating(5);
-                            }}
-                            className="inline-flex items-center justify-center rounded-full bg-primary px-4 py-3 text-sm font-semibold text-white transition hover:bg-primary/90"
-                          >
-                            Write a Review
-                          </button>
-                        )
-                      ) : (
-                        <div className="rounded-[1.25rem] border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
-                          <p className="font-semibold text-slate-900">Please login first</p>
-                          <p className="mt-1">You need to sign in before you can submit a review for this product.</p>
-                          <Link href={`/auth/login?redirect=/products/${id}`} className="mt-3 inline-flex font-semibold text-primary hover:text-secondary">
-                            Sign in now
-                          </Link>
-                        </div>
-                      )}
-
-                      {showReviewForm && (
-                        <form onSubmit={handleReviewSubmit} className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4">
-                          <div className="flex items-center justify-between gap-3">
-                            <p className="text-sm font-semibold text-slate-900">{editingReviewId ? 'Edit your review' : 'Share your experience'}</p>
-                            <button type="button" onClick={() => { setShowReviewForm(false); setEditingReviewId(null); setReviewComment(''); setReviewRating(5); }} className="text-sm font-semibold text-slate-500 hover:text-slate-700">
-                              Cancel
-                            </button>
-                          </div>
-                          <div className="mt-4 flex items-center gap-2">
-                            {Array.from({ length: 5 }).map((_, index) => {
-                              const starValue = index + 1;
-                              return (
-                                <button
-                                  key={starValue}
-                                  type="button"
-                                  onClick={() => setReviewRating(starValue)}
-                                  className="text-2xl text-amber-500"
-                                >
-                                  <Star className={starValue <= reviewRating ? 'fill-current' : ''} />
-                                </button>
-                              );
-                            })}
-                          </div>
-                          <textarea
-                            value={reviewComment}
-                            onChange={(event) => setReviewComment(event.target.value)}
-                            rows={5}
-                            className="mt-4 w-full rounded-[1.25rem] border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-                            placeholder="Tell others what you liked, what worked well, or what could be improved."
-                          />
-                          <div className="mt-4 flex justify-end">
-                            <button type="submit" disabled={reviewSubmitting} className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60">
-                              {reviewSubmitting ? 'Saving...' : editingReviewId ? 'Update Review' : 'Submit Review'}
-                            </button>
-                          </div>
-                        </form>
-                      )}
-
-                      {sortedReviews.length === 0 ? (
-                        <div className="rounded-[1.5rem] border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
-                          <p className="text-lg font-semibold text-slate-900">Be the first to review this product.</p>
-                          <p className="mt-2 text-sm text-slate-600">Share your experience and help other customers make a confident choice.</p>
-                        </div>
-                      ) : (
-                        <div className="space-y-3">
-                          {visibleReviews.map((review: any) => (
-                            <div key={review._id || review.id} className="rounded-[1.25rem] border border-slate-200 bg-white p-4 shadow-sm">
-                              <div className="flex items-start justify-between gap-3">
-                                <div className="flex items-center gap-3">
-                                  <img src={getReviewAuthorAvatar(review)} alt={getReviewAuthorName(review)} className="h-11 w-11 rounded-full object-cover" />
-                                  <div>
-                                    <p className="font-semibold text-slate-900">{getReviewAuthorName(review)}</p>
-                                    <p className="text-sm text-slate-500">{new Date(review.createdAt || Date.now()).toLocaleDateString('en-IN')}</p>
-                                  </div>
-                                </div>
-                                <div className="flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-sm font-semibold text-amber-700">
-                                  <Star className="h-4 w-4 fill-current" /> {Number(review.rating || 0)}
-                                </div>
-                              </div>
-                              <p className="mt-3 text-sm leading-7 text-slate-700">{getReviewText(review)}</p>
-                              {verifiedPurchase && (review.userId === currentUserId || review.user?._id === currentUserId || review.user?.id === currentUserId) && (
-                                <span className="mt-3 inline-flex items-center rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">
-                                  Verified Purchase
-                                </span>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-
-                      {reviewHasMore && (
-                        <button type="button" onClick={handleLoadMoreReviews} disabled={reviewLoadingMore} className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60">
-                          {reviewLoadingMore ? 'Loading reviews...' : `Load More Reviews (${Math.max(0, reviewTotal - visibleReviewCount)} left)`}
-                        </button>
-                      )}
-                    </div>
+                    {reviewHasMore && (
+                      <button type="button" onClick={handleLoadMoreReviews} disabled={reviewLoadingMore} className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60">
+                        {reviewLoadingMore ? 'Loading reviews...' : `Load More Reviews (${Math.max(0, reviewTotal - visibleReviewCount)} left)`}
+                      </button>
+                    )}
                   </div>
-                )}
+                </div>
               </div>
             </div>
 

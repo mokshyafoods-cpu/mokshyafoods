@@ -87,8 +87,9 @@ export const createOrderValidator: ValidationChain[] = [
 ];
 
 export const updateOrderValidator: ValidationChain[] = [
-  body('orderStatus').optional().trim(),
-  body('paymentStatus').optional().trim(),
+  body('status').optional().trim().isIn(['pending', 'processing', 'shipped', 'delivered', 'cancelled']).withMessage('Invalid order status'),
+  body('orderStatus').optional().trim().isIn(['pending', 'processing', 'shipped', 'delivered', 'cancelled']).withMessage('Invalid order status'),
+  body('paymentStatus').optional().trim().isIn(['pending', 'paid', 'cancelled']).withMessage('Invalid payment status'),
   body('trackingInfo').optional().isObject().withMessage('Tracking info must be an object'),
   body('staffNote').optional().trim(),
   body('cancelReason').optional().trim(),
@@ -97,6 +98,17 @@ export const updateOrderValidator: ValidationChain[] = [
 
 export const paymentInitiateValidator: ValidationChain[] = [
   body('orderId').isMongoId().withMessage('Valid order ID is required'),
+];
+
+export const genericPaymentInitiateValidator: ValidationChain[] = [
+  body('orderId').isMongoId().withMessage('Valid order ID is required'),
+  body('method').trim().notEmpty().isIn(['cod', 'cash', 'esewa', 'khalti', 'fonepay']).withMessage('Payment method must be cod, cash, esewa, khalti, or fonepay'),
+  body('amount').optional().isFloat({ min: 0 }).withMessage('Amount must be a valid number'),
+];
+
+export const genericPaymentVerifyValidator: ValidationChain[] = [
+  body('transactionId').trim().notEmpty().withMessage('Transaction ID is required'),
+  body('orderId').optional().isMongoId().withMessage('Valid order ID is required'),
 ];
 
 export const eSewaVerifyValidator: ValidationChain[] = [

@@ -1,9 +1,25 @@
 import type { Metadata } from 'next';
 
 const SITE_NAME = 'Mokshya Foods';
-const DEFAULT_DESCRIPTION = 'Mokshya Foods offers naturally dried fruits and pure food powders from Nepal for everyday cooking, snacking, and gifting.';
-const DEFAULT_IMAGE = '/logo.jpeg';
-const DEFAULT_SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://www.mokshyafoods.com.np';
+const DEFAULT_DESCRIPTION = 'Mokshya Foods offers naturally dried food products and food powders from Nepal for everyday use, gifting, and household routines.';
+
+function normalizeSiteUrl(value: string) {
+  return String(value || 'https://www.mokshyafoods.com.np').trim().replace(/\/+$/, '');
+}
+
+const DEFAULT_SITE_URL = normalizeSiteUrl(process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://www.mokshyafoods.com.np');
+const DEFAULT_IMAGE_PATH = '/logo.jpeg';
+const DEFAULT_IMAGE = `${DEFAULT_SITE_URL}${DEFAULT_IMAGE_PATH}`;
+
+export function getSiteUrl() {
+  return DEFAULT_SITE_URL;
+}
+
+export function getSocialImageUrl(path: string = DEFAULT_IMAGE_PATH) {
+  if (!path) return DEFAULT_IMAGE;
+  if (path.startsWith('http://') || path.startsWith('https://')) return path;
+  return `${DEFAULT_SITE_URL}${path.startsWith('/') ? path : `/${path}`}`;
+}
 
 export function buildMetadata(overrides: Metadata = {}): Metadata {
   const title = overrides.title ?? {
@@ -44,7 +60,7 @@ export function buildMetadata(overrides: Metadata = {}): Metadata {
         url: DEFAULT_IMAGE,
         width: 1200,
         height: 630,
-        alt: 'Mokshya Foods premium dried fruits',
+        alt: 'Mokshya Foods products',
       }],
     },
     twitter: {
@@ -77,6 +93,13 @@ export function buildPageMetadata(title: string, description: string, path: stri
   return buildMetadata({
     title,
     description,
+    keywords: [
+      SITE_NAME,
+      'Mokshya Foods',
+      'Nepal food products',
+      'dried fruits Nepal',
+      `${title.toLowerCase()}`,
+    ],
     alternates: {
       canonical: url,
       languages: {
@@ -110,11 +133,18 @@ export function buildPageMetadata(title: string, description: string, path: stri
 export function buildProductMetadata(product: any, url: string): Metadata {
   const title = product?.name ? `${product.name} | Mokshya Foods` : 'Mokshya Foods Product';
   const description = (product?.description || DEFAULT_DESCRIPTION).slice(0, 160);
-  const image = product?.thumbnail || product?.image || DEFAULT_IMAGE;
+  const image = getSocialImageUrl(product?.thumbnail || product?.image || DEFAULT_IMAGE_PATH);
 
   return buildMetadata({
     title,
     description,
+    keywords: [
+      SITE_NAME,
+      product?.name || 'Mokshya Foods product',
+      'dried fruits Nepal',
+      'food powders Nepal',
+      product?.category?.name || 'Nepal food products',
+    ].filter(Boolean) as string[],
     alternates: {
       canonical: url,
       languages: {
@@ -152,17 +182,17 @@ export function buildOrganizationJsonLd() {
     '@id': `${DEFAULT_SITE_URL}/#store`,
     name: SITE_NAME,
     url: DEFAULT_SITE_URL,
-    logo: `${DEFAULT_SITE_URL}/logo.jpeg`,
-    image: `${DEFAULT_SITE_URL}/1.jpeg`,
+    logo: getSocialImageUrl(),
+    image: getSocialImageUrl('/1.jpeg'),
     description: DEFAULT_DESCRIPTION,
     address: {
       '@type': 'PostalAddress',
-      addressLocality: 'Butwal',
-      addressRegion: 'Lumbini',
+      addressLocality: 'Tilottama-01, Rupandehi, Banbitika, Butwal',
+      addressRegion: 'Lumbini Province',
       addressCountry: 'NP',
     },
-    telephone: '+977-9745298975',
-    email: 'hello@mokshyafoods.com.np',
+    telephone: '+9779761583987',
+    email: 'mokshyafoods@gmail.com',
     sameAs: [
       'https://www.facebook.com/mokshyafoods',
       'https://www.instagram.com/mokshyafoods',
@@ -171,8 +201,30 @@ export function buildOrganizationJsonLd() {
     areaServed: 'Nepal',
     availableLanguage: ['English', 'Nepali'],
     currenciesAccepted: 'NPR',
-    paymentAccepted: 'Cash, Bank Transfer, Digital Wallet',
+    paymentAccepted: 'Cash on Delivery',
   };
+}
+
+export function buildWebsiteJsonLd() {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    url: DEFAULT_SITE_URL,
+    name: SITE_NAME,
+    description: DEFAULT_DESCRIPTION,
+    publisher: {
+      '@type': 'Organization',
+      name: SITE_NAME,
+      logo: {
+        '@type': 'ImageObject',
+        url: getSocialImageUrl(),
+      },
+    },
+  };
+}
+
+export function buildSeoJsonLd() {
+  return [buildOrganizationJsonLd(), buildWebsiteJsonLd()];
 }
 
 export function buildProductJsonLd(product: any, url: string) {

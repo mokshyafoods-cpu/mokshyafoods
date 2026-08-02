@@ -128,18 +128,20 @@ export default function WishlistPage() {
                   const productId = item._id || item.id;
                   return (
                     <div key={productId} className="group overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
-                      <div className="relative overflow-hidden">
+                      <Link href={`/products/${productId}`} className="relative overflow-hidden block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70">
                         <img
                           src={getProductImage(item)}
                           alt={item.name}
                           className="h-56 w-full object-cover transition duration-300 group-hover:scale-105"
                         />
                         <div className="absolute left-4 top-4 rounded-full bg-primary text-white px-3 py-1 font-semibold">{idx + 1}</div>
-                      </div>
+                      </Link>
                       <div className="p-5">
                         <div className="flex items-start justify-between gap-3">
                           <div>
-                            <h2 className="text-lg font-semibold text-slate-950 line-clamp-2">{item.name}</h2>
+                            <Link href={`/products/${productId}`} className="text-lg font-semibold text-slate-950 line-clamp-2 hover:text-primary">
+                              {item.name}
+                            </Link>
                             {item.category && <p className="mt-2 text-sm text-slate-500">{item.category}</p>}
                           </div>
                         </div>
@@ -148,6 +150,7 @@ export default function WishlistPage() {
                           <button
                             type="button"
                             onClick={() => handleAddToCart(item)}
+                            aria-label={`Add ${item.name} to cart`}
                             className="inline-flex items-center gap-2 rounded-full bg-secondary px-3 py-2 text-sm font-semibold text-secondary-foreground shadow-sm hover:bg-secondary/90"
                           >
                             <ShoppingCart className="h-4 w-4" /> Add to cart
@@ -155,6 +158,7 @@ export default function WishlistPage() {
                           <button
                             type="button"
                             onClick={() => handleRemove(productId)}
+                            aria-label={`Remove ${item.name} from wishlist`}
                             className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
                           >
                             Remove

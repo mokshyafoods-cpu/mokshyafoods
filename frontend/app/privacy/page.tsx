@@ -14,10 +14,10 @@ export default function PrivacyPage() {
             Mokshya Foods respects your privacy and collects only the information required to process orders, support your account, and respond to inquiries.
           </p>
           <p className="mt-4 text-sm leading-7 text-slate-700">
-            We may collect your name, contact details, delivery address, and payment information when you place an order or contact us. This information is used solely to fulfill purchases, communicate updates, and improve service quality.
+            We may collect your name, phone number, email address, delivery address, order details, and account information when you place an order, create an account, or contact us. This information is used to process orders, communicate updates, and improve service quality.
           </p>
           <p className="mt-4 text-sm leading-7 text-slate-700">
-            We do not sell your personal data to third parties. Information may be shared only with trusted service providers that help us deliver orders and operate the website, and only as needed to provide those services.
+            We do not sell your personal data to third parties. Information may be shared only with service providers that help us deliver orders and operate the website, and only as needed to provide those services.
           </p>
           <p className="mt-4 text-sm leading-7 text-slate-700">
             If you have questions about your data or would like to request access or correction, please contact us through the contact page.

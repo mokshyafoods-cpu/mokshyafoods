@@ -1,5 +1,7 @@
+import { getSiteUrl } from '@/lib/seo';
+
 export async function GET() {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://www.mokshyafoods.com.np';
+  const siteUrl = getSiteUrl();
   const body = `User-agent: *
 Allow: /
 Disallow: /admin

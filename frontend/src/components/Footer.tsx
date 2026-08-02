@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { Camera, PhoneCall, ChevronRight, Home, ShieldCheck, Info, ShoppingBag, Lock, FileText, Sparkles, Leaf } from 'lucide-react';
+import { Camera, PhoneCall, ChevronRight, Home, ShieldCheck, Info, ShoppingBag, Lock, FileText, Sparkles, Leaf, MapPin, ExternalLink } from 'lucide-react';
 import { siteConfig } from '@/lib/business';
 
 const footerLinks = [
@@ -31,7 +31,7 @@ export default function Footer() {
               </div>
               <div className="min-w-0">
                 <p className="text-lg font-bold text-slate-950 sm:text-xl">Mokshya Foods</p>
-                <p className="text-sm font-medium text-[#9f7b2f]">Naturally dried fruits & pure food powders</p>
+                <p className="text-sm font-medium text-[#9f7b2f]">Naturally dried foods and food powders</p>
               </div>
             </Link>
             <p className="mt-5 max-w-full text-sm leading-6 text-slate-700 sm:mt-6 sm:leading-7">
@@ -40,6 +40,7 @@ export default function Footer() {
             <div className="mt-4 space-y-2 text-sm text-slate-700">
               <p className="flex items-center gap-2"><PhoneCall className="h-4 w-4" /> {siteConfig.phoneDisplay}</p>
               <a href={`mailto:${siteConfig.email}`} className="transition hover:text-[#b77f22]">{siteConfig.email}</a>
+              <p className="flex items-center gap-2"><MapPin className="h-4 w-4" /> {siteConfig.location}</p>
             </div>
           </div>
 
@@ -73,13 +74,19 @@ export default function Footer() {
 
         <div className="flex flex-col items-center justify-between gap-4 border-t border-[#d6b37e] pt-6 sm:gap-6 md:flex-row md:pt-8">
           <p className="max-w-full text-center text-sm text-slate-700 md:text-left">© 2026 Mokshya Foods. All Rights Reserved.</p>
-          <div className="flex items-center gap-3">
-            <Link href={siteConfig.instagram} className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#b77f22] text-slate-950 transition hover:bg-[#a36e1f]" aria-label="Visit Mokshya Foods on Instagram">
+          <div className="flex flex-wrap items-center gap-3">
+            <a href={siteConfig.facebook} target="_blank" rel="noopener noreferrer" className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#b77f22] text-slate-950 transition hover:bg-[#a36e1f]" aria-label="Visit Mokshya Foods on Facebook">
+              <ExternalLink className="h-5 w-5" />
+            </a>
+            <a href={siteConfig.instagram} target="_blank" rel="noopener noreferrer" className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#b77f22] text-slate-950 transition hover:bg-[#a36e1f]" aria-label="Visit Mokshya Foods on Instagram">
               <Camera className="h-5 w-5" />
-            </Link>
-            <Link href={siteConfig.whatsapp} className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#b77f22] text-slate-950 transition hover:bg-[#a36e1f]" aria-label="Contact Mokshya Foods on WhatsApp">
+            </a>
+            <a href={siteConfig.tiktok} target="_blank" rel="noopener noreferrer" className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#b77f22] text-slate-950 transition hover:bg-[#a36e1f]" aria-label="Visit Mokshya Foods on TikTok">
+              <ExternalLink className="h-5 w-5" />
+            </a>
+            <a href={siteConfig.whatsapp} target="_blank" rel="noopener noreferrer" className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#b77f22] text-slate-950 transition hover:bg-[#a36e1f]" aria-label="Contact Mokshya Foods on WhatsApp">
               <PhoneCall className="h-5 w-5" />
-            </Link>
+            </a>
           </div>
         </div>
       </div>

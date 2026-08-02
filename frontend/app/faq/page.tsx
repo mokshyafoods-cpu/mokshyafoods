@@ -14,15 +14,19 @@ export default function FaqPage() {
           <div className="mt-8 space-y-5 text-sm leading-7 text-slate-700">
             <div>
               <h2 className="font-semibold text-slate-950">What products does Mokshya Foods offer?</h2>
-              <p className="mt-2">We offer naturally dried fruits and food powders designed for everyday use, gifting, and household routines.</p>
+              <p className="mt-2">We offer naturally dried food products and food powders designed for everyday use, gifting, and household routines.</p>
             </div>
             <div>
-              <h2 className="font-semibold text-slate-950">How long does delivery take?</h2>
-              <p className="mt-2">Most orders are dispatched promptly and delivered across Nepal through trusted delivery partners, depending on your location.</p>
+              <h2 className="font-semibold text-slate-950">How does delivery work?</h2>
+              <p className="mt-2">We deliver across Nepal. Free delivery is available within town, while outside-town delivery is based on distance and may be charged up to Rs 150.</p>
             </div>
             <div>
-              <h2 className="font-semibold text-slate-950">How should I store the products?</h2>
-              <p className="mt-2">Keep the packs sealed and store them in a cool, dry place away from direct sunlight to preserve flavor and texture.</p>
+              <h2 className="font-semibold text-slate-950">What payment methods are available?</h2>
+              <p className="mt-2">Our current customer payment option is cash on delivery.</p>
+            </div>
+            <div>
+              <h2 className="font-semibold text-slate-950">What is your return or refund policy?</h2>
+              <p className="mt-2">Returns and refunds are reviewed within one week of delivery for eligible concerns. If a product is damaged, we aim to replace it with a new product where possible.</p>
             </div>
             <div>
               <h2 className="font-semibold text-slate-950">How can I place a larger order or ask a product question?</h2>

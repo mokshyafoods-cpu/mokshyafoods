@@ -3,6 +3,7 @@
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 import { useCartStore } from '@/context/cartStore';
+import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link';
 import { Trash2, Minus, Plus, Percent } from 'lucide-react';
 import { useEffect } from 'react';
@@ -11,6 +12,7 @@ import { toast } from 'sonner';
 
 export default function CartPage() {
   const { items, removeItem, updateQuantity, getTotalPrice, getTotalItems, updateItem } = useCartStore();
+  const { isAuthenticated } = useAuth();
 
   // Refresh product data when cart loads to get latest prices, images, and discounts
   useEffect(() => {
@@ -139,7 +141,9 @@ export default function CartPage() {
                     <div className="flex flex-col items-end gap-4">
                       <div className="flex items-center gap-2 rounded-2xl border border-slate-300 bg-slate-50 px-3 py-2">
                         <button
-                          onClick={() => updateQuantity(item.productId, item.quantity - 1)}
+                          type="button"
+                          onClick={() => updateQuantity(item.productId, Math.max(1, item.quantity - 1))}
+                          aria-label={`Decrease quantity of ${item.name}`}
                           className="rounded-full bg-white p-2 text-slate-700 shadow-sm transition hover:bg-slate-100"
                         >
                           <Minus className="w-4 h-4" />
@@ -148,7 +152,9 @@ export default function CartPage() {
                           {item.quantity}
                         </span>
                         <button
+                          type="button"
                           onClick={() => updateQuantity(item.productId, item.quantity + 1)}
+                          aria-label={`Increase quantity of ${item.name}`}
                           className="rounded-full bg-white p-2 text-slate-700 shadow-sm transition hover:bg-slate-100"
                         >
                           <Plus className="w-4 h-4" />
@@ -156,7 +162,9 @@ export default function CartPage() {
                       </div>
 
                       <button
+                        type="button"
                         onClick={() => removeItem(item.productId)}
+                        aria-label={`Remove ${item.name} from cart`}
                         className="rounded-full p-2 text-rose-600 transition hover:bg-rose-100"
                       >
                         <Trash2 className="w-5 h-5" />
@@ -200,12 +208,22 @@ export default function CartPage() {
                   <span>RS {getTotalPrice().toFixed(0)}</span>
                 </div>
 
-                <Link
-                  href="/checkout"
-                  className="block w-full px-4 py-3 bg-primary text-white rounded-lg hover:bg-opacity-90 transition font-semibold text-center"
-                >
-                  Proceed to Checkout
-                </Link>
+                <div className="space-y-3">
+                  <Link
+                    href={isAuthenticated ? '/checkout' : '/auth/login?redirect=/checkout'}
+                    className="block w-full px-4 py-3 bg-primary text-white rounded-lg hover:bg-opacity-90 transition font-semibold text-center"
+                  >
+                    {isAuthenticated ? 'Proceed to Checkout' : 'Sign in to Checkout'}
+                  </Link>
+                  {!isAuthenticated && (
+                    <Link
+                      href="/auth/register?redirect=/checkout"
+                      className="block w-full px-4 py-3 border border-primary text-primary rounded-lg hover:bg-primary hover:text-white transition font-semibold text-center"
+                    >
+                      Create an account
+                    </Link>
+                  )}
+                </div>
 
                 <Link
                   href="/products"

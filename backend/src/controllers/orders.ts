@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import mongoose from 'mongoose';
 import { buildBrandEmailTemplate, sendEmail } from '../utils/email';
+import { getEffectiveProductPrice } from '../utils/pricing';
 
 const resolveProductLookup = async (productId: string): Promise<any> => {
   const productsColl = mongoose.connection.collection('products');
@@ -38,7 +39,13 @@ const normalizeOrderItem = async (item: any): Promise<any> => {
     };
   }
 
-  const resolvedPrice = Number(item.price ?? product.discountPrice ?? product.price ?? 0);
+  const resolvedPrice = getEffectiveProductPrice({
+    price: product.price,
+    discountPrice: product.discountPrice,
+    onSale: product.onSale,
+    saleStart: product.saleStart,
+    saleEnd: product.saleEnd,
+  });
   return {
     product: String(rawProductId),
     productId: String(rawProductId),
@@ -99,8 +106,11 @@ const buildOrderEmailContent = (order: any, variant: 'customer' | 'admin' = 'cus
         <strong>Ordered items</strong>
         <ul style="padding-left:18px;margin:8px 0 0;">${itemRows}</ul>
       </div>
-      <p style="margin-top:16px;font-weight:700;">Total: Rs. ${Number(order.total || 0).toFixed(2)}</p>
-      <p style="margin-top:12px;">Payment method: ${order.paymentMethod || 'N/A'}</p>
+      <p style="margin-top:16px;font-weight:700;">Subtotal: Rs. ${Number(order.subtotal || 0).toFixed(2)}</p>
+      <p>Delivery charge: Rs. ${Number(order.deliveryCharge || order.shippingCost || 0).toFixed(2)}</p>
+      <p style="font-weight:700;">Total: Rs. ${Number(order.total || 0).toFixed(2)}</p>
+      <p style="margin-top:12px;">Payment method: Cash on Delivery</p>
+      <p>Please pay in cash when your order is delivered.</p>
       <p style="margin-top:12px;">Order channel: ${order.channel || 'web'}</p>
       ${order.notes ? `<p><strong>Notes:</strong> ${order.notes}</p>` : ''}
     </div>`;
@@ -126,8 +136,11 @@ const buildOrderEmailContent = (order: any, variant: 'customer' | 'admin' = 'cus
         productId ? `Product ID: ${productId}` : '',
       ].filter(Boolean).join(' | ');
     }),
+    `Subtotal: Rs. ${Number(order.subtotal || 0).toFixed(2)}`,
+    `Delivery charge: Rs. ${Number(order.deliveryCharge || order.shippingCost || 0).toFixed(2)}`,
     `Total: Rs. ${Number(order.total || 0).toFixed(2)}`,
-    `Payment method: ${order.paymentMethod || 'N/A'}`,
+    'Payment method: Cash on Delivery',
+    'Please pay in cash when your order is delivered.',
     `Order channel: ${order.channel || 'web'}`,
     order.notes ? `Notes: ${order.notes}` : '',
   ].filter(Boolean).join('\n');
@@ -248,17 +261,19 @@ export const createOrder = async (req: AuthenticatedRequest, res: Response): Pro
       return res.status(400).json({ success: false, message: 'Shipping address is required' });
     }
 
-    if (!body.paymentMethod) {
-      return res.status(400).json({ success: false, message: 'Payment method is required' });
+    if (!shippingAddress.name || !shippingAddress.phone || !shippingAddress.street || !shippingAddress.city || !shippingAddress.country) {
+      return res.status(400).json({ success: false, message: 'Please provide your full name, phone number, and delivery address' });
+    }
+
+    const normalizedPaymentMethod = String(body.paymentMethod || 'cod').trim().toLowerCase();
+    if (!['cod', 'cash'].includes(normalizedPaymentMethod)) {
+      return res.status(400).json({ success: false, message: 'Only cash on delivery is available' });
     }
 
     const ordersColl = mongoose.connection.collection('orders');
-
     const productsColl = mongoose.connection.collection('products');
-
     const normalizedItems = await Promise.all(items.map((item: any) => normalizeOrderItem(item)));
 
-    // Ensure requested quantities are available before creating the order
     const productIds = normalizedItems
       .map((item) => item.productId)
       .filter(Boolean)
@@ -266,23 +281,61 @@ export const createOrder = async (req: AuthenticatedRequest, res: Response): Pro
       .map((id) => (mongoose.Types.ObjectId.isValid(String(id)) ? new mongoose.Types.ObjectId(String(id)) : null))
       .filter(Boolean) as mongoose.Types.ObjectId[];
 
+    const productMap = new Map<string, any>();
     if (productIds.length) {
-      const products = await productsColl.find({ _id: { $in: productIds } }).toArray();
-      const productMap = new Map(products.map((p: any) => [p._id.toString(), p]));
-
-      for (const item of normalizedItems) {
-        if (!item.productId) continue;
-        const product = productMap.get(String(item.productId));
-        if (!product) {
-          return res.status(400).json({ success: false, message: `Product not found: ${item.name || item.productId}` });
-        }
-        if (Number(item.quantity || 0) > Number(product.quantity || 0)) {
-          return res.status(400).json({ success: false, message: `Insufficient stock for ${item.name || product.name}: requested ${item.quantity}, available ${product.quantity}` });
-        }
-      }
+      const products = await productsColl.find({ _id: { $in: productIds }, isActive: { $ne: false } }).toArray();
+      products.forEach((product: any) => productMap.set(product._id.toString(), product));
     }
 
-    const total = normalizedItems.reduce((sum, item) => sum + (Number(item.subtotal) || 0), 0);
+    const trustedItems: any[] = [];
+    for (const item of normalizedItems) {
+      if (!item.productId) {
+        return res.status(400).json({ success: false, message: 'Each item must include a valid product reference' });
+      }
+
+      const product = productMap.get(String(item.productId));
+      if (!product) {
+        return res.status(400).json({ success: false, message: `Product not found: ${item.name || item.productId}` });
+      }
+
+      const requestedQuantity = Number(item.quantity || 0);
+      const availableQuantity = Number(product.quantity || 0);
+      if (requestedQuantity < 1) {
+        return res.status(400).json({ success: false, message: `Quantity must be at least 1 for ${item.name || product.name}` });
+      }
+      if (requestedQuantity > availableQuantity) {
+        return res.status(400).json({ success: false, message: `Insufficient stock for ${item.name || product.name}: requested ${requestedQuantity}, available ${availableQuantity}` });
+      }
+
+      const trustedPrice = getEffectiveProductPrice({
+        price: product.price,
+        discountPrice: product.discountPrice,
+        onSale: product.onSale,
+        saleStart: product.saleStart,
+        saleEnd: product.saleEnd,
+      });
+      const trustedSubtotal = requestedQuantity * trustedPrice;
+      trustedItems.push({
+        ...item,
+        price: trustedPrice,
+        subtotal: trustedSubtotal,
+        name: product.name || item.name || 'Product',
+        productData: {
+          _id: product._id?.toString?.() || product._id,
+          name: product.name,
+          description: product.description,
+          thumbnail: product.thumbnail || product.image || product.images?.[0]?.url || '/placeholder.jpg',
+          images: Array.isArray(product.images) ? product.images : [],
+          sku: product.sku,
+          price: product.price,
+          discountPrice: product.discountPrice,
+        },
+      });
+    }
+
+    const subtotal = trustedItems.reduce((sum, item) => sum + (Number(item.subtotal) || 0), 0);
+    const deliveryCharge = 0;
+    const total = subtotal + deliveryCharge;
     const orderNumber = buildOrderNumber();
 
     const orderDoc = {
@@ -295,15 +348,19 @@ export const createOrder = async (req: AuthenticatedRequest, res: Response): Pro
         email: shippingAddress.email || '',
         phone: shippingAddress.phone || '',
       },
-      items: normalizedItems,
+      items: trustedItems,
       shippingAddress,
-      paymentMethod: body.paymentMethod,
+      paymentMethod: 'cod',
+      paymentStatus: 'pending',
       couponCode: body.couponCode || '',
       notes: body.notes || '',
       channel: body.channel || 'web',
-      status: 'pending',
-      paymentStatus: 'pending',
+      subtotal,
+      deliveryCharge,
+      shippingCost: deliveryCharge,
       total,
+      status: 'pending',
+      orderStatus: 'pending',
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -317,10 +374,9 @@ export const createOrder = async (req: AuthenticatedRequest, res: Response): Pro
       console.error('Order notification email failed:', emailError?.message || emailError);
     }
 
-    // Decrement stock for ordered items (safe since availability was checked above)
     try {
       await Promise.all(
-        normalizedItems.map(async (item) => {
+        trustedItems.map(async (item) => {
           if (!item.productId || item.quantity <= 0) return;
           const filter = mongoose.Types.ObjectId.isValid(item.productId)
             ? { _id: new mongoose.Types.ObjectId(item.productId) }
@@ -378,12 +434,12 @@ export const getAllOrders = async (req: AuthenticatedRequest, res: Response): Pr
 
 export const getUserOrders = async (req: AuthenticatedRequest, res: Response): Promise<Response> => {
   try {
-    const userId = String(req.userId || req.params.id || req.query.userId || '');
-    const ordersColl = mongoose.connection.collection('orders');
-
+    const userId = String(req.userId || '');
     if (!userId) {
-      return res.json({ success: true, message: 'User orders loaded', data: [] });
+      return res.status(401).json({ success: false, message: 'Authentication required' });
     }
+
+    const ordersColl = mongoose.connection.collection('orders');
 
     const orders = await ordersColl
       .find({
@@ -399,14 +455,28 @@ export const getUserOrders = async (req: AuthenticatedRequest, res: Response): P
   }
 };
 
-export const getOrderById = async (req: Request, res: Response): Promise<Response> => {
+export const getOrderById = async (req: AuthenticatedRequest, res: Response): Promise<Response> => {
   try {
     const rawId = req.params.id;
     const id = Array.isArray(rawId) ? rawId[0] : rawId;
     if (!id) return res.status(400).json({ success: false, message: 'Order id required' });
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ success: false, message: 'Invalid order id' });
+    }
+    const userId = req.userId;
+    const userRole = String(req.userRole || '').trim().toLowerCase();
+    const isAdmin = userRole === 'admin' || userRole === 'superadmin' || userRole === 'administrator' || userRole.includes('admin');
     const ordersColl = mongoose.connection.collection('orders');
     const order = await ordersColl.findOne({ _id: new mongoose.Types.ObjectId(id) });
     if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
+
+    const orderOwnerId = order.userId || order.user?.id || order.user?._id || '';
+    const isOwner = Boolean(userId && (orderOwnerId === userId || order.user?._id === userId || order.user?.id === userId));
+
+    if (!isAdmin && !isOwner) {
+      return res.status(403).json({ success: false, message: 'You do not have access to this order' });
+    }
+
     if (Array.isArray(order.items)) {
       const hydratedItems = await Promise.all(order.items.map((item: any) => normalizeOrderItem(item)));
       order.items = hydratedItems;
@@ -418,23 +488,62 @@ export const getOrderById = async (req: Request, res: Response): Promise<Respons
   }
 };
 
-export const updateOrderStatus = async (req: Request, res: Response): Promise<Response> => {
+export const updateOrderStatus = async (req: Request & { userId?: string; userRole?: string }, res: Response): Promise<Response> => {
   try {
     const rawId = req.params.id;
     const id = Array.isArray(rawId) ? rawId[0] : rawId;
     const update = req.body || {};
     if (!id) return res.status(400).json({ success: false, message: 'Order id required' });
+
     const ordersColl = mongoose.connection.collection('orders');
     const existingOrder = await ordersColl.findOne({ _id: new mongoose.Types.ObjectId(id) });
     if (!existingOrder) return res.status(404).json({ success: false, message: 'Order not found' });
 
+    const userId = req.userId;
+    const userRole = String(req.userRole || '').trim().toLowerCase();
+    const isAdmin = userRole === 'admin' || userRole === 'superadmin' || userRole === 'administrator' || userRole.includes('admin');
+    const orderOwnerId = String(existingOrder.userId || existingOrder.user?.id || existingOrder.user?._id || '');
+    const isOwner = Boolean(userId && orderOwnerId && orderOwnerId === userId);
+
+    const requestedStatus = update.orderStatus || update.status;
+    const normalizedRequestedStatus = requestedStatus ? String(requestedStatus).toLowerCase() : undefined;
+
+    if (!isAdmin) {
+      if (!isOwner) {
+        return res.status(403).json({ success: false, message: 'You do not have permission to update this order' });
+      }
+      if (normalizedRequestedStatus !== 'cancelled') {
+        return res.status(403).json({ success: false, message: 'Only admin can update order status other than cancellation' });
+      }
+    }
+
     const previousStatus = String(existingOrder.orderStatus || existingOrder.status || 'pending').toLowerCase();
-    const nextStatusInput = update.orderStatus || update.status;
-    const nextStatus = nextStatusInput ? String(nextStatusInput).toLowerCase() : previousStatus;
-    const updatePayload: Record<string, any> = { ...update, updatedAt: new Date() };
-    if (nextStatusInput) {
-      updatePayload.orderStatus = nextStatus;
-      updatePayload.status = nextStatus;
+    const nextStatus = normalizedRequestedStatus ? normalizedRequestedStatus : previousStatus;
+    const updatePayload: Record<string, any> = { updatedAt: new Date() };
+
+    if (isAdmin) {
+      const allowedAdminFields = ['orderStatus', 'status', 'paymentStatus', 'trackingInfo', 'staffNote', 'cancelReason', 'isCashCollected'];
+      for (const key of allowedAdminFields) {
+        if (key in update) {
+          updatePayload[key] = update[key];
+        }
+      }
+      if (normalizedRequestedStatus) {
+        updatePayload.orderStatus = nextStatus;
+        updatePayload.status = nextStatus;
+      }
+      if (nextStatus === 'cancelled') {
+        updatePayload.cancelReason = String(update.cancelReason || update.reason || 'Cancelled by user');
+        updatePayload.cancelledAt = new Date();
+      }
+    } else {
+      if (normalizedRequestedStatus === 'cancelled') {
+        updatePayload.orderStatus = 'cancelled';
+        updatePayload.status = 'cancelled';
+        updatePayload.cancelReason = String(update.cancelReason || update.reason || 'Cancelled by user');
+        updatePayload.cancelledAt = new Date();
+        updatePayload.paymentStatus = 'cancelled';
+      }
     }
 
     const result = await ordersColl.findOneAndUpdate(
@@ -446,9 +555,13 @@ export const updateOrderStatus = async (req: Request, res: Response): Promise<Re
     if (!updatedOrder) return res.status(404).json({ success: false, message: 'Order not found' });
 
     try {
-      await sendOrderStatusNotification(updatedOrder, previousStatus, nextStatus);
+      if (nextStatus === 'cancelled') {
+        await sendOrderCancellationNotificationToAdmin(updatedOrder, updatePayload.cancelReason);
+      } else {
+        await sendOrderStatusNotification(updatedOrder, previousStatus, nextStatus);
+      }
     } catch (emailError: any) {
-      console.error('Order status notification email failed:', emailError?.message || emailError);
+      console.error('Order email notification failed:', emailError?.message || emailError);
     }
 
     return res.json({ success: true, message: 'Order updated', data: updatedOrder });
@@ -456,6 +569,52 @@ export const updateOrderStatus = async (req: Request, res: Response): Promise<Re
     console.error('updateOrderStatus error:', error);
     return res.status(500).json({ success: false, message: error.message || 'Failed to update order' });
   }
+};
+
+const sendOrderCancellationNotificationToAdmin = async (order: any, cancelReason: string): Promise<void> => {
+  const adminRecipients = Array.from(
+    new Set(
+      [process.env.ADMIN_EMAIL, process.env.EMAIL_USER, process.env.EMAIL_FROM].filter((value): value is string => Boolean(value))
+    )
+  );
+  if (!adminRecipients.length) return;
+
+  const subject = `Order Cancelled - ${order.orderNumber}`;
+  const customerName = order.shippingAddress?.name || order.user?.name || 'Customer';
+  const customerEmail = order.shippingAddress?.email || order.user?.email || 'N/A';
+  const itemsHtml = Array.isArray(order.items)
+    ? order.items.map((item: any) => `<li>${item.name || 'Product'} x${item.quantity || 1} - Rs. ${Number(item.price || 0).toFixed(2)}</li>`).join('')
+    : '';
+
+  const { html, text } = buildBrandEmailTemplate({
+    title: `Order Cancelled - ${order.orderNumber}`,
+    greeting: 'Hello Admin,',
+    intro: `Order ${order.orderNumber} has been cancelled by the customer.`,
+    bodyHtml: `
+      <div style="font-size:15px;line-height:1.7;color:#374151;">
+        <p><strong>Order number:</strong> ${order.orderNumber}</p>
+        <p><strong>Customer:</strong> ${customerName}</p>
+        <p><strong>Customer email:</strong> ${customerEmail}</p>
+        <p><strong>Cancellation reason:</strong> ${cancelReason}</p>
+        <p><strong>Order total:</strong> Rs. ${Number(order.total || 0).toFixed(2)}</p>
+        <p><strong>Payment status:</strong> ${order.paymentStatus || 'pending'}</p>
+        <div><strong>Items:</strong><ul>${itemsHtml}</ul></div>
+      </div>
+    `,
+    bodyText: `Order ${order.orderNumber} has been cancelled by the customer.
+Order total: Rs. ${Number(order.total || 0).toFixed(2)}
+Payment status: ${order.paymentStatus || 'pending'}
+Cancellation reason: ${cancelReason}`,
+    footerNote: 'Please review the cancelled order and follow up with the customer if needed.',
+  });
+
+  await sendEmail({
+    to: adminRecipients,
+    subject,
+    html,
+    text,
+    replyTo: process.env.REPLY_TO || process.env.EMAIL_FROM || process.env.EMAIL_USER || 'support@mokshyafoods.com',
+  });
 };
 
 export default {

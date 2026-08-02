@@ -252,7 +252,8 @@ export const resendOtp = async (req: Request & { userId?: string }, res: Respons
 
 const createResetToken = (): string => crypto.randomBytes(32).toString('hex');
 
-const hashToken = async (token: string): Promise<string> => bcrypt.hash(token, 10);
+const hashToken = (token: string): string =>
+  crypto.createHash('sha256').update(token).digest('hex');
 
 const sendPasswordResetEmail = async (email: string, name: string, token: string): Promise<void> => {
   const frontendBaseUrl = process.env.FRONTEND_URL?.trim() || process.env.FRONTEND_URLS?.split(',')[0]?.trim() || 'http://localhost:3000';
@@ -292,7 +293,7 @@ export const forgotPassword = async (req: Request, res: Response): Promise<Respo
 
     if (user) {
       const token = createResetToken();
-      const hashedToken = await hashToken(token);
+      const hashedToken = hashToken(token);
       user.resetPasswordToken = hashedToken;
       user.resetPasswordExpires = new Date(Date.now() + 30 * 60 * 1000);
       await user.save();
@@ -347,7 +348,7 @@ export const resetPassword = async (req: Request, res: Response): Promise<Respon
       });
     }
 
-    const hashedToken = await hashToken(token);
+    const hashedToken = hashToken(token);
     const user = await User.findOne({
       resetPasswordToken: hashedToken,
       resetPasswordExpires: { $gt: new Date() },

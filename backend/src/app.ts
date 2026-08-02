@@ -22,6 +22,7 @@ dotenv.config();
 const app = express();
 
 app.use(helmet());
+app.disable('x-powered-by');
 
 const corsOptions: CorsOptions = {
   origin: (origin, callback) => {
@@ -45,14 +46,19 @@ const corsOptions: CorsOptions = {
     );
 
     const isLocalOrigin = origin?.startsWith('http://localhost') || origin?.startsWith('http://127.0.0.1');
+    const allowLocalOrigins = process.env.NODE_ENV !== 'production';
 
-    if (!origin || allowedOrigins.includes(origin) || isLocalOrigin) {
+    if (!origin || allowedOrigins.includes(origin) || (allowLocalOrigins && isLocalOrigin)) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));
     }
   },
+  methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'Accept'],
   credentials: true,
+  optionsSuccessStatus: 200,
+  preflightContinue: false,
 };
 
 app.use(cors(corsOptions));

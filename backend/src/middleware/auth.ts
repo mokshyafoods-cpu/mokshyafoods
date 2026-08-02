@@ -19,7 +19,16 @@ export const authMiddleware = (req: AuthenticatedRequest, res: Response, next: N
       return;
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as JwtPayload & {
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+      res.status(500).json({
+        success: false,
+        message: 'Server configuration error: JWT_SECRET is required',
+      });
+      return;
+    }
+
+    const decoded = jwt.verify(token, secret) as JwtPayload & {
       id?: string;
       userId?: string;
       _id?: string;

@@ -3,7 +3,7 @@ import { Geist, Geist_Mono } from 'next/font/google'
 import './globals.css'
 import { AuthProvider } from '@/context/AuthContext'
 import { Toaster } from '@/components/ui/sonner'
-import { buildMetadata, buildOrganizationJsonLd } from '@/lib/seo'
+import { buildMetadata, buildSeoJsonLd } from '@/lib/seo'
 
 const geistSans = Geist({ subsets: ['latin'] })
 const geistMono = Geist_Mono({ subsets: ['latin'] })
@@ -13,7 +13,7 @@ export const metadata: Metadata = buildMetadata({
     default: 'Mokshya Foods | Naturally Dried Fruits & Food Powders in Nepal',
     template: '%s | Mokshya Foods',
   },
-  description: 'Mokshya Foods brings naturally dried fruits and pure food powders from Nepal to homes, kitchens, and everyday gifting.',
+  description: 'Mokshya Foods offers naturally dried food products and food powders from Nepal for everyday use, gifting, and household routines.',
   generator: 'v0.app',
   icons: {
     icon: '/favicon.png',
@@ -40,7 +40,10 @@ export default function RootLayout({
     <html lang="en" className="light bg-background">
       <body className={`${geistSans.className} antialiased bg-background text-foreground`}>
         <AuthProvider>
-          <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(buildOrganizationJsonLd()) }} />
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{ __html: JSON.stringify(buildSeoJsonLd()) }}
+          />
           {children}
           <Toaster
             position="top-center"

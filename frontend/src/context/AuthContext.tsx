@@ -1,8 +1,9 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { authAPI, userAPI } from '@/services/api';
+import { authAPI, userAPI, wishlistAPI } from '@/services/api';
 import { toast } from 'sonner';
+import { clearGuestWishlist, readGuestWishlist } from '@/lib/wishlist';
 
 interface User {
   id: string;
@@ -40,6 +41,36 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+const mergeGuestWishlistIntoAccount = async () => {
+  if (typeof window === 'undefined') return;
+
+  const guestWishlist = readGuestWishlist();
+  if (!guestWishlist.length) return;
+
+  const productIds = guestWishlist
+    .map((item) => String(item.id || '').trim())
+    .filter(Boolean);
+
+  if (!productIds.length) return;
+
+  try {
+    for (const productId of productIds) {
+      try {
+        await wishlistAPI.addToWishlist(productId);
+      } catch (error: any) {
+        const status = error?.response?.status;
+        if (status !== 400 && status !== 409) {
+          console.warn('Failed to merge guest wishlist item into account:', error);
+        }
+      }
+    }
+
+    clearGuestWishlist();
+  } catch (error) {
+    console.warn('Failed to merge guest wishlist into account:', error);
+  }
+};
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -124,6 +155,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(userPayload as any);
         localStorage.setItem('user', JSON.stringify(userPayload));
       }
+      await mergeGuestWishlistIntoAccount();
       toast.success('Login successful');
       return userPayload as any;
     } catch (error: any) {
@@ -150,6 +182,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(userPayload as any);
         localStorage.setItem('user', JSON.stringify(userPayload));
       }
+      await mergeGuestWishlistIntoAccount();
       toast.success('Registration successful');
       return userPayload as any;
     } catch (error: any) {

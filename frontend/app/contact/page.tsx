@@ -43,7 +43,7 @@ export default function ContactPage() {
           <div className="mb-8 text-center space-y-3">
             <h1 className="text-3xl md:text-4xl font-bold text-primary">Contact Us</h1>
             <p className="text-base text-muted-foreground max-w-2xl mx-auto">
-              Reach out for product questions, order support, or general enquiries about our naturally dried fruits and food powders.
+              Reach out for product questions, order support, or general enquiries about our naturally dried food products and food powders from Nepal.
             </p>
           </div>
 
@@ -71,6 +71,12 @@ export default function ContactPage() {
                 icon={<Clock className="w-6 h-6" />}
                 title="Business Hours"
                 content={siteConfig.hours}
+              />
+              <ContactInfoCard
+                icon={<Mail className="w-6 h-6" />}
+                title="Follow us"
+                content="Facebook, Instagram, and TikTok"
+                link={siteConfig.facebook}
               />
             </div>
 

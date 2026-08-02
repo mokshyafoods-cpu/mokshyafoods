@@ -11,6 +11,7 @@ function RegisterPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams?.get('redirect') || '/account/dashboard';
+  const shouldRequireVerification = (target: string) => target === '/account/dashboard' || target.startsWith('/account');
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -26,7 +27,7 @@ function RegisterPageContent() {
 
     if (user?.role === 'admin') {
       router.push('/admin');
-    } else if (!user?.isVerified) {
+    } else if (!user?.isVerified && shouldRequireVerification(redirectTo)) {
       router.push('/auth/verify?redirect=' + encodeURIComponent(redirectTo));
     } else {
       router.push(redirectTo || '/account/dashboard');
@@ -77,7 +78,7 @@ function RegisterPageContent() {
       const newUser = await register(formData.name, formData.email, formData.password, formData.phone);
       if (newUser?.role === 'admin') {
         router.push('/admin');
-      } else if (!newUser?.isVerified) {
+      } else if (!newUser?.isVerified && shouldRequireVerification(redirectTo)) {
         router.push('/auth/verify?redirect=' + encodeURIComponent(redirectTo));
       } else {
         router.push(redirectTo || '/account/dashboard');

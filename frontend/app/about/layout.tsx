@@ -3,7 +3,7 @@ import { buildPageMetadata } from '@/lib/seo';
 
 export const metadata: Metadata = buildPageMetadata(
   'About Mokshya Foods',
-  'Learn about Mokshya Foods, our Nepali sourcing story, and our commitment to premium organic dried fruits.',
+  'Learn about Mokshya Foods, our Nepal-based food business, product range, and customer service approach.',
   '/about'
 );
 

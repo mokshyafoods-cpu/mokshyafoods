@@ -712,70 +712,77 @@ function ProductsPageContent() {
                 </div>
               ) : (
                 <div className={viewMode === 'grid' ? 'grid gap-6 sm:grid-cols-2 xl:grid-cols-3' : 'space-y-6'}>
-                  {displayedProducts.map((product) => (
-                  <Link
-                    key={product._id}
-                    href={getProductUrl(product, product._id)}
-                    className={`group block overflow-hidden rounded-[1.75rem] border border-border bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl ${
-                      viewMode === 'list' ? 'sm:flex sm:items-center' : ''
-                    }`}
-                  >
-                    <div className={`relative overflow-hidden bg-muted ${viewMode === 'list' ? 'h-48 sm:h-40 sm:w-56 flex-shrink-0' : 'aspect-[4/3]'}`}>
-                      <img
-                        src={getProductImage(product)}
-                        alt={product.name}
-                        className={`h-full w-full object-cover transition duration-500 ${product.quantity === 0 ? 'opacity-60' : 'group-hover:scale-105'}`}
-                      />
-                      <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition duration-300 group-hover:bg-black/10"></div>
-                      <div className="absolute inset-x-4 bottom-4 z-20 flex gap-2 sm:inset-auto sm:right-4 sm:top-4 sm:flex-col sm:gap-3 sm:opacity-100 sm:group-hover:opacity-100">
-                        <WishlistButton product={product} className="h-10 w-10" iconClassName="h-5 w-5" />
-                        <AddToCartButton
-                          product={product}
-                          price={product.computedPrice}
-                          image={getProductImage(product)}
-                          compact
-                          disabled={product.quantity === 0}
-                          className="h-10 w-10"
+                  {displayedProducts.map((product) => {
+                  const productHref = getProductUrl(product, product._id);
+                  return (
+                    <article
+                      key={product._id}
+                      className={`group overflow-hidden rounded-[1.75rem] border border-border bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl ${
+                        viewMode === 'list' ? 'sm:flex sm:items-center' : ''
+                      }`}
+                    >
+                      <div className={`relative overflow-hidden bg-muted ${viewMode === 'list' ? 'h-48 sm:h-40 sm:w-56 flex-shrink-0' : 'aspect-[4/3]'}`}>
+                        <Link href={productHref} className="absolute inset-0 z-10" aria-label={`View details for ${product.name}`}>
+                          <span className="sr-only">View details for {product.name}</span>
+                        </Link>
+                        <img
+                          src={getProductImage(product)}
+                          alt={product.name}
+                          className={`h-full w-full object-cover transition duration-500 ${product.quantity === 0 ? 'opacity-60' : 'group-hover:scale-105'}`}
                         />
-                      </div>
-                      {product.quantity === 0 && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/40 p-4">
-                          <span className="rounded-full bg-white/95 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-900">
-                            Out of Stock
-                          </span>
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition duration-300 group-hover:bg-black/10"></div>
+                        <div className="absolute inset-x-4 bottom-4 z-20 flex gap-2 sm:inset-auto sm:right-4 sm:top-4 sm:flex-col sm:gap-3 sm:opacity-100 sm:group-hover:opacity-100">
+                          <WishlistButton product={product} className="h-10 w-10" iconClassName="h-5 w-5" />
+                          <AddToCartButton
+                            product={product}
+                            price={product.computedPrice}
+                            image={getProductImage(product)}
+                            compact
+                            disabled={product.quantity === 0}
+                            className="h-10 w-10"
+                          />
                         </div>
-                      )}
-                      {product.saleActive && product.discountPrice && product.price && Number(product.discountPrice) < Number(product.price) && (
-                        <span className="absolute left-4 top-4 rounded-full bg-red-600 px-3 py-1 text-xs font-semibold text-white">
-                          {Math.round(((Number(product.price) - Number(product.discountPrice)) / Number(product.price)) * 100)}% OFF
-                        </span>
-                      )}
-                    </div>
-                    <div className="p-6">
-                      <div className="mb-4 flex flex-wrap items-center gap-2 text-sm text-slate-500">
-                        <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1">★ {(product.rating || 0).toFixed(1)}</span>
-                        <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1">{product.reviewCount || 0} reviews</span>
-                        {getDisplayCategoryLabel(product.category) && (
-                          <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1">
-                            {getDisplayCategoryLabel(product.category)}
+                        {product.quantity === 0 && (
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/40 p-4">
+                            <span className="rounded-full bg-white/95 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-900">
+                              Out of Stock
+                            </span>
+                          </div>
+                        )}
+                        {product.saleActive && product.discountPrice && product.price && Number(product.discountPrice) < Number(product.price) && (
+                          <span className="absolute left-4 top-4 rounded-full bg-red-600 px-3 py-1 text-xs font-semibold text-white">
+                            {Math.round(((Number(product.price) - Number(product.discountPrice)) / Number(product.price)) * 100)}% OFF
                           </span>
                         )}
                       </div>
-                      <h3 className="text-xl font-semibold text-slate-950 mb-3 line-clamp-2">{product.name}</h3>
-                      {product.description && (
-                        <p className="mb-4 text-sm leading-6 text-slate-600 line-clamp-3">{product.description}</p>
-                      )}
-                      <div className="flex flex-wrap items-center justify-between gap-4">
-                        <div>
-                          <p className="text-lg font-bold text-secondary">RS {product.computedPrice}</p>
-                          {product.saleActive && product.discountPrice && product.price && Number(product.discountPrice) < Number(product.price) && (
-                            <p className="text-xs text-slate-500 line-through">RS {product.price}</p>
+                      <div className="p-6">
+                        <div className="mb-4 flex flex-wrap items-center gap-2 text-sm text-slate-500">
+                          <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1">★ {(product.rating || 0).toFixed(1)}</span>
+                          <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1">{product.reviewCount || 0} reviews</span>
+                          {getDisplayCategoryLabel(product.category) && (
+                            <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1">
+                              {getDisplayCategoryLabel(product.category)}
+                            </span>
                           )}
                         </div>
+                        <Link href={productHref} className="block">
+                          <h3 className="text-xl font-semibold text-slate-950 mb-3 line-clamp-2">{product.name}</h3>
+                          {product.description && (
+                            <p className="mb-4 text-sm leading-6 text-slate-600 line-clamp-3">{product.description}</p>
+                          )}
+                        </Link>
+                        <div className="flex flex-wrap items-center justify-between gap-4">
+                          <div>
+                            <p className="text-lg font-bold text-secondary">RS {product.computedPrice}</p>
+                            {product.saleActive && product.discountPrice && product.price && Number(product.discountPrice) < Number(product.price) && (
+                              <p className="text-xs text-slate-500 line-through">RS {product.price}</p>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </Link>
-                ))}
+                    </article>
+                  );
+                })}
                 </div>
               )}
             </section>

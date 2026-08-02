@@ -1,8 +1,9 @@
 import type { MetadataRoute } from 'next';
 import { productAPI } from '@/services/api';
-import { getProductSlug } from '@/lib/productRoutes';
+import { getProductSlug, getProductUrl } from '@/lib/productRoutes';
+import { getSiteUrl } from '@/lib/seo';
 
-const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://www.mokshyafoods.com.np';
+const baseUrl = getSiteUrl();
 
 const staticRoutes = [
   '',
@@ -34,11 +35,11 @@ async function getProductSitemapEntries(): Promise<SitemapEntry[]> {
 
     return products
       .map((product: any) => {
-        const slug = getProductSlug(product, product?._id ?? '');
-        if (!slug) return null;
+        const url = `${baseUrl}${getProductUrl(product, product?._id ?? '')}`;
+        if (!url) return null;
 
         return {
-          url: `${baseUrl}/products/${encodeURIComponent(slug)}`,
+          url,
           lastModified: product?.updatedAt ? new Date(product.updatedAt) : undefined,
           changeFrequency: 'weekly' as const,
           priority: 0.9,
@@ -46,7 +47,7 @@ async function getProductSitemapEntries(): Promise<SitemapEntry[]> {
       })
       .filter(Boolean) as SitemapEntry[];
   } catch (error) {
-    console.error('Failed to build product sitemap entries:', error);
+    console.warn('Sitemap product fetch failed. Falling back to static routes.', error);
     return [];
   }
 }

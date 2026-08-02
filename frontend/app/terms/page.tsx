@@ -14,10 +14,10 @@ export default function TermsPage() {
             By shopping with Mokshya Foods, you agree to use our website responsibly, provide accurate order details, and refrain from unauthorized copying, resale, or misuse of our product content and brand materials.
           </p>
           <p className="mt-4 text-sm leading-7 text-slate-700">
-            Prices, availability, packaging details, and delivery timelines may change from time to time. We aim to keep all information accurate and transparent, but final fulfillment depends on stock availability and service conditions at the time of order.
+            Prices, availability, packaging details, and delivery arrangements may change from time to time. We aim to keep information accurate and transparent, but final fulfillment depends on stock availability and service conditions at the time of order.
           </p>
           <p className="mt-4 text-sm leading-7 text-slate-700">
-            Customers are responsible for confirming the correctness of shipping addresses and contact details before placing their order. Mokshya Foods reserves the right to decline or cancel orders where necessary for compliance, quality, or operational reasons.
+            Customers are responsible for confirming the correctness of shipping addresses and contact details before placing their order. Our current customer payment option is cash on delivery. Mokshya Foods reserves the right to decline or cancel orders where necessary for compliance, quality, or operational reasons.
           </p>
         </div>
       </main>
