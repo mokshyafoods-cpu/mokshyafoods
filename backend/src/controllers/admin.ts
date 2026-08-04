@@ -165,12 +165,14 @@ export const createRawMaterial = async (req: Request, res: Response): Promise<Re
     const body = req.body || {};
     const quantity = Number(body.quantityPurchased || body.quantity || 0);
     const unitCost = Number(body.costPerUnit || body.unitCost || 0);
+    const travelCost = Number(body.travelCost || 0);
     const doc = new RawMaterial({
       name: String(body.name || '').trim(),
       supplier: String(body.supplier || '').trim(),
       quantityPurchased: quantity,
       unit: String(body.unit || 'kg').trim(),
       costPerUnit: unitCost,
+      travelCost,
       purchaseDate: body.purchaseDate ? new Date(body.purchaseDate) : new Date(),
       notes: String(body.notes || '').trim(),
     });
@@ -201,6 +203,7 @@ export const updateRawMaterial = async (req: Request, res: Response): Promise<Re
     if (quantity != null) update.quantityPurchased = quantity;
     if (body.unit != null) update.unit = String(body.unit).trim();
     if (unitCost != null) update.costPerUnit = unitCost;
+    if (body.travelCost != null) update.travelCost = Number(body.travelCost);
     if (body.purchaseDate != null) update.purchaseDate = new Date(body.purchaseDate);
     if (body.notes != null) update.notes = String(body.notes).trim();
 

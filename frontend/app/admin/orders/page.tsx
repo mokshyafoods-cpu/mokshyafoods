@@ -8,6 +8,20 @@ import { toast } from 'sonner';
 
 const statusOptions = ['all', 'pending', 'processing', 'shipped', 'delivered', 'cancelled'];
 
+const paymentMethodOptions = [
+  { value: 'cash4', label: 'Cash' },
+  { value: 'cod', label: 'Cash on Delivery' },
+  { value: 'phonepay', label: 'PhonePay' },
+  { value: 'esewa', label: 'eSewa' },
+];
+
+const formatPaymentMethod = (method: string) => {
+  const normalized = String(method || '').trim().toLowerCase();
+  const option = paymentMethodOptions.find((item) => item.value === normalized);
+  if (normalized === 'cash') return 'Cash';
+  return option?.label || method || 'N/A';
+};
+
 export default function AdminOrdersPage() {
   const [status, setStatus] = useState('all');
   const [search, setSearch] = useState('');
@@ -91,7 +105,7 @@ export default function AdminOrdersPage() {
       customerContact: order.shippingAddress?.phone || order.user?.phone || '',
       products: (order.items || []).map((item: any) => `${item.name || 'Product'} x${item.quantity || 1}`).join(', '),
       amount: order.total || 0,
-      paymentMethod: order.paymentMethod || 'cash',
+      paymentMethod: order.paymentMethod || 'cash4',
       paymentDate: new Date().toISOString().slice(0, 10),
       notes: '',
       _id: existing?._id || '',
@@ -273,7 +287,7 @@ export default function AdminOrdersPage() {
                       </select>
                     </div>
                     <div className="text-slate-900">
-                      <div>{order.paymentMethod === 'cod' ? 'Cash on Delivery' : order.paymentMethod || 'N/A'}</div>
+                      <div>{formatPaymentMethod(order.paymentMethod || 'cash4')}</div>
                       <div className="mt-1 text-xs text-slate-500">{order.paymentStatus || 'Pending'}</div>
                     </div>
                     <div className="flex justify-start">
@@ -328,11 +342,10 @@ export default function AdminOrdersPage() {
                 </div>
                 <div>
                   <label className="mb-2 block text-sm font-semibold text-slate-700">Payment method</label>
-                  <select value={ledgerForm.paymentMethod || 'cash'} onChange={(e) => setLedgerForm({ ...ledgerForm, paymentMethod: e.target.value })} className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-900">
-                    <option value="cash">Cash</option>
-                    <option value="card">Card</option>
-                    <option value="bank-transfer">Bank transfer</option>
-                    <option value="cod">COD</option>
+                  <select value={ledgerForm.paymentMethod || 'cash4'} onChange={(e) => setLedgerForm({ ...ledgerForm, paymentMethod: e.target.value })} className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-900">
+                    {paymentMethodOptions.map((option) => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
                   </select>
                 </div>
                 <div>

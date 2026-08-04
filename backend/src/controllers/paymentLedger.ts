@@ -9,6 +9,12 @@ const normalizeString = (value: unknown): string => {
   return String(value).trim();
 };
 
+const normalizeLedgerPaymentMethod = (value: unknown): string => {
+  const raw = normalizeString(value || 'cash4').toLowerCase();
+  if (raw === 'cash') return 'cash4';
+  return raw;
+};
+
 export const getAllPaymentLedger = async (req: AuthenticatedRequest, res: Response): Promise<Response> => {
   try {
     const page = Number(req.query.page) || 1;
@@ -77,7 +83,7 @@ export const createOrUpdatePaymentLedger = async (req: AuthenticatedRequest, res
       customerContact: normalizeString(payload.customerContact),
       products: normalizeString(payload.products),
       amount: Number(payload.amount || 0),
-      paymentMethod: normalizeString(payload.paymentMethod || 'cash'),
+      paymentMethod: normalizeLedgerPaymentMethod(payload.paymentMethod || 'cash4'),
       paymentDate: normalizeString(payload.paymentDate || new Date().toISOString().slice(0, 10)),
       notes: normalizeString(payload.notes),
       updatedAt: new Date(),
@@ -126,7 +132,7 @@ export const updatePaymentLedger = async (req: AuthenticatedRequest, res: Respon
       customerContact: normalizeString(payload.customerContact ?? existingEntry.customerContact),
       products: normalizeString(payload.products ?? existingEntry.products),
       amount: Number(payload.amount ?? existingEntry.amount ?? 0),
-      paymentMethod: normalizeString(payload.paymentMethod ?? (existingEntry.paymentMethod || 'cash')),
+      paymentMethod: normalizeLedgerPaymentMethod(payload.paymentMethod ?? (existingEntry.paymentMethod || 'cash4')),
       paymentDate: normalizeString(payload.paymentDate ?? (existingEntry.paymentDate || new Date().toISOString().slice(0, 10))),
       notes: normalizeString(payload.notes ?? existingEntry.notes),
       updatedAt: new Date(),

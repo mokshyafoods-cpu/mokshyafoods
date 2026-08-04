@@ -11,6 +11,7 @@ interface RawMaterialRow {
   supplier: string;
   quantityPurchased: number;
   costPerUnit: number;
+  travelCost?: number;
   totalCost: number;
   purchaseDate: string;
   notes: string;
@@ -24,7 +25,7 @@ export default function AdminRawMaterialsPage() {
   const [search, setSearch] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [form, setForm] = useState({ name: '', unit: 'kg', supplier: '', quantityPurchased: '0', costPerUnit: '0', notes: '' });
+  const [form, setForm] = useState({ name: '', unit: 'kg', supplier: '', quantityPurchased: '0', costPerUnit: '0', travelCost: '0', purchaseDate: new Date().toISOString().slice(0, 10), notes: '' });
 
   const loadData = async (nextPage = page) => {
     try {
@@ -44,6 +45,13 @@ export default function AdminRawMaterialsPage() {
 
   const totalSpend = useMemo(() => rows.reduce((sum, item) => sum + Number(item.totalCost || 0), 0), [rows]);
 
+  const computeTotalCost = () => {
+    const quantity = Number(form.quantityPurchased || 0);
+    const unitCost = Number(form.costPerUnit || 0);
+    const travelCost = Number(form.travelCost || 0);
+    return quantity * unitCost + travelCost;
+  };
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     try {
@@ -53,11 +61,12 @@ export default function AdminRawMaterialsPage() {
         supplier: form.supplier,
         quantityPurchased: Number(form.quantityPurchased || 0),
         costPerUnit: Number(form.costPerUnit || 0),
+        travelCost: Number(form.travelCost || 0),
+        purchaseDate: form.purchaseDate || new Date().toISOString(),
         notes: form.notes,
-        purchaseDate: new Date().toISOString(),
       });
       toast.success('Purchase saved');
-      setForm({ name: '', unit: 'kg', supplier: '', quantityPurchased: '0', costPerUnit: '0', notes: '' });
+      setForm({ name: '', unit: 'kg', supplier: '', quantityPurchased: '0', costPerUnit: '0', travelCost: '0', purchaseDate: new Date().toISOString().slice(0, 10), notes: '' });
       loadData(1);
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Unable to save purchase');
@@ -123,10 +132,25 @@ export default function AdminRawMaterialsPage() {
                 <input type="number" value={form.quantityPurchased} onChange={(e) => setForm({ ...form, quantityPurchased: e.target.value })} placeholder="Qty purchased" className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-500 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200" />
               </label>
             </div>
-            <label className="block">
-              <span className="mb-1 block text-sm font-medium text-slate-700">Cost per unit</span>
-              <input type="number" value={form.costPerUnit} onChange={(e) => setForm({ ...form, costPerUnit: e.target.value })} placeholder="Cost per unit" className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-500 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200" />
-            </label>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <label className="block">
+                <span className="mb-1 block text-sm font-medium text-slate-700">Cost per unit</span>
+                <input type="number" value={form.costPerUnit} onChange={(e) => setForm({ ...form, costPerUnit: e.target.value })} placeholder="Cost per unit" className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-500 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200" />
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-sm font-medium text-slate-700">Travel cost (optional)</span>
+                <input type="number" value={form.travelCost} onChange={(e) => setForm({ ...form, travelCost: e.target.value })} placeholder="Travel cost" className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-500 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200" />
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-sm font-medium text-slate-700">Purchase date</span>
+                <input type="date" value={form.purchaseDate} onChange={(e) => setForm({ ...form, purchaseDate: e.target.value })} className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200" />
+              </label>
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900">
+              <p className="font-medium text-slate-700">Total cost</p>
+              <p className="mt-1 text-xl font-semibold text-slate-900">RS {computeTotalCost()}</p>
+              <p className="text-xs text-slate-500">Quantity × cost per unit + travel cost.</p>
+            </div>
             <label className="block">
               <span className="mb-1 block text-sm font-medium text-slate-700">Notes</span>
               <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Notes" className="min-h-[90px] w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-500 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200" />
@@ -140,13 +164,14 @@ export default function AdminRawMaterialsPage() {
           <div className="mt-4 space-y-3">
             {rows.length === 0 ? <p className="text-sm text-slate-500">No purchases found.</p> : rows.map((item) => (
               <div key={item._id} className="rounded-2xl border border-slate-200 p-4">
-                <div className="flex items-center justify-between gap-3">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <p className="font-semibold text-slate-900">{item.name}</p>
                     <p className="text-sm text-slate-500">{item.supplier || 'No supplier'} • {item.quantityPurchased} {item.unit}</p>
+                    <p className="text-sm text-slate-500">Travel cost: RS {Number(item.travelCost || 0)}</p>
                   </div>
                   <div className="text-right text-sm text-slate-600">
-                    <p>RS {item.totalCost}</p>
+                    <p>Total: RS {item.totalCost}</p>
                     <p>{new Date(item.purchaseDate).toLocaleDateString('en-IN')}</p>
                   </div>
                 </div>

@@ -13,6 +13,19 @@ export default function PaymentLedgerPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
+  const paymentMethodLabels: Record<string, string> = {
+    cash4: 'Cash',
+    cash: 'Cash',
+    cod: 'Cash on Delivery',
+    phonepay: 'PhonePay',
+    esewa: 'eSewa',
+  };
+
+  const formatPaymentMethod = (method: string) => {
+    const normalized = String(method || '').trim().toLowerCase();
+    return paymentMethodLabels[normalized] || method || 'Cash';
+  };
+
   const loadEntries = async () => {
     try {
       setLoading(true);
@@ -70,7 +83,7 @@ export default function PaymentLedgerPage() {
                   <div className="text-slate-800">{entry.customerName || 'Walk-in'}</div>
                   <div className="text-sm text-slate-700">{entry.products || '—'}</div>
                   <div className="font-semibold text-slate-900">RS {Number(entry.amount || 0).toLocaleString()}</div>
-                  <div className="text-slate-700">{entry.paymentMethod || 'cash'}</div>
+                  <div className="text-slate-700">{formatPaymentMethod(entry.paymentMethod || 'cash4')}</div>
                   <div className="text-slate-700">{entry.paymentDate || new Date(entry.createdAt).toLocaleDateString()}</div>
                   <div className="text-sm text-slate-600">{entry.notes || '—'}</div>
                 </div>

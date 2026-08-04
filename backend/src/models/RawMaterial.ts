@@ -6,6 +6,7 @@ export interface IRawMaterial extends Document {
   supplier?: string;
   quantityPurchased: number;
   costPerUnit: number;
+  travelCost: number;
   totalCost: number;
   purchaseDate: Date;
   notes?: string;
@@ -19,13 +20,17 @@ const rawMaterialSchema = new Schema<IRawMaterial>({
   supplier: { type: String, trim: true, default: '' },
   quantityPurchased: { type: Number, required: true, default: 0 },
   costPerUnit: { type: Number, required: true, default: 0 },
+  travelCost: { type: Number, required: true, default: 0 },
   totalCost: { type: Number, required: true, default: 0 },
   purchaseDate: { type: Date, default: Date.now },
   notes: { type: String, trim: true, default: '' },
 }, { timestamps: true });
 
 rawMaterialSchema.pre('save', function(next) {
-  this.totalCost = Number(this.quantityPurchased || 0) * Number(this.costPerUnit || 0);
+  const quantity = Number(this.quantityPurchased || 0);
+  const cost = Number(this.costPerUnit || 0);
+  const travel = Number(this.travelCost || 0);
+  this.totalCost = quantity * cost + travel;
   next();
 });
 
@@ -34,8 +39,9 @@ rawMaterialSchema.pre(['findOneAndUpdate', 'updateOne'], function(next) {
   if (update?.$set) {
     const quantity = Number(update.$set.quantityPurchased ?? update.$set.quantity ?? 0);
     const cost = Number(update.$set.costPerUnit ?? 0);
-    if (update.$set.quantityPurchased != null || update.$set.costPerUnit != null) {
-      update.$set.totalCost = quantity * cost;
+    const travel = Number(update.$set.travelCost ?? 0);
+    if (update.$set.quantityPurchased != null || update.$set.costPerUnit != null || update.$set.travelCost != null) {
+      update.$set.totalCost = quantity * cost + travel;
     }
   }
   next();
