@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react';
 import { productAPI } from '@/services/api';
 import { toast } from 'sonner';
 import { getProductUrl } from '@/lib/productRoutes';
+import { siteConfig } from '@/lib/business';
 import WishlistButton from '@/components/WishlistButton';
 import AddToCartButton from '@/components/AddToCartButton';
 
@@ -120,6 +121,14 @@ export default function HomeClient() {
                       <Link href="/products" className="inline-flex items-center justify-center gap-2 rounded-full bg-slate-950 px-8 py-3 text-sm font-semibold text-white shadow-xl shadow-slate-200/20 transition hover:bg-slate-800">
                         Shop Now <ArrowRight className="w-4 h-4" />
                       </Link>
+                      <a
+                        href={siteConfig.whatsapp}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white px-8 py-3 text-sm font-semibold text-slate-950 shadow-sm transition hover:bg-slate-100"
+                      >
+                        Direct connect to WhatsApp
+                      </a>
                       <Link href="#story" className="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white px-8 py-3 text-sm font-semibold text-slate-950 shadow-sm transition hover:bg-slate-100">
                         Our Story
                       </Link>
