@@ -8,6 +8,8 @@ import { toast } from 'sonner';
 
 const statusOptions = ['all', 'pending', 'processing', 'shipped', 'delivered', 'cancelled'];
 
+const soldByOptions = ['all', 'Bishal', 'Krishna', 'Ukesh'];
+
 const paymentMethodOptions = [
   { value: 'cash4', label: 'Cash' },
   { value: 'cod', label: 'Cash on Delivery' },
@@ -24,6 +26,7 @@ const formatPaymentMethod = (method: string) => {
 
 export default function AdminOrdersPage() {
   const [status, setStatus] = useState('all');
+  const [soldBy, setSoldBy] = useState('all');
   const [search, setSearch] = useState('');
   const [viewMode, setViewMode] = useState<'customer' | 'pos'>('customer');
   const [page, setPage] = useState(1);
@@ -35,9 +38,10 @@ export default function AdminOrdersPage() {
 
   const queryParams = useMemo(() => ({
     status: status === 'all' ? undefined : status,
+    soldBy: soldBy === 'all' ? undefined : soldBy,
     search: search.trim() || undefined,
     limit: 30,
-  }), [status, search]);
+  }), [status, soldBy, search]);
 
   const { data, error, isLoading, mutate } = useSWR(
     ['admin-orders', queryParams],
@@ -50,12 +54,13 @@ export default function AdminOrdersPage() {
     const source = orders.filter((order: any) => {
       const orderStatus = (order.orderStatus || order.status || 'pending').toString().toLowerCase();
       const matchesStatus = status === 'all' || orderStatus === status;
-      const searchable = `${order.orderNumber || ''} ${order.user?.name || ''} ${order.shippingAddress?.name || ''} ${order.shippingAddress?.phone || ''}`.toLowerCase();
+      const matchesSoldBy = soldBy === 'all' || (order.soldBy || 'Not Recorded') === soldBy;
+      const searchable = `${order.orderNumber || ''} ${order.user?.name || ''} ${order.shippingAddress?.name || ''} ${order.shippingAddress?.phone || ''} ${order.soldBy || ''}`.toLowerCase();
       const matchesSearch = !normalized || searchable.includes(normalized);
-      return matchesStatus && matchesSearch;
+      return matchesStatus && matchesSoldBy && matchesSearch;
     });
     return source.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-  }, [orders, search, status, page]);
+  }, [orders, search, status, soldBy, page]);
 
   const totalPages = Math.max(1, Math.ceil(orders.length / PAGE_SIZE));
 
@@ -160,7 +165,7 @@ export default function AdminOrdersPage() {
             </p>
           </div>
 
-          <div className="grid gap-3 w-full sm:grid-cols-[220px_auto]">
+          <div className="grid gap-3 w-full sm:grid-cols-[220px_220px_auto]">
             <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
               <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Filter status</label>
               <select
@@ -170,6 +175,19 @@ export default function AdminOrdersPage() {
               >
                 {statusOptions.map((option) => (
                   <option key={option} value={option}>{option === 'all' ? 'All statuses' : option}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+              <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Filter sold by</label>
+              <select
+                className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-primary"
+                value={soldBy}
+                onChange={(e) => setSoldBy(e.target.value)}
+              >
+                {soldByOptions.map((option) => (
+                  <option key={option} value={option}>{option === 'all' ? 'All partners' : option}</option>
                 ))}
               </select>
             </div>
@@ -235,6 +253,7 @@ export default function AdminOrdersPage() {
                     </div>
                     <div className="mt-3 space-y-2 text-sm text-slate-600">
                       <p>Customer: {order.user?.name || order.shippingAddress?.name || 'Guest'}</p>
+                      <p>Sold By: {order.soldBy || 'Not Recorded'}</p>
                       <p>Status: {order.orderStatus}</p>
                       <p>Payment: {order.paymentMethod || 'N/A'}</p>
                     </div>
@@ -246,9 +265,10 @@ export default function AdminOrdersPage() {
           </div>
         ) : (
           <div className="min-w-[840px]">
-            <div className="grid gap-0 border-b border-slate-200 bg-slate-100 px-6 py-4 text-sm font-semibold uppercase tracking-[0.2em] text-slate-500 sm:grid-cols-[1.4fr_1fr_1fr_1fr_0.8fr_0.8fr]">
+            <div className="grid gap-0 border-b border-slate-200 bg-slate-100 px-6 py-4 text-sm font-semibold uppercase tracking-[0.2em] text-slate-500 sm:grid-cols-[1.4fr_1fr_1fr_1fr_1fr_0.8fr_0.8fr]">
               <span>Order</span>
               <span>Customer</span>
+              <span>Sold By</span>
               <span>Status</span>
               <span>Payment</span>
               <span>Ledger</span>
@@ -267,13 +287,16 @@ export default function AdminOrdersPage() {
             ) : (
               <div className="divide-y divide-slate-200">
                 {filteredOrders.map((order: any) => (
-                  <div key={order._id} className="grid items-center gap-4 px-6 py-5 sm:grid-cols-[1.4fr_1fr_1fr_1fr_0.8fr_0.8fr]">
+                  <div key={order._id} className="grid items-center gap-4 px-6 py-5 sm:grid-cols-[1.4fr_1fr_1fr_1fr_1fr_0.8fr_0.8fr]">
                     <div>
                       <p className="font-semibold text-slate-900">{order.orderNumber || order._id}</p>
                       <p className="text-sm text-slate-500">{new Date(order.createdAt).toLocaleDateString()}</p>
                     </div>
                     <div className="text-slate-900">
                       {order.user?.name || order.shippingAddress?.name || 'Guest'}
+                    </div>
+                    <div className="text-slate-900">
+                      {order.soldBy || 'Not Recorded'}
                     </div>
                     <div>
                       <select

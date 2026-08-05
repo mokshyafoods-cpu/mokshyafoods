@@ -152,6 +152,7 @@ export const paymentLedgerAPI = {
   getByOrderId: (orderId: string) => apiClient.get(`/payment-ledger/order/${orderId}`),
   createOrUpdate: (data: any) => apiClient.post('/payment-ledger', data),
   update: (id: string, data: any) => apiClient.put(`/payment-ledger/${id}`, data),
+  delete: (id: string) => apiClient.delete(`/payment-ledger/${id}`),
 };
 
 export const reviewAPI = {

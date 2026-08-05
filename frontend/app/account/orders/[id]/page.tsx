@@ -135,6 +135,9 @@ export default function OrderDetailPage() {
               {order.shippingAddress?.phone && (
                 <p className="mt-3 text-sm text-slate-500">Phone: {order.shippingAddress.phone}</p>
               )}
+              {order.soldBy && (
+                <p className="mt-3 text-sm text-slate-500">Sold by: {order.soldBy}</p>
+              )}
             </div>
             <div className="rounded-[1.75rem] border border-slate-200 bg-slate-50 p-5">
               <p className="text-sm text-slate-500">Payment Method</p>

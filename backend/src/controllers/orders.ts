@@ -406,11 +406,13 @@ export const getAllOrders = async (req: AuthenticatedRequest, res: Response): Pr
     const skip = (page - 1) * limit;
 
     const status = req.query.status ? String(req.query.status).toLowerCase() : undefined;
+    const soldBy = req.query.soldBy ? String(req.query.soldBy).trim() : undefined;
     const search = req.query.search ? String(req.query.search).trim() : undefined;
 
     const ordersColl = mongoose.connection.collection('orders');
     const filter: any = {};
     if (status && status !== 'all') filter.$or = [{ status }, { orderStatus: status }];
+    if (soldBy && soldBy !== 'all') filter.soldBy = soldBy;
     if (search) {
       const s = new RegExp(search, 'i');
       filter.$or = [
@@ -419,6 +421,7 @@ export const getAllOrders = async (req: AuthenticatedRequest, res: Response): Pr
         { 'shippingAddress.name': { $regex: s } },
         { 'shippingAddress.phone': { $regex: s } },
         { 'user.email': { $regex: s } },
+        { soldBy: { $regex: s } },
       ];
     }
 
@@ -522,7 +525,7 @@ export const updateOrderStatus = async (req: Request & { userId?: string; userRo
     const updatePayload: Record<string, any> = { updatedAt: new Date() };
 
     if (isAdmin) {
-      const allowedAdminFields = ['orderStatus', 'status', 'paymentStatus', 'trackingInfo', 'staffNote', 'cancelReason', 'isCashCollected'];
+      const allowedAdminFields = ['orderStatus', 'status', 'paymentStatus', 'trackingInfo', 'soldBy', 'staffNote', 'cancelReason', 'isCashCollected'];
       for (const key of allowedAdminFields) {
         if (key in update) {
           updatePayload[key] = update[key];

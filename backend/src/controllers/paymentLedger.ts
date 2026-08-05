@@ -148,9 +148,29 @@ export const updatePaymentLedger = async (req: AuthenticatedRequest, res: Respon
   }
 };
 
+export const deletePaymentLedger = async (req: AuthenticatedRequest, res: Response): Promise<Response> => {
+  try {
+    const rawId = req.params.id;
+    const id = Array.isArray(rawId) ? rawId[0] : rawId;
+    if (!id) return res.status(400).json({ success: false, message: 'Ledger id required' });
+
+    const ledgerColl = mongoose.connection.collection('paymentLedger');
+    const result = await ledgerColl.deleteOne({ _id: new mongoose.Types.ObjectId(id) });
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ success: false, message: 'Ledger entry not found' });
+    }
+
+    return res.json({ success: true, message: 'Ledger entry deleted' });
+  } catch (error: any) {
+    console.error('deletePaymentLedger error:', error);
+    return res.status(500).json({ success: false, message: error.message || 'Failed to delete payment ledger entry' });
+  }
+};
+
 export default {
   getAllPaymentLedger,
   getPaymentLedgerByOrderId,
   createOrUpdatePaymentLedger,
   updatePaymentLedger,
+  deletePaymentLedger,
 };

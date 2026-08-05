@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { adminAPI } from '@/services/api';
 import { toast } from 'sonner';
+import { Trash2 } from 'lucide-react';
 
 interface RawMaterialRow {
   _id: string;
@@ -70,6 +71,17 @@ export default function AdminRawMaterialsPage() {
       loadData(1);
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Unable to save purchase');
+    }
+  };
+
+  const handleDeleteRawMaterial = async (id: string) => {
+    if (!window.confirm('Delete this raw material purchase?')) return;
+    try {
+      await adminAPI.deleteRawMaterial(id);
+      toast.success('Raw material purchase deleted');
+      loadData(1);
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Unable to delete purchase');
     }
   };
 
@@ -170,9 +182,14 @@ export default function AdminRawMaterialsPage() {
                     <p className="text-sm text-slate-500">{item.supplier || 'No supplier'} • {item.quantityPurchased} {item.unit}</p>
                     <p className="text-sm text-slate-500">Travel cost: RS {Number(item.travelCost || 0)}</p>
                   </div>
-                  <div className="text-right text-sm text-slate-600">
-                    <p>Total: RS {item.totalCost}</p>
-                    <p>{new Date(item.purchaseDate).toLocaleDateString('en-IN')}</p>
+                  <div className="flex items-center justify-between gap-4 sm:justify-end">
+                    <div className="text-right text-sm text-slate-600">
+                      <p>Total: RS {item.totalCost}</p>
+                      <p>{new Date(item.purchaseDate).toLocaleDateString('en-IN')}</p>
+                    </div>
+                    <button type="button" onClick={() => void handleDeleteRawMaterial(item._id)} className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-100">
+                      <Trash2 className="h-4 w-4" /> Delete
+                    </button>
                   </div>
                 </div>
               </div>

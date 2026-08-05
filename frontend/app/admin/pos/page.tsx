@@ -57,6 +57,32 @@ const unwrapResponseData = (response: any, fallback: any = null) => {
   return response?.data ?? response ?? fallback;
 };
 
+const formatCurrency = (value: number | string): string => {
+  const amount = typeof value === 'number' ? value : Number(value || 0);
+  if (Number.isNaN(amount)) return '0';
+  return amount.toLocaleString('en-IN');
+};
+
+const formatPaymentMethod = (method: string | undefined): string => {
+  const normalized = String(method || '').trim().toLowerCase();
+  if (normalized === 'cod') return 'COD';
+  if (normalized === 'cash') return 'Cash';
+  return method || 'N/A';
+};
+
+const formatDateTime = (value: string | number | Date | undefined): string => {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleString('en-IN', {
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+};
+
 export default function POSPage() {
   const { user } = useAuth();
   const router = useRouter();
@@ -77,6 +103,7 @@ export default function POSPage() {
   const [discountMode, setDiscountMode] = useState<'flat' | 'percent'>('flat');
   const [discountReason, setDiscountReason] = useState('');
   const [tenderedAmount, setTenderedAmount] = useState(0);
+  const [soldBy, setSoldBy] = useState<'Bishal' | 'Krishna' | 'Ukesh' | ''>('');
   const [tillHistory, setTillHistory] = useState<any[]>([]);
   const [openTill, setOpenTill] = useState<any>(null);
   const [startingCash, setStartingCash] = useState('');
@@ -359,46 +386,48 @@ export default function POSPage() {
       return;
     }
 
-    if (paymentMethod === 'cash' && tenderedAmount < total) {
-      toast.error('Amount tendered must cover total');
-      return;
-    }
+      if (!soldBy) {
+        toast.error('Please select who sold this order');
+        return;
+      }
 
-    setIsLoading(true);
-    try {
-      const response = await posAPI.createOrder({
-        items: cart.map((item) => ({ product: item.productId, quantity: item.quantity, price: item.price })),
-        customerName: customerName.trim() || attachedCustomer?.name || 'Walk-in Customer',
-        customerPhone: customerPhone.trim() || attachedCustomer?.phone || '',
-        customerEmail: '',
-        paymentMethod,
-        discountAmount,
-        customerId: attachedCustomer?._id,
-        tenderedAmount: paymentMethod === 'cash' ? tenderedAmount : 0,
-        notes: discountReason,
-      });
+      if (paymentMethod === 'cash' && tenderedAmount < total) {
+        toast.error('Amount tendered must cover total');
+        return;
+      }
 
-      const payload = unwrapResponseData(response, null);
-      const nextReceiptOrder = payload && typeof payload === 'object' ? payload : null;
-      setReceiptOrder(nextReceiptOrder);
-      setInvoiceNumber(nextReceiptOrder?.invoiceNumber || 'BILL-TBD');
-      setShowReceipt(true);
-      setCart([]);
-      setAttachedCustomer(null);
-      setCustomerPhone('');
-      setCustomerName('');
-      setDiscountValue(0);
-      setDiscountMode('flat');
-      setDiscountReason('');
-      setTenderedAmount(0);
-      setPaymentOpen(false);
-      loadTillHistory();
-    } catch (error) {
-      toast.error('Payment failed');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+      setIsLoading(true);
+      try {
+        const response = await posAPI.createOrder({
+          items: cart.map((item) => ({ product: item.productId, quantity: item.quantity, price: item.price })),
+          customerName: customerName.trim() || attachedCustomer?.name || 'Walk-in Customer',
+          customerPhone: customerPhone.trim() || attachedCustomer?.phone || '',
+          customerEmail: '',
+          paymentMethod,
+          soldBy,
+        });
+
+        const payload = unwrapResponseData(response, null);
+        const nextReceiptOrder = payload && typeof payload === 'object' ? payload : null;
+        setReceiptOrder(nextReceiptOrder);
+        setInvoiceNumber(nextReceiptOrder?.invoiceNumber || 'BILL-TBD');
+        setShowReceipt(true);
+        setCart([]);
+        setAttachedCustomer(null);
+        setCustomerPhone('');
+        setCustomerName('');
+        setDiscountValue(0);
+        setDiscountMode('flat');
+        setDiscountReason('');
+        setTenderedAmount(0);
+        setPaymentOpen(false);
+        loadTillHistory();
+      } catch (error) {
+        toast.error('Payment failed');
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
   if (!user || !['admin', 'cashier'].includes(user.role)) {
     return (
@@ -574,6 +603,19 @@ export default function POSPage() {
                 placeholder="Phone"
                 className="w-full rounded-[1.75rem] border border-slate-800 bg-slate-900 px-4 py-3 text-sm text-white placeholder:text-slate-500 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
               />
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-slate-300">Sold By</label>
+                <select
+                  value={soldBy}
+                  onChange={(e) => setSoldBy(e.target.value as 'Bishal' | 'Krishna' | 'Ukesh' | '')}
+                  className="w-full rounded-[1.75rem] border border-slate-800 bg-slate-900 px-4 py-3 text-sm text-white outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                >
+                  <option value="">Select partner</option>
+                  <option value="Bishal">Bishal</option>
+                  <option value="Krishna">Krishna</option>
+                  <option value="Ukesh">Ukesh</option>
+                </select>
+              </div>
               <div className="mt-2 space-y-2">
                 <div className="flex items-center gap-2">
                   <select
@@ -846,86 +888,101 @@ export default function POSPage() {
 
       {showReceipt && receiptOrder && (
         <div ref={receiptRef} className="receipt-print">
-          <div className="mx-auto w-[320px] rounded-3xl border border-slate-200 bg-white p-6 text-slate-900">
-            <div className="text-center">
-              <p className="text-xl font-semibold">Mokshya Foods</p>
-              <p className="mt-1 text-xs text-slate-500">Tilottama-01, Banbitika, Rupandehi • Lumbini Zone</p>
-              <p className="mt-1 text-xs text-slate-500">PAN: 624385631</p>
+          <div className="receipt-content">
+            <div className="receipt-header">
+              <p className="brand-name">Mokshya Foods</p>
+              <p className="business-details">Tilottama-01, Banbitika, Rupandehi • Lumbini Zone</p>
+              <p className="business-details">PAN: 624385631</p>
             </div>
-            <div className="mt-6 space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span>Bill No.</span>
-                <span>{receiptOrder.invoiceNumber || invoiceNumber}</span>
+
+            <div className="receipt-section">
+              <div className="receipt-row">
+                <span className="receipt-key">Bill No.</span>
+                <span className="receipt-value">{receiptOrder.invoiceNumber || invoiceNumber}</span>
               </div>
-              <div className="flex justify-between">
-                <span>Date</span>
-                <span>{new Date(receiptOrder.createdAt).toLocaleString('en-IN')}</span>
+              <div className="receipt-row">
+                <span className="receipt-key">Date</span>
+                <span className="receipt-value">{formatDateTime(receiptOrder.createdAt)}</span>
               </div>
-              <div className="flex justify-between">
-                <span>Cashier</span>
-                <span>{user.name}</span>
+              <div className="receipt-row">
+                <span className="receipt-key">Customer</span>
+                <span className="receipt-value">{receiptOrder.user?.name || 'Walk-in Customer'}</span>
               </div>
-              <div className="flex justify-between">
-                <span>Customer</span>
-                <span>{receiptOrder.user?.name || 'Walk-in Customer'}</span>
+              <div className="receipt-row">
+                <span className="receipt-key">Contact</span>
+                <span className="receipt-value">{receiptOrder.user?.phone || '—'}</span>
               </div>
-              <div className="flex justify-between">
-                <span>Contact</span>
-                <span>{receiptOrder.user?.phone || '—'}</span>
+              <div className="receipt-row">
+                <span className="receipt-key">Sold By</span>
+                <span className="receipt-value">{receiptOrder.soldBy || 'Not Recorded'}</span>
               </div>
             </div>
-            <div className="mt-6 border-t border-slate-200 pt-4 text-sm">
+
+            <div className="receipt-section receipt-items">
               {receiptOrder.items.map((item: any, index: number) => {
                 const productId = item?.product?._id || item?.productId || item?.product?.id || `receipt-item-${index}`;
                 const productName = item.name || item.productData?.name || item.product?.name || 'Product';
                 return (
-                  <div key={productId} className="mb-3 flex justify-between gap-2">
+                  <div key={productId} className="item">
                     <div>
-                      <p className="font-medium">{productName}</p>
-                      <p className="text-xs text-slate-500">{item.quantity} × RS {item.price}</p>
+                      <p className="item-name">{productName}</p>
+                      <p className="item-meta">{item.quantity} × Rs {formatCurrency(item.price)}</p>
                     </div>
-                    <p className="font-semibold">RS {item.subtotal}</p>
+                    <p className="item-total">Rs {formatCurrency(item.subtotal)}</p>
                   </div>
                 );
               })}
             </div>
-            <div className="space-y-2 border-t border-slate-200 pt-4 text-sm">
-              <div className="flex justify-between">
-                <span>Subtotal</span>
-                <span>RS {receiptOrder.subtotal}</span>
+
+            <div className="receipt-section totals">
+              <div className="total-row">
+                <span className="total-label">Subtotal</span>
+                <span className="total-value">Rs {formatCurrency(receiptOrder.subtotal)}</span>
               </div>
-              <div className="flex justify-between">
-                <span>Discount</span>
-                <span>- RS {receiptOrder.discountAmount}</span>
+              <div className="total-row">
+                <span className="total-label">Discount</span>
+                <span className="total-value">
+                  {Number(receiptOrder.discountAmount || 0) > 0 ? `- Rs ${formatCurrency(receiptOrder.discountAmount)}` : 'Rs 0'}
+                </span>
               </div>
-              {receiptOrder.taxAmount > 0 && (
-                <div className="flex justify-between">
-                  <span>Tax</span>
-                  <span>RS {receiptOrder.taxAmount}</span>
+              {Number(receiptOrder.deliveryCharge ?? receiptOrder.shippingCost ?? 0) > 0 && (
+                <div className="total-row">
+                  <span className="total-label">Delivery</span>
+                  <span className="total-value">Rs {formatCurrency(receiptOrder.deliveryCharge ?? receiptOrder.shippingCost ?? 0)}</span>
                 </div>
               )}
-              <div className="flex justify-between text-base font-semibold">
-                <span>Total</span>
-                <span>RS {receiptOrder.total}</span>
+              {Number(receiptOrder.taxAmount || 0) > 0 && (
+                <div className="total-row">
+                  <span className="total-label">Tax</span>
+                  <span className="total-value">Rs {formatCurrency(receiptOrder.taxAmount)}</span>
+                </div>
+              )}
+              <div className="total-row grand-total">
+                <span className="total-label">TOTAL</span>
+                <span className="total-value">Rs {formatCurrency(receiptOrder.total)}</span>
               </div>
-              <div className="flex justify-between text-sm text-slate-600">
-                <span>Payment</span>
-                <span>{receiptOrder.paymentMethod}</span>
+            </div>
+
+            <div className="receipt-section receipt-payment">
+              <div className="receipt-row">
+                <span className="receipt-key">Payment</span>
+                <span className="receipt-value">{formatPaymentMethod(receiptOrder.paymentMethod)}</span>
               </div>
               {receiptOrder.paymentMethod === 'cash' && (
                 <>
-                  <div className="flex justify-between text-sm text-slate-600">
-                    <span>Tendered</span>
-                    <span>RS {receiptOrder.tenderedAmount}</span>
+                  <div className="receipt-row">
+                    <span className="receipt-key">Tendered</span>
+                    <span className="receipt-value">Rs {formatCurrency(receiptOrder.tenderedAmount)}</span>
                   </div>
-                  <div className="flex justify-between text-sm text-slate-600">
-                    <span>Change</span>
-                    <span>RS {receiptOrder.changeDue}</span>
+                  <div className="receipt-row">
+                    <span className="receipt-key">Change</span>
+                    <span className="receipt-value">Rs {formatCurrency(receiptOrder.changeDue)}</span>
                   </div>
                 </>
               )}
             </div>
-            <p className="mt-6 text-center text-xs text-slate-500">Thank you for shopping at Mokshya Foods!</p>
+
+            <p className="footer">Thank you for shopping with Mokshya Foods!</p>
           </div>
         </div>
       )}

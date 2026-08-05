@@ -100,6 +100,7 @@ export const createPOSOrder = async (req: AuthenticatedRequest, res: Response): 
     const paymentMethod = String(body.paymentMethod || 'cash').toLowerCase();
     const tenderedAmount = paymentMethod === 'cash' ? Number(body.tenderedAmount || 0) : 0;
     const changeDue = Math.max(0, tenderedAmount - total);
+    const soldBy = String(body.soldBy || '').trim();
     const orderNumber = buildOrderNumber();
     const counterDoc = await InvoiceCounter.findOneAndUpdate(
       { key: 'pos-bills' },
@@ -126,6 +127,7 @@ export const createPOSOrder = async (req: AuthenticatedRequest, res: Response): 
       taxAmount: 0,
       total,
       paymentMethod,
+      soldBy,
       paymentStatus: paymentMethod === 'cash' ? 'paid' : 'pending',
       orderStatus: 'completed',
       status: 'completed',

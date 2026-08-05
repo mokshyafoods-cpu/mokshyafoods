@@ -1,6 +1,6 @@
 import express from 'express';
 import { authMiddleware, adminMiddleware } from '../middleware/auth';
-import { createOrUpdatePaymentLedger, getAllPaymentLedger, getPaymentLedgerByOrderId, updatePaymentLedger } from '../controllers/paymentLedger';
+import { createOrUpdatePaymentLedger, getAllPaymentLedger, getPaymentLedgerByOrderId, updatePaymentLedger, deletePaymentLedger } from '../controllers/paymentLedger';
 
 const router = express.Router();
 
@@ -8,5 +8,6 @@ router.get('/', adminMiddleware, getAllPaymentLedger);
 router.get('/order/:orderId', adminMiddleware, getPaymentLedgerByOrderId);
 router.post('/', adminMiddleware, createOrUpdatePaymentLedger);
 router.put('/:id', adminMiddleware, updatePaymentLedger);
+router.delete('/:id', adminMiddleware, deletePaymentLedger);
 
 export default router;
