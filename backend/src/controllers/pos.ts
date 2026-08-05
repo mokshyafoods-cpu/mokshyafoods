@@ -97,8 +97,20 @@ export const createPOSOrder = async (req: AuthenticatedRequest, res: Response): 
     const subtotal = normalizedItems.reduce((sum, item) => sum + Number(item.subtotal || 0), 0);
     const discountAmount = Number(body.discountAmount || 0);
     const total = Math.max(0, subtotal - discountAmount);
-    const paymentMethod = String(body.paymentMethod || 'cash').toLowerCase();
-    const tenderedAmount = paymentMethod === 'cash' ? Number(body.tenderedAmount || 0) : 0;
+    const transactionType = String(body.transactionType || 'customer_sale').trim();
+    const notes = String(body.notes || '').trim();
+    const normalizedPaymentMethod = transactionType === 'customer_sale' ? String(body.paymentMethod || 'cash').toLowerCase() : 'cash';
+    const tenderedAmount = transactionType === 'customer_sale' && normalizedPaymentMethod === 'cash' ? Number(body.tenderedAmount || 0) : 0;
+    const paymentStatus = transactionType === 'customer_sale'
+      ? normalizedPaymentMethod === 'cash'
+        ? 'paid'
+        : 'pending'
+      : transactionType === 'partner_sale'
+        ? 'paid'
+        : 'pending';
+    const status = transactionType === 'partner_product_taken' ? 'pending' : 'completed';
+    const orderStatus = status;
+    const paymentMethod = normalizedPaymentMethod;
     const changeDue = Math.max(0, tenderedAmount - total);
     const soldBy = String(body.soldBy || '').trim();
     const orderNumber = buildOrderNumber();
@@ -126,15 +138,16 @@ export const createPOSOrder = async (req: AuthenticatedRequest, res: Response): 
       discountAmount,
       taxAmount: 0,
       total,
+      transactionType,
       paymentMethod,
       soldBy,
-      paymentStatus: paymentMethod === 'cash' ? 'paid' : 'pending',
-      orderStatus: 'completed',
-      status: 'completed',
+      paymentStatus,
+      orderStatus,
+      status,
       tenderedAmount,
       changeDue,
       channel: 'pos',
-      notes: body.notes || '',
+      notes,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -163,11 +176,28 @@ export const getDailySalesReport = async (_req: Request, res: Response): Promise
     const ordersColl = mongoose.connection.collection('orders');
     const startOfDay = new Date();
     startOfDay.setHours(0, 0, 0, 0);
-    const [orders, totalRevenue] = await Promise.all([
+    const [orders, totalRevenue, partnerProductsTakenCount, partnerSalesValueData] = await Promise.all([
       ordersColl.find({ createdAt: { $gte: startOfDay } }).toArray(),
-      ordersColl.aggregate([{ $match: { createdAt: { $gte: startOfDay } } }, { $group: { _id: null, total: { $sum: '$total' } } }]).toArray(),
+      ordersColl.aggregate([
+        { $match: { createdAt: { $gte: startOfDay }, transactionType: { $ne: 'partner_product_taken' } } },
+        { $group: { _id: null, total: { $sum: '$total' } } },
+      ]).toArray(),
+      ordersColl.countDocuments({ createdAt: { $gte: startOfDay }, transactionType: 'partner_product_taken' }),
+      ordersColl.aggregate([
+        { $match: { createdAt: { $gte: startOfDay }, transactionType: 'partner_sale' } },
+        { $group: { _id: null, total: { $sum: '$total' } } },
+      ]).toArray(),
     ]);
-    return res.status(200).json({ success: true, data: { orders: orders.length, totalRevenue: Number(totalRevenue[0]?.total || 0) } });
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        orders: orders.length,
+        totalRevenue: Number(totalRevenue[0]?.total || 0),
+        partnerProductsTakenCount,
+        partnerSalesValue: Number(partnerSalesValueData[0]?.total || 0),
+      },
+    });
   } catch (error: any) {
     console.error('getDailySalesReport error:', error);
     return res.status(500).json({ success: false, message: error.message || 'Failed to load daily sales report' });
@@ -177,10 +207,12 @@ export const getDailySalesReport = async (_req: Request, res: Response): Promise
 export const getSalesSummary = async (_req: Request, res: Response): Promise<Response> => {
   try {
     const ordersColl = mongoose.connection.collection('orders');
+    const totalOrders = await ordersColl.countDocuments();
     const [overview] = await ordersColl.aggregate([
-      { $group: { _id: null, count: { $sum: 1 }, totalSales: { $sum: '$total' } } },
+      { $match: { transactionType: { $ne: 'partner_product_taken' } } },
+      { $group: { _id: null, totalSales: { $sum: '$total' } } },
     ]).toArray();
-    return res.status(200).json({ success: true, data: { count: overview?.count || 0, totalSales: Number(overview?.totalSales || 0) } });
+    return res.status(200).json({ success: true, data: { count: totalOrders, totalSales: Number(overview?.totalSales || 0) } });
   } catch (error: any) {
     console.error('getSalesSummary error:', error);
     return res.status(500).json({ success: false, message: error.message || 'Failed to load sales summary' });

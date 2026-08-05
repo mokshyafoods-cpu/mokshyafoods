@@ -49,6 +49,12 @@ interface CartItem {
 
 const LOW_STOCK_THRESHOLD = 10;
 
+const TRANSACTION_TYPE_OPTIONS = [
+  { value: 'customer_sale', label: 'Customer Sale' },
+  { value: 'partner_product_taken', label: 'Partner Product Taken' },
+  { value: 'partner_sale', label: 'Partner Sale' },
+];
+
 const unwrapResponseData = (response: any, fallback: any = null) => {
   if (!response) return fallback;
   if (response?.data && typeof response.data === 'object' && 'data' in response.data) {
@@ -103,6 +109,8 @@ export default function POSPage() {
   const [discountMode, setDiscountMode] = useState<'flat' | 'percent'>('flat');
   const [discountReason, setDiscountReason] = useState('');
   const [tenderedAmount, setTenderedAmount] = useState(0);
+  const [note, setNote] = useState('');
+  const [transactionType, setTransactionType] = useState<'customer_sale' | 'partner_product_taken' | 'partner_sale'>('customer_sale');
   const [soldBy, setSoldBy] = useState<'Bishal' | 'Krishna' | 'Ukesh' | ''>('');
   const [tillHistory, setTillHistory] = useState<any[]>([]);
   const [openTill, setOpenTill] = useState<any>(null);
@@ -321,7 +329,18 @@ export default function POSPage() {
     setDiscountMode('flat');
     setDiscountReason('');
     setTenderedAmount(0);
+    setNote('');
+    setTransactionType('customer_sale');
+    setSoldBy('');
+    setPaymentMethod('cash');
   };
+
+  useEffect(() => {
+    if (transactionType !== 'customer_sale') {
+      setPaymentMethod('cash');
+      setTenderedAmount(0);
+    }
+  }, [transactionType]);
 
   const attachCustomer = async () => {
     if (!customerPhone.trim()) {
@@ -399,12 +418,14 @@ export default function POSPage() {
       setIsLoading(true);
       try {
         const response = await posAPI.createOrder({
+          transactionType,
           items: cart.map((item) => ({ product: item.productId, quantity: item.quantity, price: item.price })),
           customerName: customerName.trim() || attachedCustomer?.name || 'Walk-in Customer',
           customerPhone: customerPhone.trim() || attachedCustomer?.phone || '',
           customerEmail: '',
           paymentMethod,
           soldBy,
+          notes: note,
         });
 
         const payload = unwrapResponseData(response, null);
@@ -587,36 +608,62 @@ export default function POSPage() {
               </div>
               <div className="rounded-full border border-slate-800 bg-slate-900 px-4 py-2 text-sm font-semibold text-slate-300">No Delivery</div>
             </div>
+            
 
             <div className="mt-6 space-y-4">
-              <input
-                type="text"
-                value={customerName}
-                onChange={(e) => setCustomerName(e.target.value)}
-                placeholder="Customer name"
-                className="w-full rounded-[1.75rem] border border-slate-800 bg-slate-900 px-4 py-3 text-sm text-white placeholder:text-slate-500 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-              />
-              <input
-                type="text"
-                value={customerPhone}
-                onChange={(e) => setCustomerPhone(e.target.value)}
-                placeholder="Phone"
-                className="w-full rounded-[1.75rem] border border-slate-800 bg-slate-900 px-4 py-3 text-sm text-white placeholder:text-slate-500 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-              />
               <div>
-                <label className="mb-2 block text-sm font-semibold text-slate-300">Sold By</label>
+                <label className="mb-2 block text-sm font-semibold text-slate-300">Transaction Type</label>
+                <select
+                  value={transactionType}
+                  onChange={(e) => setTransactionType(e.target.value as 'customer_sale' | 'partner_product_taken' | 'partner_sale')}
+                  className="w-full rounded-[1.75rem] border border-slate-800 bg-slate-900 px-4 py-3 text-sm text-white outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                >
+                  {TRANSACTION_TYPE_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </select>
+              </div>
+              {(transactionType === 'customer_sale' || transactionType === 'partner_sale') && (
+                <>
+                  <input
+                    type="text"
+                    value={customerName}
+                    onChange={(e) => setCustomerName(e.target.value)}
+                    placeholder="Customer name"
+                    className="w-full rounded-[1.75rem] border border-slate-800 bg-slate-900 px-4 py-3 text-sm text-white placeholder:text-slate-500 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                  />
+                  <input
+                    type="text"
+                    value={customerPhone}
+                    onChange={(e) => setCustomerPhone(e.target.value)}
+                    placeholder="Phone"
+                    className="w-full rounded-[1.75rem] border border-slate-800 bg-slate-900 px-4 py-3 text-sm text-white placeholder:text-slate-500 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                  />
+                </>
+              )}
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-slate-300">Person</label>
                 <select
                   value={soldBy}
                   onChange={(e) => setSoldBy(e.target.value as 'Bishal' | 'Krishna' | 'Ukesh' | '')}
                   className="w-full rounded-[1.75rem] border border-slate-800 bg-slate-900 px-4 py-3 text-sm text-white outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
                 >
-                  <option value="">Select partner</option>
+                  <option value="">Select person</option>
                   <option value="Bishal">Bishal</option>
                   <option value="Krishna">Krishna</option>
                   <option value="Ukesh">Ukesh</option>
                 </select>
               </div>
-              <div className="mt-2 space-y-2">
+              {(transactionType === 'partner_product_taken' || transactionType === 'partner_sale') && (
+                <textarea
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  placeholder="Optional note"
+                  rows={3}
+                  className="w-full rounded-[1.75rem] border border-slate-800 bg-slate-900 px-4 py-3 text-sm text-white placeholder:text-slate-500 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                />
+              )}
+            <div className="mt-2 space-y-2">
                 <div className="flex items-center gap-2">
                   <select
                     value={discountMode}
@@ -671,25 +718,35 @@ export default function POSPage() {
             <div className="mt-5 rounded-[1.75rem] bg-slate-900/80 p-5">
               <div className="flex items-center justify-between gap-4">
                 <p className="text-sm font-semibold uppercase tracking-[0.35em] text-slate-400">Payment method</p>
-                <span className="text-xs uppercase tracking-[0.35em] text-slate-400">{paymentMethod === 'cash' ? 'Cash sale' : 'Cash on delivery'}</span>
+                <span className="text-xs uppercase tracking-[0.35em] text-slate-400">
+                  {transactionType === 'customer_sale' ? (paymentMethod === 'cash' ? 'Cash sale' : 'Cash on delivery') : 'Cash (partner transaction)'}
+                </span>
               </div>
               <div className="mt-4 grid gap-2 sm:grid-cols-2">
-                <button
-                  type="button"
-                  onClick={() => setPaymentMethod('cash')}
-                  className={`rounded-full px-4 py-3 text-sm font-semibold transition ${paymentMethod === 'cash' ? 'bg-blue-600 text-white' : 'border border-slate-800 bg-slate-900 text-slate-300'}`}
-                >
-                  Cash
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPaymentMethod('cod')}
-                  className={`rounded-full px-4 py-3 text-sm font-semibold transition ${paymentMethod === 'cod' ? 'bg-blue-600 text-white' : 'border border-slate-800 bg-slate-900 text-slate-300'}`}
-                >
-                  COD
-                </button>
+                {transactionType === 'customer_sale' ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setPaymentMethod('cash')}
+                      className={`rounded-full px-4 py-3 text-sm font-semibold transition ${paymentMethod === 'cash' ? 'bg-blue-600 text-white' : 'border border-slate-800 bg-slate-900 text-slate-300'}`}
+                    >
+                      Cash
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPaymentMethod('cod')}
+                      className={`rounded-full px-4 py-3 text-sm font-semibold transition ${paymentMethod === 'cod' ? 'bg-blue-600 text-white' : 'border border-slate-800 bg-slate-900 text-slate-300'}`}
+                    >
+                      COD
+                    </button>
+                  </>
+                ) : (
+                  <div className="rounded-full border border-slate-800 bg-slate-900 px-4 py-3 text-sm text-white">
+                    Cash
+                  </div>
+                )}
               </div>
-              {paymentMethod === 'cash' && (
+              {transactionType === 'customer_sale' && paymentMethod === 'cash' && (
                 <div className="mt-4 space-y-3">
                   <input
                     type="number"
@@ -729,7 +786,6 @@ export default function POSPage() {
                 Print bill after order
               </label>
             </div>
-          </div>
 
           <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
             <p className="text-sm uppercase tracking-[0.35em] text-slate-400">Order items</p>
@@ -794,6 +850,7 @@ export default function POSPage() {
               )}
             </div>
           </div>
+        </div>
         </aside>
       </div>
 
@@ -913,9 +970,25 @@ export default function POSPage() {
                 <span className="receipt-value">{receiptOrder.user?.phone || '—'}</span>
               </div>
               <div className="receipt-row">
-                <span className="receipt-key">Sold By</span>
+                <span className="receipt-key">Transaction Type</span>
+                <span className="receipt-value">{receiptOrder.transactionType === 'partner_product_taken' ? 'Partner Product Taken' : receiptOrder.transactionType === 'partner_sale' ? 'Partner Sale' : 'Customer Sale'}</span>
+              </div>
+              <div className="receipt-row">
+                <span className="receipt-key">Person</span>
                 <span className="receipt-value">{receiptOrder.soldBy || 'Not Recorded'}</span>
               </div>
+              {receiptOrder.transactionType === 'partner_product_taken' && (
+                <div className="receipt-row">
+                  <span className="receipt-key">Status</span>
+                  <span className="receipt-value">Pending</span>
+                </div>
+              )}
+              {receiptOrder.notes && (
+                <div className="receipt-row">
+                  <span className="receipt-key">Note</span>
+                  <span className="receipt-value">{receiptOrder.notes}</span>
+                </div>
+              )}
             </div>
 
             <div className="receipt-section receipt-items">

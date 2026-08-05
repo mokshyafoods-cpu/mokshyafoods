@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 const statusOptions = ['all', 'pending', 'processing', 'shipped', 'delivered', 'cancelled'];
 
 const soldByOptions = ['all', 'Bishal', 'Krishna', 'Ukesh'];
+const transactionTypeOptions = ['all', 'customer_sale', 'partner_product_taken', 'partner_sale'];
 
 const paymentMethodOptions = [
   { value: 'cash4', label: 'Cash' },
@@ -27,6 +28,7 @@ const formatPaymentMethod = (method: string) => {
 export default function AdminOrdersPage() {
   const [status, setStatus] = useState('all');
   const [soldBy, setSoldBy] = useState('all');
+  const [transactionType, setTransactionType] = useState('all');
   const [search, setSearch] = useState('');
   const [viewMode, setViewMode] = useState<'customer' | 'pos'>('customer');
   const [page, setPage] = useState(1);
@@ -39,9 +41,10 @@ export default function AdminOrdersPage() {
   const queryParams = useMemo(() => ({
     status: status === 'all' ? undefined : status,
     soldBy: soldBy === 'all' ? undefined : soldBy,
+    transactionType: transactionType === 'all' ? undefined : transactionType,
     search: search.trim() || undefined,
     limit: 30,
-  }), [status, soldBy, search]);
+  }), [status, soldBy, transactionType, search]);
 
   const { data, error, isLoading, mutate } = useSWR(
     ['admin-orders', queryParams],
@@ -193,6 +196,19 @@ export default function AdminOrdersPage() {
             </div>
 
             <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+              <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Filter type</label>
+              <select
+                className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-primary"
+                value={transactionType}
+                onChange={(e) => setTransactionType(e.target.value)}
+              >
+                {transactionTypeOptions.map((option) => (
+                  <option key={option} value={option}>{option === 'all' ? 'All types' : option.replace(/_/g, ' ')}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
               <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Search orders</label>
               <div className="mt-2 flex items-center gap-2 rounded-2xl bg-white px-3 py-2">
                 <Search className="h-4 w-4 text-slate-400" />
@@ -253,6 +269,7 @@ export default function AdminOrdersPage() {
                     </div>
                     <div className="mt-3 space-y-2 text-sm text-slate-600">
                       <p>Customer: {order.user?.name || order.shippingAddress?.name || 'Guest'}</p>
+                      <p>Type: {order.transactionType === 'partner_product_taken' ? 'Partner Product Taken' : order.transactionType === 'partner_sale' ? 'Partner Sale' : 'Customer Sale'}</p>
                       <p>Sold By: {order.soldBy || 'Not Recorded'}</p>
                       <p>Status: {order.orderStatus}</p>
                       <p>Payment: {order.paymentMethod || 'N/A'}</p>

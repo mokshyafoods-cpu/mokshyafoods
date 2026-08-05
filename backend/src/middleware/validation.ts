@@ -87,12 +87,14 @@ export const createOrderValidator: ValidationChain[] = [
 ];
 
 export const updateOrderValidator: ValidationChain[] = [
-  body('status').optional().trim().isIn(['pending', 'processing', 'shipped', 'delivered', 'cancelled']).withMessage('Invalid order status'),
-  body('orderStatus').optional().trim().isIn(['pending', 'processing', 'shipped', 'delivered', 'cancelled']).withMessage('Invalid order status'),
+  body('transactionType').optional().trim().isIn(['customer_sale', 'partner_product_taken', 'partner_sale']).withMessage('Invalid transaction type'),
+  body('status').optional().trim().isIn(['pending', 'processing', 'shipped', 'delivered', 'completed', 'returned', 'cancelled']).withMessage('Invalid order status'),
+  body('orderStatus').optional().trim().isIn(['pending', 'processing', 'shipped', 'delivered', 'completed', 'returned', 'cancelled']).withMessage('Invalid order status'),
   body('paymentStatus').optional().trim().isIn(['pending', 'paid', 'cancelled']).withMessage('Invalid payment status'),
   body('trackingInfo').optional().isObject().withMessage('Tracking info must be an object'),
   body('soldBy').optional().trim().isIn(['Bishal', 'Krishna', 'Ukesh']).withMessage('Sold By must be one of Bishal, Krishna, or Ukesh'),
   body('staffNote').optional().trim(),
+  body('notes').optional().trim(),
   body('cancelReason').optional().trim(),
   body('isCashCollected').optional().isBoolean().withMessage('isCashCollected must be a boolean'),
 ];
@@ -124,6 +126,7 @@ export const paymentVerifyKhaltiValidator: ValidationChain[] = [
 ];
 
 export const posOrderValidator: ValidationChain[] = [
+  body('transactionType').trim().notEmpty().isIn(['customer_sale', 'partner_product_taken', 'partner_sale']).withMessage('Transaction type must be customer_sale, partner_product_taken, or partner_sale'),
   body('items').isArray({ min: 1 }).withMessage('Items are required'),
   body('items.*.product').isMongoId().withMessage('Valid product ID is required'),
   body('items.*.quantity').isInt({ min: 1 }).withMessage('Quantity must be at least 1'),

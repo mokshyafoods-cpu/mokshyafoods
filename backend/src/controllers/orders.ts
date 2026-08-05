@@ -406,12 +406,24 @@ export const getAllOrders = async (req: AuthenticatedRequest, res: Response): Pr
     const skip = (page - 1) * limit;
 
     const status = req.query.status ? String(req.query.status).toLowerCase() : undefined;
+    const transactionType = req.query.transactionType ? String(req.query.transactionType).trim() : undefined;
     const soldBy = req.query.soldBy ? String(req.query.soldBy).trim() : undefined;
     const search = req.query.search ? String(req.query.search).trim() : undefined;
 
     const ordersColl = mongoose.connection.collection('orders');
     const filter: any = {};
     if (status && status !== 'all') filter.$or = [{ status }, { orderStatus: status }];
+    if (transactionType && transactionType !== 'all') {
+      if (transactionType === 'customer_sale') {
+        filter.$or = [
+          ...(filter.$or || []),
+          { transactionType: 'customer_sale' },
+          { transactionType: { $exists: false } },
+        ];
+      } else {
+        filter.transactionType = transactionType;
+      }
+    }
     if (soldBy && soldBy !== 'all') filter.soldBy = soldBy;
     if (search) {
       const s = new RegExp(search, 'i');
@@ -422,6 +434,7 @@ export const getAllOrders = async (req: AuthenticatedRequest, res: Response): Pr
         { 'shippingAddress.phone': { $regex: s } },
         { 'user.email': { $regex: s } },
         { soldBy: { $regex: s } },
+        { transactionType: { $regex: s } },
       ];
     }
 

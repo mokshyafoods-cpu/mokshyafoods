@@ -135,8 +135,16 @@ export default function OrderDetailPage() {
               {order.shippingAddress?.phone && (
                 <p className="mt-3 text-sm text-slate-500">Phone: {order.shippingAddress.phone}</p>
               )}
+              {order.transactionType && (
+                <p className="mt-3 text-sm text-slate-500">
+                  Transaction: {order.transactionType === 'partner_product_taken' ? 'Partner Product Taken' : order.transactionType === 'partner_sale' ? 'Partner Sale' : 'Customer Sale'}
+                </p>
+              )}
               {order.soldBy && (
                 <p className="mt-3 text-sm text-slate-500">Sold by: {order.soldBy}</p>
+              )}
+              {order.notes && (
+                <p className="mt-3 text-sm text-slate-500">Note: {order.notes}</p>
               )}
             </div>
             <div className="rounded-[1.75rem] border border-slate-200 bg-slate-50 p-5">

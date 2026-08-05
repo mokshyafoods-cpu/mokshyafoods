@@ -41,6 +41,83 @@ export default function AdminReportsPage() {
     URL.revokeObjectURL(url);
   };
 
+  const exportExcel = async () => {
+    if (!report) return;
+
+    const XLSX = await import('xlsx');
+    const workbook = XLSX.utils.book_new();
+
+    const summaryRows = [
+      ['Metric', 'Value'],
+      ['Raw material spend', report.rawMaterialSpend || 0],
+      ['Website sales', report.websiteSales || 0],
+      ['POS sales', report.posSales || 0],
+      ['Total sales', report.totalSales || 0],
+      ['Partner products taken', report.partnerProductsTakenCount || 0],
+      ['Partner sales value', report.partnerSalesValue || 0],
+      ['Order count', report.ordersCount || 0],
+    ];
+    const summarySheet = XLSX.utils.aoa_to_sheet(summaryRows);
+    XLSX.utils.book_append_sheet(workbook, summarySheet, 'Summary');
+
+    const rawMaterialSheetData = [
+      ['Raw material', 'Spend'],
+      ...Object.entries(report.rawMaterialBreakdown || {}).map(([name, value]) => [name, value]),
+    ];
+    const rawMaterialSheet = XLSX.utils.aoa_to_sheet(rawMaterialSheetData);
+    XLSX.utils.book_append_sheet(workbook, rawMaterialSheet, 'Raw Materials');
+
+    const productionSheetData = [
+      ['Product', 'Quantity Produced'],
+      ...Object.entries(report.productionByProduct || {}).map(([name, quantity]) => [name, quantity]),
+    ];
+    const productionSheet = XLSX.utils.aoa_to_sheet(productionSheetData);
+    XLSX.utils.book_append_sheet(workbook, productionSheet, 'Production');
+
+    const rawMaterialsData = Array.isArray(report.rawMaterials)
+      ? [
+          ['Name', 'Purchase Date', 'Total Cost', 'Vendor', 'Notes'],
+          ...report.rawMaterials.map((item: any) => [
+            item.name || '',
+            item.purchaseDate ? new Date(item.purchaseDate).toLocaleDateString() : '',
+            item.totalCost || 0,
+            item.vendor || '',
+            item.notes || '',
+          ]),
+        ]
+      : [];
+    if (rawMaterialsData.length > 1) {
+      const rawMaterialsSheet = XLSX.utils.aoa_to_sheet(rawMaterialsData);
+      XLSX.utils.book_append_sheet(workbook, rawMaterialsSheet, 'Raw Material Purchases');
+    }
+
+    const productionBatchesData = Array.isArray(report.productionBatches)
+      ? [
+          ['Batch Number', 'Product', 'Quantity Produced', 'Production Date', 'Staff In Charge'],
+          ...report.productionBatches.map((batch: any) => [
+            batch.batchNumber || '',
+            batch.productName || '',
+            batch.quantityProduced || 0,
+            batch.productionDate ? new Date(batch.productionDate).toLocaleDateString() : '',
+            batch.staffInCharge || '',
+          ]),
+        ]
+      : [];
+    if (productionBatchesData.length > 1) {
+      const productionBatchesSheet = XLSX.utils.aoa_to_sheet(productionBatchesData);
+      XLSX.utils.book_append_sheet(workbook, productionBatchesSheet, 'Production Batches');
+    }
+
+    const wbout = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+    const blob = new Blob([wbout], { type: 'application/octet-stream' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'business-report.xlsx';
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   const breakdownEntries = useMemo(() => Object.entries(report?.rawMaterialBreakdown || {}), [report]);
 
   return (
@@ -55,6 +132,7 @@ export default function AdminReportsPage() {
             <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="rounded-2xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white" />
             <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="rounded-2xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white" />
             <button onClick={loadReport} className="rounded-2xl bg-primary px-4 py-2 text-sm font-semibold text-white">Apply</button>
+            <button onClick={exportExcel} className="rounded-2xl border border-slate-700 bg-slate-900 px-4 py-2 text-sm font-semibold text-white">Export Excel</button>
             <button onClick={exportCsv} className="rounded-2xl border border-slate-700 bg-slate-900 px-4 py-2 text-sm font-semibold text-white">Export CSV</button>
           </div>
         </div>

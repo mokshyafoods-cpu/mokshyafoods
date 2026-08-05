@@ -11,6 +11,37 @@ const getMonthRange = (month?: string) => {
   return { start, end };
 };
 
+const getReportRange = (month?: string, startDate?: string, endDate?: string) => {
+  const normalizeDate = (value?: string): Date | null => {
+    if (!value) return null;
+    const date = new Date(String(value));
+    return Number.isNaN(date.getTime()) ? null : date;
+  };
+
+  const start = normalizeDate(startDate);
+  const end = normalizeDate(endDate);
+
+  if (start && end) {
+    const inclusiveEnd = new Date(end);
+    inclusiveEnd.setHours(23, 59, 59, 999);
+    return { start, end: inclusiveEnd };
+  }
+
+  if (start && !end) {
+    const inclusiveEnd = new Date(start);
+    inclusiveEnd.setHours(23, 59, 59, 999);
+    return { start, end: inclusiveEnd };
+  }
+
+  if (!start && end) {
+    const normalizedStart = new Date(end);
+    normalizedStart.setHours(0, 0, 0, 0);
+    return { start: normalizedStart, end: new Date(end.setHours(23, 59, 59, 999)) };
+  }
+
+  return getMonthRange(month);
+};
+
 export const getDashboardStats = async (_req: Request, res: Response): Promise<Response> => {
   try {
     const productsColl = mongoose.connection.collection('products');
@@ -318,21 +349,26 @@ export const deleteProductionBatch = async (req: Request, res: Response): Promis
 export const getMonthlyBusinessReport = async (req: Request, res: Response): Promise<Response> => {
   try {
     const month = String(req.query.month || '').trim();
-    const { start, end } = getMonthRange(month || undefined);
+    const startDate = String(req.query.startDate || '').trim() || undefined;
+    const endDate = String(req.query.endDate || '').trim() || undefined;
+    const { start, end } = getReportRange(month || undefined, startDate, endDate);
     const [rawMaterials, batches, allOrders] = await Promise.all([
-      RawMaterial.find({ purchaseDate: { $gte: start, $lt: end } }).sort({ purchaseDate: -1 }).lean(),
-      ProductionBatch.find({ productionDate: { $gte: start, $lt: end } }).sort({ productionDate: -1 }).lean(),
-      mongoose.connection.collection('orders').find({ createdAt: { $gte: start, $lt: end } }).sort({ createdAt: -1 }).toArray(),
+      RawMaterial.find({ purchaseDate: { $gte: start, $lte: end } }).sort({ purchaseDate: -1 }).lean(),
+      ProductionBatch.find({ productionDate: { $gte: start, $lte: end } }).sort({ productionDate: -1 }).lean(),
+      mongoose.connection.collection('orders').find({ createdAt: { $gte: start, $lte: end } }).sort({ createdAt: -1 }).toArray(),
     ]);
 
     const websiteSales = allOrders.reduce((sum: number, order: any) => {
       const channel = String(order.channel || '').toLowerCase();
+      const transactionType = String(order.transactionType || 'customer_sale').trim();
+      if (transactionType === 'partner_product_taken') return sum;
       return channel === 'pos' ? sum : sum + Number(order.total || 0);
     }, 0);
 
     const posSales = allOrders.reduce((sum: number, order: any) => {
       const channel = String(order.channel || '').toLowerCase();
-      return channel === 'pos' ? sum + Number(order.total || 0) : sum;
+      const transactionType = String(order.transactionType || 'customer_sale').trim();
+      return channel === 'pos' && transactionType !== 'partner_product_taken' ? sum + Number(order.total || 0) : sum;
     }, 0);
 
     const totalSales = websiteSales + posSales;
@@ -350,6 +386,16 @@ export const getMonthlyBusinessReport = async (req: Request, res: Response): Pro
       return acc;
     }, {});
 
+    const partnerProductsTakenCount = allOrders.reduce((count: number, order: any) => {
+      const transactionType = String(order.transactionType || 'customer_sale').trim();
+      return transactionType === 'partner_product_taken' ? count + 1 : count;
+    }, 0);
+
+    const partnerSalesValue = allOrders.reduce((sum: number, order: any) => {
+      const transactionType = String(order.transactionType || 'customer_sale').trim();
+      return transactionType === 'partner_sale' ? sum + Number(order.total || 0) : sum;
+    }, 0);
+
     return res.json({
       success: true,
       data: {
@@ -362,6 +408,8 @@ export const getMonthlyBusinessReport = async (req: Request, res: Response): Pro
         totalSales,
         websiteSales,
         posSales,
+        partnerProductsTakenCount,
+        partnerSalesValue,
         ordersCount: allOrders.length,
       },
     });
