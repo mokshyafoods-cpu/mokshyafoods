@@ -72,6 +72,7 @@ export const api = apiClient;
 
 export const blogAPI = {
   getAll: (params?: any) => apiClient.get('/blog', { params }),
+  getBySlug: (slug: string) => apiClient.get(`/blog/${encodeURIComponent(slug)}`),
 };
 
 export const authAPI = {

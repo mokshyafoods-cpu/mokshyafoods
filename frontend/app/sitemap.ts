@@ -1,6 +1,6 @@
 import type { MetadataRoute } from 'next';
-import { productAPI } from '@/services/api';
-import { getProductSlug, getProductUrl } from '@/lib/productRoutes';
+import { productAPI, blogAPI } from '@/services/api';
+import { getProductUrl } from '@/lib/productRoutes';
 import { getSiteUrl } from '@/lib/seo';
 
 const baseUrl = getSiteUrl();
@@ -52,6 +52,28 @@ async function getProductSitemapEntries(): Promise<SitemapEntry[]> {
   }
 }
 
+async function getBlogSitemapEntries(): Promise<SitemapEntry[]> {
+  try {
+    const response = await blogAPI.getAll();
+    const posts = Array.isArray(response?.data?.data) ? response.data.data : [];
+
+    return posts
+      .map((post: any) => {
+        if (!post?.slug) return null;
+        return {
+          url: `${baseUrl}/blog/${post.slug}`,
+          lastModified: post?.updatedAt ? new Date(post.updatedAt) : undefined,
+          changeFrequency: 'weekly' as const,
+          priority: 0.7,
+        };
+      })
+      .filter(Boolean) as SitemapEntry[];
+  } catch (error) {
+    console.warn('Sitemap blog fetch failed. Falling back to static routes.', error);
+    return [];
+  }
+}
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
   const routes = staticRoutes.map((route) => ({
@@ -62,5 +84,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }));
 
   const productEntries = await getProductSitemapEntries();
-  return [...routes, ...productEntries];
+  const blogEntries = await getBlogSitemapEntries();
+  return [...routes, ...productEntries, ...blogEntries];
 }
