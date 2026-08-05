@@ -62,6 +62,9 @@ export default function ResetPasswordPage() {
 
       toast.success(response?.data?.message || 'Password reset successfully.');
       setSuccess(true);
+      window.setTimeout(() => {
+        router.push('/auth/login');
+      }, 1400);
     } catch (err: any) {
       toast.error(err?.response?.data?.message || 'Unable to reset your password right now.');
     } finally {
