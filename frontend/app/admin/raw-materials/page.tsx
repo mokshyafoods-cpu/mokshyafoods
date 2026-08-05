@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { adminAPI } from '@/services/api';
 import { toast } from 'sonner';
-import { Trash2 } from 'lucide-react';
+import { Download, Pencil, Save, Trash2, X } from 'lucide-react';
+import { downloadExcel } from '@/lib/excel';
 
 interface RawMaterialRow {
   _id: string;
@@ -26,6 +27,8 @@ export default function AdminRawMaterialsPage() {
   const [search, setSearch] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [editingMaterial, setEditingMaterial] = useState<RawMaterialRow | null>(null);
+  const [editForm, setEditForm] = useState({ name: '', unit: 'kg', supplier: '', quantityPurchased: '0', costPerUnit: '0', travelCost: '0', purchaseDate: new Date().toISOString().slice(0, 10), notes: '' });
   const [form, setForm] = useState({ name: '', unit: 'kg', supplier: '', quantityPurchased: '0', costPerUnit: '0', travelCost: '0', purchaseDate: new Date().toISOString().slice(0, 10), notes: '' });
 
   const loadData = async (nextPage = page) => {
@@ -74,15 +77,64 @@ export default function AdminRawMaterialsPage() {
     }
   };
 
-  const handleDeleteRawMaterial = async (id: string) => {
-    if (!window.confirm('Delete this raw material purchase?')) return;
+  const handleEditRawMaterial = (material: RawMaterialRow) => {
+    setEditingMaterial(material);
+    setEditForm({
+      name: material.name || '',
+      unit: material.unit || 'kg',
+      supplier: material.supplier || '',
+      quantityPurchased: String(material.quantityPurchased || 0),
+      costPerUnit: String(material.costPerUnit || 0),
+      travelCost: String(material.travelCost || 0),
+      purchaseDate: material.purchaseDate ? new Date(material.purchaseDate).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10),
+      notes: material.notes || '',
+    });
+  };
+
+  const saveEditedRawMaterial = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!editingMaterial?._id) return;
+
     try {
-      await adminAPI.deleteRawMaterial(id);
-      toast.success('Raw material purchase deleted');
-      loadData(1);
+      await adminAPI.updateRawMaterial(editingMaterial._id, {
+        name: editForm.name,
+        unit: editForm.unit,
+        supplier: editForm.supplier,
+        quantityPurchased: Number(editForm.quantityPurchased || 0),
+        costPerUnit: Number(editForm.costPerUnit || 0),
+        travelCost: Number(editForm.travelCost || 0),
+        purchaseDate: editForm.purchaseDate,
+        notes: editForm.notes,
+      });
+      toast.success('Raw material purchase updated');
+      setEditingMaterial(null);
+      loadData(page);
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Unable to delete purchase');
+      toast.error(error.response?.data?.message || 'Unable to update purchase');
     }
+  };
+
+  const exportRawMaterialsExcel = async () => {
+    if (!rows.length) return;
+    await downloadExcel('raw-material-purchases.xlsx', [
+      {
+        name: 'Raw Materials',
+        data: [
+          ['Material', 'Supplier', 'Quantity', 'Unit', 'Cost per Unit', 'Travel Cost', 'Total Cost', 'Purchase Date', 'Notes'],
+          ...rows.map((item) => [
+            item.name || '',
+            item.supplier || '',
+            item.quantityPurchased || 0,
+            item.unit || '',
+            item.costPerUnit || 0,
+            item.travelCost || 0,
+            item.totalCost || 0,
+            item.purchaseDate ? new Date(item.purchaseDate).toLocaleDateString() : '',
+            item.notes || '',
+          ]),
+        ],
+      },
+    ]);
   };
 
   return (
@@ -92,33 +144,41 @@ export default function AdminRawMaterialsPage() {
         <h1 className="mt-2 text-3xl font-semibold">Material purchases</h1>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
-          <p className="text-sm uppercase tracking-[0.3em] text-slate-400">This month</p>
-          <p className="mt-3 text-3xl font-semibold text-slate-900">RS {totalSpend}</p>
-        </div>
-        <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
-          <p className="text-sm uppercase tracking-[0.3em] text-slate-400">Total records</p>
-          <p className="mt-3 text-3xl font-semibold text-slate-900">{total}</p>
-        </div>
-        <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
-          <p className="text-sm uppercase tracking-[0.3em] text-slate-400">Filter</p>
-          <div className="mt-3 space-y-2">
-            <label className="block">
-              <span className="mb-1 block text-sm font-medium text-slate-700">Search material</span>
-              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Material name" className="w-full rounded-2xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200" />
-            </label>
-            <div className="grid gap-2 sm:grid-cols-2">
+      <div className="grid gap-4 xl:grid-cols-[1fr_auto]">
+        <div className="grid gap-4 md:grid-cols-3">
+          <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+            <p className="text-sm uppercase tracking-[0.3em] text-slate-400">This month</p>
+            <p className="mt-3 text-3xl font-semibold text-slate-900">RS {totalSpend}</p>
+          </div>
+          <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+            <p className="text-sm uppercase tracking-[0.3em] text-slate-400">Total records</p>
+            <p className="mt-3 text-3xl font-semibold text-slate-900">{total}</p>
+          </div>
+          <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+            <p className="text-sm uppercase tracking-[0.3em] text-slate-400">Filter</p>
+            <div className="mt-3 space-y-2">
               <label className="block">
-                <span className="mb-1 block text-sm font-medium text-slate-700">Start date</span>
-                <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="w-full rounded-2xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200" />
+                <span className="mb-1 block text-sm font-medium text-slate-700">Search material</span>
+                <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Material name" className="w-full rounded-2xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200" />
               </label>
-              <label className="block">
-                <span className="mb-1 block text-sm font-medium text-slate-700">End date</span>
-                <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="w-full rounded-2xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200" />
-              </label>
+              <div className="grid gap-2 sm:grid-cols-2">
+                <label className="block">
+                  <span className="mb-1 block text-sm font-medium text-slate-700">Start date</span>
+                  <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="w-full rounded-2xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200" />
+                </label>
+                <label className="block">
+                  <span className="mb-1 block text-sm font-medium text-slate-700">End date</span>
+                  <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="w-full rounded-2xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200" />
+                </label>
+              </div>
             </div>
           </div>
+        </div>
+
+        <div className="flex items-center justify-end">
+          <button type="button" onClick={exportRawMaterialsExcel} className="inline-flex items-center gap-2 rounded-2xl border border-slate-300 bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800">
+            <Download className="h-4 w-4" /> Export Excel
+          </button>
         </div>
       </div>
 
@@ -187,9 +247,14 @@ export default function AdminRawMaterialsPage() {
                       <p>Total: RS {item.totalCost}</p>
                       <p>{new Date(item.purchaseDate).toLocaleDateString('en-IN')}</p>
                     </div>
-                    <button type="button" onClick={() => void handleDeleteRawMaterial(item._id)} className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-100">
-                      <Trash2 className="h-4 w-4" /> Delete
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button type="button" onClick={() => handleEditRawMaterial(item)} className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100">
+                        <Pencil className="h-4 w-4" /> Edit
+                      </button>
+                      <button type="button" onClick={() => void handleDeleteRawMaterial(item._id)} className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-100">
+                        <Trash2 className="h-4 w-4" /> Delete
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -203,6 +268,61 @@ export default function AdminRawMaterialsPage() {
           </div>
         </div>
       </div>
+
+      {editingMaterial && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4">
+          <div className="w-full max-w-3xl rounded-[2rem] bg-white p-6 shadow-2xl">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-sm uppercase tracking-[0.3em] text-slate-400">Edit purchase</p>
+                <h2 className="mt-2 text-2xl font-semibold text-slate-900">Update raw material purchase</h2>
+              </div>
+              <button type="button" onClick={() => setEditingMaterial(null)} className="rounded-full border border-slate-200 p-3 text-slate-600 hover:bg-slate-100">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <form onSubmit={saveEditedRawMaterial} className="mt-6 grid gap-4 md:grid-cols-2">
+              <label className="block">
+                <span className="mb-2 block text-sm font-semibold text-slate-700">Material name</span>
+                <input value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm" />
+              </label>
+              <label className="block">
+                <span className="mb-2 block text-sm font-semibold text-slate-700">Supplier</span>
+                <input value={editForm.supplier} onChange={(e) => setEditForm({ ...editForm, supplier: e.target.value })} className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm" />
+              </label>
+              <label className="block">
+                <span className="mb-2 block text-sm font-semibold text-slate-700">Unit</span>
+                <input value={editForm.unit} onChange={(e) => setEditForm({ ...editForm, unit: e.target.value })} className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm" />
+              </label>
+              <label className="block">
+                <span className="mb-2 block text-sm font-semibold text-slate-700">Purchase date</span>
+                <input type="date" value={editForm.purchaseDate} onChange={(e) => setEditForm({ ...editForm, purchaseDate: e.target.value })} className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm" />
+              </label>
+              <label className="block">
+                <span className="mb-2 block text-sm font-semibold text-slate-700">Quantity purchased</span>
+                <input type="number" value={editForm.quantityPurchased} onChange={(e) => setEditForm({ ...editForm, quantityPurchased: e.target.value })} className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm" />
+              </label>
+              <label className="block">
+                <span className="mb-2 block text-sm font-semibold text-slate-700">Cost per unit</span>
+                <input type="number" value={editForm.costPerUnit} onChange={(e) => setEditForm({ ...editForm, costPerUnit: e.target.value })} className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm" />
+              </label>
+              <label className="block">
+                <span className="mb-2 block text-sm font-semibold text-slate-700">Travel cost</span>
+                <input type="number" value={editForm.travelCost} onChange={(e) => setEditForm({ ...editForm, travelCost: e.target.value })} className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm" />
+              </label>
+              <label className="block md:col-span-2">
+                <span className="mb-2 block text-sm font-semibold text-slate-700">Notes</span>
+                <textarea value={editForm.notes} onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })} className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm min-h-[110px]" />
+              </label>
+              <div className="md:col-span-2 flex justify-end gap-3">
+                <button type="button" onClick={() => setEditingMaterial(null)} className="rounded-full border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700">Cancel</button>
+                <button type="submit" className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-white"><Save className="h-4 w-4" /> Save</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

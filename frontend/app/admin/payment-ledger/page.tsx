@@ -2,8 +2,9 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { BookOpenCheck, RefreshCcw, Trash2 } from 'lucide-react';
+import { BookOpenCheck, Download, Pencil, RefreshCcw, Trash2, Save, X } from 'lucide-react';
 import { paymentLedgerAPI } from '@/services/api';
+import { downloadExcel } from '@/lib/excel';
 
 const PAGE_SIZE = 10;
 
@@ -12,6 +13,8 @@ export default function PaymentLedgerPage() {
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [editingEntry, setEditingEntry] = useState<any | null>(null);
+  const [entryForm, setEntryForm] = useState({ orderNumber: '', customerName: '', customerContact: '', products: '', amount: 0, paymentMethod: 'cash4', paymentDate: '', notes: '' });
 
   const paymentMethodLabels: Record<string, string> = {
     cash4: 'Cash',
@@ -52,6 +55,54 @@ export default function PaymentLedgerPage() {
     }
   };
 
+  const handleEditEntry = (entry: any) => {
+    setEditingEntry(entry);
+    setEntryForm({
+      orderNumber: entry.orderNumber || '',
+      customerName: entry.customerName || '',
+      customerContact: entry.customerContact || '',
+      products: entry.products || '',
+      amount: Number(entry.amount || 0),
+      paymentMethod: entry.paymentMethod || 'cash4',
+      paymentDate: entry.paymentDate || new Date().toISOString().slice(0, 10),
+      notes: entry.notes || '',
+    });
+  };
+
+  const saveEditedEntry = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!editingEntry?._id) return;
+    try {
+      await paymentLedgerAPI.update(editingEntry._id, entryForm);
+      toast.success('Ledger entry updated');
+      setEditingEntry(null);
+      await loadEntries();
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || 'Failed to update ledger entry');
+    }
+  };
+
+  const exportLedgerExcel = async () => {
+    if (!entries.length) return;
+    await downloadExcel('payment-ledger.xlsx', [
+      {
+        name: 'Ledger Entries',
+        data: [
+          ['Order #', 'Customer', 'Products', 'Amount', 'Method', 'Date', 'Notes'],
+          ...entries.map((entry) => [
+            entry.orderNumber || '',
+            entry.customerName || '',
+            entry.products || '',
+            Number(entry.amount || 0),
+            entry.paymentMethod || '',
+            entry.paymentDate || new Date(entry.createdAt).toLocaleDateString(),
+            entry.notes || '',
+          ]),
+        ],
+      },
+    ]);
+  };
+
   useEffect(() => {
     void loadEntries();
   }, [page]);
@@ -65,8 +116,13 @@ export default function PaymentLedgerPage() {
             <h1 className="mt-3 text-4xl font-semibold text-slate-900">Saved ledger entries</h1>
             <p className="mt-3 text-sm text-slate-500">Review all saved payment ledger entries with order number, customer, products, amount, payment method, date, and notes.</p>
           </div>
-          <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-2 text-sm font-semibold text-primary">
-            <BookOpenCheck className="h-4 w-4" /> {entries.length} saved entries
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-2 text-sm font-semibold text-primary">
+              <BookOpenCheck className="h-4 w-4" /> {entries.length} saved entries
+            </div>
+            <button type="button" onClick={exportLedgerExcel} className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-slate-100">
+              <Download className="h-4 w-4" /> Export Excel
+            </button>
           </div>
         </div>
       </div>
@@ -98,7 +154,10 @@ export default function PaymentLedgerPage() {
                   <div className="text-slate-700">{formatPaymentMethod(entry.paymentMethod || 'cash4')}</div>
                   <div className="text-slate-700">{entry.paymentDate || new Date(entry.createdAt).toLocaleDateString()}</div>
                   <div className="text-sm text-slate-600">{entry.notes || '—'}</div>
-                  <div className="flex items-center justify-start">
+                  <div className="flex items-center justify-start gap-2">
+                    <button type="button" onClick={() => handleEditEntry(entry)} className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100">
+                      <Pencil className="h-4 w-4" /> Edit
+                    </button>
                     <button type="button" onClick={() => void handleDeleteEntry(entry._id)} className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-100">
                       <Trash2 className="h-4 w-4" /> Delete
                     </button>

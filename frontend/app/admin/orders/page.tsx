@@ -3,8 +3,9 @@
 import useSWR from 'swr';
 import { useEffect, useMemo, useState } from 'react';
 import { orderAPI, paymentLedgerAPI } from '@/services/api';
-import { Search, RefreshCcw, BookOpenCheck, X, Save } from 'lucide-react';
+import { Download, Search, RefreshCcw, BookOpenCheck, Pencil, X, Save } from 'lucide-react';
 import { toast } from 'sonner';
+import { downloadExcel } from '@/lib/excel';
 
 const statusOptions = ['all', 'pending', 'processing', 'shipped', 'delivered', 'cancelled'];
 
@@ -36,6 +37,8 @@ export default function AdminOrdersPage() {
   const [ledgerForm, setLedgerForm] = useState<any>({});
   const [ledgerLoading, setLedgerLoading] = useState(false);
   const [ledgerEntries, setLedgerEntries] = useState<Record<string, any>>({});
+  const [editingOrder, setEditingOrder] = useState<any | null>(null);
+  const [orderEditForm, setOrderEditForm] = useState<any>({ status: 'pending', soldBy: '', paymentMethod: 'cash4', notes: '' });
   const PAGE_SIZE = 8;
 
   const queryParams = useMemo(() => ({
@@ -135,6 +138,55 @@ export default function AdminOrdersPage() {
         setLedgerLoading(false);
       }
     }
+  };
+
+  const openEditOrder = (order: any) => {
+    setEditingOrder(order);
+    setOrderEditForm({
+      status: order.orderStatus || order.status || 'pending',
+      soldBy: order.soldBy || '',
+      paymentMethod: order.paymentMethod || 'cash4',
+      notes: order.notes || '',
+    });
+  };
+
+  const saveEditedOrder = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!editingOrder?._id) return;
+    try {
+      await orderAPI.update(editingOrder._id, {
+        orderStatus: orderEditForm.status,
+        soldBy: orderEditForm.soldBy,
+        paymentMethod: orderEditForm.paymentMethod,
+        notes: orderEditForm.notes,
+      });
+      toast.success('Order updated');
+      setEditingOrder(null);
+      await mutate();
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || 'Failed to update order');
+    }
+  };
+
+  const exportOrdersExcel = async () => {
+    if (!orders.length) return;
+    await downloadExcel('orders.xlsx', [
+      {
+        name: 'Orders',
+        data: [
+          ['Order #', 'Customer', 'Sold By', 'Status', 'Payment Method', 'Total', 'Date'],
+          ...orders.map((order: any) => [
+            order.orderNumber || order._id || 'N/A',
+            order.user?.name || order.shippingAddress?.name || 'Guest',
+            order.soldBy || 'N/A',
+            order.orderStatus || order.status || 'N/A',
+            formatPaymentMethod(order.paymentMethod || 'cash4'),
+            Number(order.total || 0),
+            order.createdAt ? new Date(order.createdAt).toLocaleDateString() : '',
+          ]),
+        ],
+      },
+    ]);
   };
 
   const saveLedger = async (event: React.FormEvent) => {
@@ -271,8 +323,8 @@ export default function AdminOrdersPage() {
                       <p>Customer: {order.user?.name || order.shippingAddress?.name || 'Guest'}</p>
                       <p>Type: {order.transactionType === 'partner_product_taken' ? 'Partner Product Taken' : order.transactionType === 'partner_sale' ? 'Partner Sale' : 'Customer Sale'}</p>
                       <p>Sold By: {order.soldBy || 'Not Recorded'}</p>
-                      <p>Status: {order.orderStatus}</p>
-                      <p>Payment: {order.paymentMethod || 'N/A'}</p>
+                      <p>Status: {order.orderStatus || order.status}</p>
+                      <p>Payment: {formatPaymentMethod(order.paymentMethod || 'cash4')}</p>
                     </div>
                     <p className="mt-4 text-lg font-semibold text-slate-900">RS {order.total?.toFixed?.(0) ?? order.total ?? 0}</p>
                   </div>
@@ -330,7 +382,7 @@ export default function AdminOrdersPage() {
                       <div>{formatPaymentMethod(order.paymentMethod || 'cash4')}</div>
                       <div className="mt-1 text-xs text-slate-500">{order.paymentStatus || 'Pending'}</div>
                     </div>
-                    <div className="flex justify-start">
+                    <div className="flex items-center gap-2">
                       <button
                         type="button"
                         onClick={() => openLedger(order)}
@@ -339,6 +391,13 @@ export default function AdminOrdersPage() {
                       >
                         {ledgerEntries[order._id]?._id ? <BookOpenCheck className="h-4 w-4 text-emerald-600" /> : <BookOpenCheck className="h-4 w-4 text-slate-700" />}
                         <span>Ledger</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => openEditOrder(order)}
+                        className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
+                      >
+                        <Pencil className="h-4 w-4" /> Edit
                       </button>
                     </div>
                     <div className="text-right font-semibold text-slate-900">RS {order.total?.toFixed?.(0) ?? order.total ?? 0}</div>
@@ -406,6 +465,54 @@ export default function AdminOrdersPage() {
                 <button type="submit" className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-white">
                   <Save className="h-4 w-4" /> Save ledger entry
                 </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {editingOrder && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/60 px-4 py-6">
+          <div className="w-full max-w-3xl rounded-[2rem] border border-slate-200 bg-white shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+              <div>
+                <p className="text-sm uppercase tracking-[0.3em] text-slate-400">Edit order</p>
+                <h2 className="text-xl font-semibold text-slate-900">Update order details</h2>
+              </div>
+              <button type="button" onClick={() => setEditingOrder(null)} className="rounded-full border border-slate-200 p-2 text-slate-600 hover:bg-slate-100">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <form onSubmit={saveEditedOrder} className="space-y-4 p-6">
+              <div className="grid gap-4 md:grid-cols-2">
+                <label className="block">
+                  <span className="mb-2 block text-sm font-semibold text-slate-700">Order status</span>
+                  <select value={orderEditForm.status} onChange={(e) => setOrderEditForm({ ...orderEditForm, status: e.target.value })} className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-900">
+                    {statusOptions.filter((option) => option !== 'all').map((option) => (
+                      <option key={option} value={option}>{option}</option>
+                    ))}
+                  </select>
+                </label>
+                <label className="block">
+                  <span className="mb-2 block text-sm font-semibold text-slate-700">Sold by</span>
+                  <input value={orderEditForm.soldBy} onChange={(e) => setOrderEditForm({ ...orderEditForm, soldBy: e.target.value })} className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-900" />
+                </label>
+                <label className="block">
+                  <span className="mb-2 block text-sm font-semibold text-slate-700">Payment method</span>
+                  <select value={orderEditForm.paymentMethod} onChange={(e) => setOrderEditForm({ ...orderEditForm, paymentMethod: e.target.value })} className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-900">
+                    {paymentMethodOptions.map((option) => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
+                  </select>
+                </label>
+                <label className="block">
+                  <span className="mb-2 block text-sm font-semibold text-slate-700">Notes</span>
+                  <textarea value={orderEditForm.notes} onChange={(e) => setOrderEditForm({ ...orderEditForm, notes: e.target.value })} className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-900 min-h-[120px]" />
+                </label>
+              </div>
+              <div className="flex flex-wrap justify-end gap-3">
+                <button type="button" onClick={() => setEditingOrder(null)} className="rounded-full border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700">Cancel</button>
+                <button type="submit" className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-white"><Save className="h-4 w-4" /> Save changes</button>
               </div>
             </form>
           </div>

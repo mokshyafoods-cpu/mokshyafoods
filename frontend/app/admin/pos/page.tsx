@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
@@ -13,6 +14,7 @@ import {
   Mail,
   Minus,
   Plus,
+  Pencil,
   Printer,
   Search,
   ShoppingBag,
@@ -835,6 +837,13 @@ export default function POSPage() {
                             <p className="text-sm text-slate-500">Line total</p>
                             <p className="font-semibold">RS {item.subtotal}</p>
                           </div>
+                          <Link
+                            href={`/admin/products/${item.productId}`}
+                            className="inline-flex items-center justify-center rounded-full border border-slate-200 p-2 text-slate-500 transition hover:border-slate-300 hover:text-slate-900"
+                            aria-label="Edit product"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Link>
                           <button
                             type="button"
                             onClick={() => removeCartItem(item.productId)}
