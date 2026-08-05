@@ -68,7 +68,6 @@ export default function Navigation() {
     return name !== 'healthy snacks' && name !== 'gift packs';
   }) : [];
   const [searchText, setSearchText] = useState('');
-  const hideAccountPublicLinks = pathname?.startsWith('/account');
   const mobileNavItems = [
     { href: '/', label: 'Home', icon: House },
     { href: '/products', label: 'Products', icon: Package2 },
@@ -132,24 +131,6 @@ export default function Navigation() {
                     <span className="absolute left-0 -bottom-1 h-[3px] w-full bg-primary origin-left scale-x-0 transition-transform duration-150 ease-out group-hover:scale-x-100" />
                   </span>
                 </Link>
-                {!hideAccountPublicLinks && (
-                  <>
-                    <Link href="/about" onClick={closeNav} className="flex items-center gap-2 text-slate-950 group">
-                      <BadgeInfo className="h-4 w-4 text-primary" />
-                      <span className="relative inline-block transform transition-transform duration-150 ease-out group-hover:-translate-y-1">
-                        About
-                        <span className="absolute left-0 -bottom-1 h-[3px] w-full bg-primary origin-left scale-x-0 transition-transform duration-150 ease-out group-hover:scale-x-100" />
-                      </span>
-                    </Link>
-                    <Link href="/faq" onClick={closeNav} className="flex items-center gap-2 text-slate-950 group">
-                      <BadgeCheck className="h-4 w-4 text-primary" />
-                      <span className="relative inline-block transform transition-transform duration-150 ease-out group-hover:-translate-y-1">
-                        FAQ
-                        <span className="absolute left-0 -bottom-1 h-[3px] w-full bg-primary origin-left scale-x-0 transition-transform duration-150 ease-out group-hover:scale-x-100" />
-                      </span>
-                    </Link>
-                  </>
-                )}
                 {filteredCategories.slice(0, 3).map((category) => (
                   <Link
                     key={category._id || category.name}
