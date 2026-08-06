@@ -125,7 +125,7 @@ export default function HomeClient() {
                         href={siteConfig.whatsapp}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white px-8 py-3 text-sm font-semibold text-slate-950 shadow-sm transition hover:bg-slate-100"
+                        className="inline-flex items-center justify-center rounded-full border border-[#25D366] bg-[#25D366] px-8 py-3 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(37,211,102,0.25)] transition hover:bg-[#1ebe5b]"
                       >
                         Direct connect to WhatsApp
                       </a>
