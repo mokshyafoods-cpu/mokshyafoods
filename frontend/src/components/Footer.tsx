@@ -15,7 +15,7 @@ const footerLinks = [
 
 export default function Footer() {
   return (
-    <footer className="mt-10 mb-6 border-t border-[#d6b37e] bg-white text-slate-950 sm:mt-12 sm:mb-8 lg:mt-16 lg:mb-10">
+    <footer className="mt-12 mb-10 border-t border-[#d6b37e] bg-white text-slate-950 sm:mt-12 sm:mb-8 lg:mt-16 lg:mb-10">
       <div className="mx-auto max-w-7xl px-3 py-8 sm:px-6 sm:py-12 lg:px-8 lg:py-20">
         <div className="mb-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 lg:gap-8">
           <div className="max-w-full">
@@ -73,7 +73,7 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="flex flex-col items-center justify-between gap-4 border-t border-[#d6b37e] pt-6 sm:gap-6 md:flex-row md:pt-8">
+        <div className="flex flex-col items-center justify-between gap-5 border-t border-[#d6b37e] pt-7 pb-2 sm:gap-6 sm:pt-8 md:flex-row md:pt-8 md:pb-0">
           <p className="max-w-full text-center text-sm text-slate-700 md:text-left">© 2026 Mokshya Foods. All Rights Reserved.</p>
           <div className="flex flex-wrap items-center justify-center gap-3 sm:justify-end sm:gap-4">
             <a href={siteConfig.facebook} target="_blank" rel="noopener noreferrer" className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#b77f22] text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-[#a36e1f] sm:h-12 sm:w-12" aria-label="Visit Mokshya Foods on Facebook">

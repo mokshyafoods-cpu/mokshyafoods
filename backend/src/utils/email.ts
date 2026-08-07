@@ -24,7 +24,7 @@ const getSenderEmail = (): string => process.env.EMAIL_FROM || process.env.EMAIL
 const getSenderName = (): string => process.env.EMAIL_FROM_NAME || 'Mokshya Foods';
 const getSenderAddress = (): string => `${getSenderName()} <${getSenderEmail()}>`;
 const getReplyTo = (): string => process.env.REPLY_TO || process.env.EMAIL_FROM || process.env.EMAIL_USER || 'support@mokshyafoods.com';
-const getCompanyAddress = (): string => process.env.COMPANY_ADDRESS || 'Mokshya Foods, Kathmandu, Nepal';
+const getCompanyAddress = (): string => process.env.COMPANY_ADDRESS || 'Mokshya Foods, Butwal, Rupandehi, Nepal';
 const getConfiguredEmailService = (): string => {
   const configuredService = process.env.EMAIL_SERVICE?.trim().toLowerCase();
   if (configuredService) return configuredService;
@@ -36,6 +36,7 @@ const getConfiguredEmailService = (): string => {
 const getSocialLinks = (): { label: string; url: string }[] => [
   { label: 'Instagram', url: 'https://www.instagram.com/mokshyafoods?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==' },
   { label: 'Facebook', url: 'https://facebook.com/mokshyafoods' },
+  { label: 'Website', url: 'https://mokshyafoods.com' },
 ];
 
 const getDeliveryHeaders = (): Record<string, string> => ({
@@ -125,7 +126,10 @@ export const buildBrandEmailTemplate = ({ title, greeting, intro, bodyHtml, body
             <tr>
               <td style="background:#1f5f3b;padding:24px 20px;text-align:center;">
                 <div style="display:inline-block;text-align:center;">
-                  <div style="font-size:28px;font-weight:700;letter-spacing:0.12em;color:#ffffff;text-transform:uppercase;">Mokshya Foods</div>
+                  <div style="display:inline-flex;align-items:center;gap:10px;font-size:28px;font-weight:700;letter-spacing:0.12em;color:#ffffff;text-transform:uppercase;">
+                    <img src="https://mokshyafoods.com/logo.jpeg" alt="Mokshya Foods logo" width="36" height="36" style="width:36px;height:36px;border-radius:10px;display:block;" />
+                    Mokshya Foods
+                  </div>
                   <div style="margin-top:6px;font-size:12px;color:#e7f0ea;letter-spacing:0.24em;text-transform:uppercase;">Pure • Natural • Trusted</div>
                 </div>
               </td>
@@ -146,6 +150,7 @@ export const buildBrandEmailTemplate = ({ title, greeting, intro, bodyHtml, body
                   <div style="font-weight:700;color:#111827;">Mokshya Foods</div>
                   <div>${getCompanyAddress()}</div>
                   <div style="margin-top:8px;">${socialLinks}</div>
+                  <div style="margin-top:8px;">Website: <a href="https://mokshyafoods.com" style="color:#1f5f3b;text-decoration:none;">mokshyafoods.com</a></div>
                   <div style="margin-top:8px;">© ${new Date().getFullYear()} Mokshya Foods. All rights reserved.</div>
                   ${footerMessage ? `<div style="margin-top:8px;">${footerMessage}</div>` : ''}
                 </div>
