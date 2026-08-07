@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { Camera, PhoneCall, ChevronRight, Home, ShieldCheck, Info, ShoppingBag, Lock, FileText, Sparkles, Leaf, MapPin, ExternalLink } from 'lucide-react';
+import { PhoneCall, ChevronRight, ShieldCheck, Info, ShoppingBag, Lock, FileText, Sparkles, Leaf, MapPin } from 'lucide-react';
+import { FaFacebookF, FaInstagram, FaTiktok, FaWhatsapp } from 'react-icons/fa6';
 import { siteConfig } from '@/lib/business';
 
 const footerLinks = [
@@ -14,7 +15,7 @@ const footerLinks = [
 
 export default function Footer() {
   return (
-    <footer className="mt-10 border-t border-[#d6b37e] bg-white text-slate-950 sm:mt-12 lg:mt-16">
+    <footer className="mt-10 mb-6 border-t border-[#d6b37e] bg-white text-slate-950 sm:mt-12 sm:mb-8 lg:mt-16 lg:mb-10">
       <div className="mx-auto max-w-7xl px-3 py-8 sm:px-6 sm:py-12 lg:px-8 lg:py-20">
         <div className="mb-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 lg:gap-8">
           <div className="max-w-full">
@@ -74,18 +75,18 @@ export default function Footer() {
 
         <div className="flex flex-col items-center justify-between gap-4 border-t border-[#d6b37e] pt-6 sm:gap-6 md:flex-row md:pt-8">
           <p className="max-w-full text-center text-sm text-slate-700 md:text-left">© 2026 Mokshya Foods. All Rights Reserved.</p>
-          <div className="flex flex-wrap items-center gap-3">
-            <a href={siteConfig.facebook} target="_blank" rel="noopener noreferrer" className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#b77f22] text-slate-950 transition hover:bg-[#a36e1f]" aria-label="Visit Mokshya Foods on Facebook">
-              <ExternalLink className="h-5 w-5" />
+          <div className="flex flex-wrap items-center justify-center gap-3 sm:justify-end sm:gap-4">
+            <a href={siteConfig.facebook} target="_blank" rel="noopener noreferrer" className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#b77f22] text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-[#a36e1f] sm:h-12 sm:w-12" aria-label="Visit Mokshya Foods on Facebook">
+              <FaFacebookF className="h-4 w-4 sm:h-5 sm:w-5" />
             </a>
-            <a href={siteConfig.instagram} target="_blank" rel="noopener noreferrer" className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#b77f22] text-slate-950 transition hover:bg-[#a36e1f]" aria-label="Visit Mokshya Foods on Instagram">
-              <Camera className="h-5 w-5" />
+            <a href={siteConfig.instagram} target="_blank" rel="noopener noreferrer" className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#b77f22] text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-[#a36e1f] sm:h-12 sm:w-12" aria-label="Visit Mokshya Foods on Instagram">
+              <FaInstagram className="h-4 w-4 sm:h-5 sm:w-5" />
             </a>
-            <a href={siteConfig.tiktok} target="_blank" rel="noopener noreferrer" className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#b77f22] text-slate-950 transition hover:bg-[#a36e1f]" aria-label="Visit Mokshya Foods on TikTok">
-              <ExternalLink className="h-5 w-5" />
+            <a href={siteConfig.tiktok} target="_blank" rel="noopener noreferrer" className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#b77f22] text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-[#a36e1f] sm:h-12 sm:w-12" aria-label="Visit Mokshya Foods on TikTok">
+              <FaTiktok className="h-4 w-4 sm:h-5 sm:w-5" />
             </a>
-            <a href={siteConfig.whatsapp} target="_blank" rel="noopener noreferrer" className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#b77f22] text-slate-950 transition hover:bg-[#a36e1f]" aria-label="Contact Mokshya Foods on WhatsApp">
-              <PhoneCall className="h-5 w-5" />
+            <a href={siteConfig.whatsapp} target="_blank" rel="noopener noreferrer" className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#b77f22] text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-[#a36e1f] sm:h-12 sm:w-12" aria-label="Contact Mokshya Foods on WhatsApp">
+              <FaWhatsapp className="h-4 w-4 sm:h-5 sm:w-5" />
             </a>
           </div>
         </div>

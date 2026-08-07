@@ -10,6 +10,7 @@ import { productAPI } from '@/services/api';
 import { toast } from 'sonner';
 import { getProductUrl } from '@/lib/productRoutes';
 import { siteConfig } from '@/lib/business';
+import { formatProductWeight } from '@/lib/utils';
 import WishlistButton from '@/components/WishlistButton';
 import AddToCartButton from '@/components/AddToCartButton';
 
@@ -129,7 +130,7 @@ export default function HomeClient() {
                       >
                         Direct connect to WhatsApp
                       </a>
-                      <Link href="#story" className="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white px-8 py-3 text-sm font-semibold text-slate-950 shadow-sm transition hover:bg-slate-100">
+                      <Link href="/about#story" className="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white px-8 py-3 text-sm font-semibold text-slate-950 shadow-sm transition hover:bg-slate-100">
                         Our Story
                       </Link>
                     </div>
@@ -236,7 +237,7 @@ export default function HomeClient() {
                       <div className="space-y-3 p-5">
                         <div className="flex items-center justify-between gap-4 text-sm text-muted-foreground">
                           <span>{item.category?.name || 'Premium snack'}</span>
-                          <span className="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-500">{item.weight || '250g'}</span>
+                          <span className="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-500">{formatProductWeight(item.weight, item.weightUnit)}</span>
                         </div>
                         <h3 className="text-lg font-semibold text-primary line-clamp-2">{item.name}</h3>
                         {item.description && <p className="text-sm text-slate-600 line-clamp-2">{item.description}</p>}

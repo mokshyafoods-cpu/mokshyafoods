@@ -4,7 +4,7 @@ import Link from 'next/link';
 
 export default function AboutPage() {
   return (
-    <div className="min-h-screen bg-[#f8f9fa] py-16">
+    <div id="story" className="min-h-screen bg-[#f8f9fa] py-16">
       <div className="mx-auto max-w-5xl rounded-[2rem] border border-border bg-white p-10 shadow-lg">
         <div className="space-y-6">
           <div>

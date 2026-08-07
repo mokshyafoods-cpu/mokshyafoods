@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { ArrowLeft, Star, Tag, Percent } from 'lucide-react';
 import { buildProductJsonLd } from '@/lib/seo';
 import { getProductSlug } from '@/lib/productRoutes';
+import { formatProductWeight } from '@/lib/utils';
 import WishlistButton from '@/components/WishlistButton';
 import AddToCartButton from '@/components/AddToCartButton';
 
@@ -659,7 +660,7 @@ export default function ProductDetailPage() {
                   <div className="flex items-center justify-between gap-3">
                     <span>Weight</span>
                     <span className="font-semibold text-slate-900">
-                      {product.weight ? `${product.weight} ${product.weightUnit || 'g'}` : '250 g'}
+                      {formatProductWeight(product.weight, product.weightUnit)}
                     </span>
                   </div>
                   <div className="flex items-center justify-between gap-3">
