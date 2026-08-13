@@ -14,6 +14,26 @@ const statusSteps = [
   { key: 'delivered', label: 'Delivered', description: 'Order delivered successfully' },
 ];
 
+const getOrderItemImage = (item: any): string => {
+  const product = item?.product || {};
+  const imageCandidates = [
+    item?.image,
+    item?.thumbnail,
+    item?.productImage,
+    product?.image,
+    product?.thumbnail,
+    product?.images?.[0]?.url,
+    product?.images?.[0]?.secure_url,
+    product?.images?.[0]?.path,
+    item?.images?.[0]?.url,
+    item?.images?.[0]?.secure_url,
+    item?.images?.[0]?.path,
+  ];
+
+  const safeImage = imageCandidates.find((value) => typeof value === 'string' && value.trim().length > 0);
+  return safeImage || '/logo.jpeg';
+};
+
 export default function PublicOrderDetailPage() {
   const params = useParams();
   const orderId = Array.isArray(params.id) ? params.id[0] : params.id;
@@ -167,10 +187,20 @@ export default function PublicOrderDetailPage() {
               <div className="mt-6 space-y-4">
                 {order.items?.map((item: any, index: number) => {
                   const product = item.product || {};
-                  const imageUrl = product.images?.[0]?.url || product.thumbnail || '/placeholder.png';
+                  const imageUrl = getOrderItemImage(item);
                   return (
                     <div key={`${product._id || item._id || index}`} className="flex gap-4 rounded-[1.75rem] border border-slate-200 p-4">
-                      <img src={imageUrl} alt={product.name || item.name || 'Product'} className="h-20 w-20 rounded-2xl object-cover" />
+                      <img
+                        src={imageUrl}
+                        alt={product.name || item.name || 'Product'}
+                        className="h-20 w-20 rounded-2xl object-cover"
+                        onError={(event) => {
+                          const target = event.currentTarget as HTMLImageElement;
+                          if (target.src !== `${window.location.origin}/logo.jpeg`) {
+                            target.src = '/logo.jpeg';
+                          }
+                        }}
+                      />
                       <div className="flex-1">
                         <p className="font-semibold text-slate-950">{product.name || item.name || 'Product'}</p>
                         <p className="text-sm text-slate-600">Qty {item.quantity}</p>
