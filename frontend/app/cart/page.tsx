@@ -6,33 +6,37 @@ import { useCartStore } from '@/context/cartStore';
 import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link';
 import { Trash2, Minus, Plus, Percent } from 'lucide-react';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { productAPI } from '@/services/api';
 import { toast } from 'sonner';
 
 export default function CartPage() {
   const { items, removeItem, updateQuantity, getTotalPrice, getTotalItems, updateItem } = useCartStore();
   const { isAuthenticated } = useAuth();
+  const hasRefreshedCartRef = useRef(false);
 
-  // Refresh product data when cart loads to get latest prices, images, and discounts
+  // Refresh product data when cart loads to get latest prices, images, and discounts.
+  // Guard against re-running this effect after the cart is updated by the refresh itself.
   useEffect(() => {
+    if (items.length === 0 || hasRefreshedCartRef.current) return;
+
+    hasRefreshedCartRef.current = true;
+
     const refreshProductData = async () => {
-      if (items.length === 0) return;
-      
       try {
         for (const item of items) {
           try {
             const result = await productAPI.getById(item.productId);
             const freshProduct = result.data?.data ?? result.data;
-            
+
             if (freshProduct) {
-              const galleryImages = Array.isArray(freshProduct.images) 
-                ? freshProduct.images.map((img: any) => 
+              const galleryImages = Array.isArray(freshProduct.images)
+                ? freshProduct.images.map((img: any) =>
                     typeof img === 'string' ? img : (img.url || img.secure_url || img.path || '')
                   ).filter(Boolean)
                 : [];
               const mainImage = galleryImages[0] || freshProduct.thumbnail || freshProduct.image || '/placeholder.jpg';
-              
+
               updateItem({
                 ...item,
                 price: freshProduct.discountPrice || freshProduct.price || item.price,
@@ -55,7 +59,7 @@ export default function CartPage() {
     };
 
     refreshProductData();
-  }, [items, updateItem]);
+  }, [items.length, updateItem]);
 
   if (items.length === 0) {
     return (
