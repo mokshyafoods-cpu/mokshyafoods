@@ -63,6 +63,20 @@ const buildOrderLedgerEntry = (order: any) => {
   };
 };
 
+const buildLedgerLookupFilters = (id: string) => {
+  const normalized = normalizeString(id);
+  if (!normalized) return { _id: null };
+
+  const objectId = mongoose.Types.ObjectId.isValid(normalized) ? new mongoose.Types.ObjectId(normalized) : null;
+  return {
+    $or: [
+      ...(objectId ? [{ _id: objectId }] : []),
+      { orderId: normalized },
+      { orderId: { $in: [normalized, objectId?.toString()] } },
+    ],
+  };
+};
+
 export const getAllPaymentLedger = async (req: AuthenticatedRequest, res: Response): Promise<Response> => {
   try {
     const page = Number(req.query.page) || 1;
@@ -72,52 +86,34 @@ export const getAllPaymentLedger = async (req: AuthenticatedRequest, res: Respon
     const fromDate = req.query.fromDate ? normalizeString(req.query.fromDate) : '';
     const toDate = req.query.toDate ? normalizeString(req.query.toDate) : '';
 
-    const ordersColl = mongoose.connection.collection('orders');
-    const filter: Record<string, any> = {
-      isDeleted: { $ne: true },
-      $or: [
-        { status: { $nin: ['cancelled', 'failed', 'returned'] } },
-        { orderStatus: { $nin: ['cancelled', 'failed', 'returned'] } },
-      ],
-      $nor: [
-        { paymentStatus: 'cancelled' },
-        { paymentStatus: 'failed' },
-        { status: 'cancelled' },
-        { orderStatus: 'cancelled' },
-      ],
-    };
+    const ledgerColl = mongoose.connection.collection('paymentLedger');
+    const filter: Record<string, any> = {};
 
     if (fromDate || toDate) {
       const dateFilter: Record<string, any> = {};
       if (fromDate) dateFilter.$gte = new Date(`${fromDate}T00:00:00.000Z`);
       if (toDate) dateFilter.$lte = new Date(`${toDate}T23:59:59.999Z`);
-      filter.createdAt = dateFilter;
+      filter.paymentDate = dateFilter;
     }
 
     if (search) {
       const regex = new RegExp(search, 'i');
-      filter.$and = [
-        {
-          $or: [
-            { orderNumber: regex },
-            { 'shippingAddress.name': regex },
-            { 'user.name': regex },
-            { 'shippingAddress.phone': regex },
-            { soldBy: regex },
-            { notes: regex },
-          ],
-        },
+      filter.$or = [
+        { orderNumber: regex },
+        { customerName: regex },
+        { customerContact: regex },
+        { products: regex },
+        { notes: regex },
       ];
     }
 
-    const total = await ordersColl.countDocuments(filter);
-    const orderRows = await ordersColl.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).toArray();
-    const entries = orderRows.map(buildOrderLedgerEntry);
+    const total = await ledgerColl.countDocuments(filter);
+    const ledgerRows = await ledgerColl.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).toArray();
 
     return res.json({
       success: true,
       message: 'Payment ledger entries loaded',
-      data: entries,
+      data: ledgerRows,
       pagination: { page, limit, total },
     });
   } catch (error: any) {
@@ -131,6 +127,12 @@ export const getPaymentLedgerByOrderId = async (req: AuthenticatedRequest, res: 
     const orderId = normalizeString(req.params.orderId || req.query.orderId || '');
     if (!orderId) {
       return res.status(400).json({ success: false, message: 'Order id required' });
+    }
+
+    const ledgerColl = mongoose.connection.collection('paymentLedger');
+    const savedEntry = await ledgerColl.findOne(buildLedgerLookupFilters(orderId));
+    if (savedEntry) {
+      return res.json({ success: true, message: 'Payment ledger entry loaded', data: savedEntry });
     }
 
     const ordersColl = mongoose.connection.collection('orders');
@@ -198,7 +200,7 @@ export const updatePaymentLedger = async (req: AuthenticatedRequest, res: Respon
     if (!id) return res.status(400).json({ success: false, message: 'Ledger id required' });
 
     const ledgerColl = mongoose.connection.collection('paymentLedger');
-    const existingEntry = await ledgerColl.findOne({ _id: new mongoose.Types.ObjectId(id) });
+    const existingEntry = await ledgerColl.findOne(buildLedgerLookupFilters(id));
     if (!existingEntry) return res.status(404).json({ success: false, message: 'Ledger entry not found' });
 
     const payload = req.body || {};
@@ -231,9 +233,14 @@ export const deletePaymentLedger = async (req: AuthenticatedRequest, res: Respon
     if (!id) return res.status(400).json({ success: false, message: 'Ledger id required' });
 
     const ledgerColl = mongoose.connection.collection('paymentLedger');
-    const result = await ledgerColl.deleteOne({ _id: new mongoose.Types.ObjectId(id) });
+    const existingEntry = await ledgerColl.findOne(buildLedgerLookupFilters(id));
+    if (!existingEntry) {
+      return res.json({ success: true, message: 'Ledger entry already deleted or not found' });
+    }
+
+    const result = await ledgerColl.deleteOne({ _id: existingEntry._id });
     if (result.deletedCount === 0) {
-      return res.status(404).json({ success: false, message: 'Ledger entry not found' });
+      return res.json({ success: true, message: 'Ledger entry already deleted or not found' });
     }
 
     return res.json({ success: true, message: 'Ledger entry deleted' });

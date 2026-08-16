@@ -62,6 +62,7 @@ export default function PaymentLedgerPage() {
     try {
       await paymentLedgerAPI.delete(id);
       toast.success('Ledger entry deleted');
+      setEditingEntry(null);
       await loadEntries();
     } catch (error: any) {
       toast.error(error?.response?.data?.message || 'Failed to delete ledger entry');
@@ -316,6 +317,67 @@ export default function PaymentLedgerPage() {
           )}
         </div>
       </div>
+
+      {editingEntry && (
+        <form onSubmit={saveEditedEntry} className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-xl">
+          <div className="mb-5 flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm uppercase tracking-[0.3em] text-slate-400">Edit ledger</p>
+              <h2 className="mt-2 text-2xl font-semibold text-slate-900">Update payment details</h2>
+            </div>
+            <button type="button" onClick={() => setEditingEntry(null)} className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700">
+              <X className="h-4 w-4" /> Cancel
+            </button>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+              Order Number
+              <input value={entryForm.orderNumber} onChange={(e) => setEntryForm((prev) => ({ ...prev, orderNumber: e.target.value }))} className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-primary" />
+            </label>
+            <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+              Customer Name
+              <input value={entryForm.customerName} onChange={(e) => setEntryForm((prev) => ({ ...prev, customerName: e.target.value }))} className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-primary" />
+            </label>
+            <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+              Customer Contact
+              <input value={entryForm.customerContact} onChange={(e) => setEntryForm((prev) => ({ ...prev, customerContact: e.target.value }))} className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-primary" />
+            </label>
+            <label className="flex flex-col gap-2 text-sm font-medium text-slate-700 md:col-span-2 xl:col-span-2">
+              Products
+              <input value={entryForm.products} onChange={(e) => setEntryForm((prev) => ({ ...prev, products: e.target.value }))} className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-primary" />
+            </label>
+            <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+              Amount
+              <input type="number" value={entryForm.amount} onChange={(e) => setEntryForm((prev) => ({ ...prev, amount: Number(e.target.value || 0) }))} className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-primary" />
+            </label>
+            <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+              Payment Method
+              <select value={entryForm.paymentMethod} onChange={(e) => setEntryForm((prev) => ({ ...prev, paymentMethod: e.target.value }))} className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-primary">
+                <option value="cash4">Cash</option>
+                <option value="cash">Cash</option>
+                <option value="cod">Cash on Delivery</option>
+                <option value="phonepay">PhonePay</option>
+                <option value="esewa">eSewa</option>
+              </select>
+            </label>
+            <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+              Payment Date
+              <input type="date" value={entryForm.paymentDate} onChange={(e) => setEntryForm((prev) => ({ ...prev, paymentDate: e.target.value }))} className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-primary" />
+            </label>
+            <label className="flex flex-col gap-2 text-sm font-medium text-slate-700 md:col-span-2 xl:col-span-3">
+              Notes
+              <input value={entryForm.notes} onChange={(e) => setEntryForm((prev) => ({ ...prev, notes: e.target.value }))} className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-primary" />
+            </label>
+          </div>
+
+          <div className="mt-6 flex justify-end">
+            <button type="submit" className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary/90">
+              <Save className="h-4 w-4" /> Save changes
+            </button>
+          </div>
+        </form>
+      )}
 
       <div className="flex flex-wrap items-center justify-between gap-4 rounded-[2rem] border border-slate-200 bg-slate-50 px-6 py-5 text-sm text-slate-500">
         <div>{entries.length === 0 ? 'No entries' : `Showing ${Math.min((page - 1) * PAGE_SIZE + 1, entries.length)}-${Math.min(page * PAGE_SIZE, entries.length)} of ${entries.length} results`}</div>
