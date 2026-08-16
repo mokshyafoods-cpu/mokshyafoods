@@ -3,16 +3,19 @@
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { BookOpenCheck, Download, Pencil, RefreshCcw, Trash2, Save, X } from 'lucide-react';
-import { paymentLedgerAPI } from '@/services/api';
+import { paymentLedgerAPI, productAPI } from '@/services/api';
 import { downloadExcel } from '@/lib/excel';
 
 const PAGE_SIZE = 10;
 
 export default function PaymentLedgerPage() {
   const [entries, setEntries] = useState<any[]>([]);
+  const [allProducts, setAllProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
   const [editingEntry, setEditingEntry] = useState<any | null>(null);
   const [entryForm, setEntryForm] = useState({ orderNumber: '', customerName: '', customerContact: '', products: '', amount: 0, paymentMethod: 'cash4', paymentDate: '', notes: '' });
 
@@ -29,10 +32,20 @@ export default function PaymentLedgerPage() {
     return paymentMethodLabels[normalized] || method || 'Cash';
   };
 
+  const loadProducts = async () => {
+    try {
+      const response = await productAPI.getAll({ limit: 500 });
+      const payload = Array.isArray(response?.data?.data) ? response.data.data : (Array.isArray(response?.data) ? response.data : []);
+      setAllProducts(payload);
+    } catch (error) {
+      setAllProducts([]);
+    }
+  };
+
   const loadEntries = async () => {
     try {
       setLoading(true);
-      const response = await paymentLedgerAPI.getAll({ page, limit: PAGE_SIZE });
+      const response = await paymentLedgerAPI.getAll({ page, limit: PAGE_SIZE, fromDate, toDate });
       const ledgerItems = Array.isArray(response?.data?.data) ? response.data.data : [];
       const total = Number(response?.data?.pagination?.total || ledgerItems.length || 0);
       setEntries(ledgerItems);
@@ -82,81 +95,149 @@ export default function PaymentLedgerPage() {
     }
   };
 
-  const extractProductQuantity = (productList: string, productName: string) => {
-    if (!productList || !productName) return 0;
-    const normalizedProductName = productName.trim();
-    const match = String(productList)
-      .split(',')
-      .map((item) => item.trim())
-      .find((item) => {
-        const itemName = item.replace(/\s*x\s*\d+$/i, '').trim();
-        return itemName.toLowerCase() === normalizedProductName.toLowerCase();
-      });
+  const getProductQuantityMap = (entry: any) => {
+    const productMap = new Map<string, number>();
+    const items = Array.isArray(entry?.items) ? entry.items : [];
 
-    if (!match) return 0;
-    const quantityMatch = match.match(/x\s*(\d+)/i);
-    return quantityMatch ? Number(quantityMatch[1] || 0) : 0;
+    items.forEach((item: any) => {
+      const name = String(item?.name || item?.productData?.name || item?.productName || '').trim();
+      if (!name) return;
+      const quantity = Number(item?.quantity || 0);
+      productMap.set(name.toUpperCase(), (productMap.get(name.toUpperCase()) || 0) + quantity);
+    });
+
+    return productMap;
   };
 
   const exportLedgerExcel = async () => {
     const ledgerRows = entries.length ? entries : [];
-    if (!ledgerRows.length) return;
+    if (!ledgerRows.length) {
+      toast.error('No ledger rows available to export');
+      return;
+    }
 
     const productNames = Array.from(
-      new Set(
-        ledgerRows.flatMap((entry) => {
-          const value = String(entry.products || '');
-          return value
-            .split(',')
-            .map((item) => item.replace(/\s*x\s*\d+$/i, '').trim())
-            .filter(Boolean);
-        })
-      )
-    ).sort((a, b) => a.localeCompare(b));
+      new Set([
+        ...allProducts.map((product) => String(product?.name || '').trim()).filter(Boolean),
+        ...ledgerRows.flatMap((entry) => Array.from(getProductQuantityMap(entry).keys()).map((key) => key)),
+      ])
+    )
+      .map((name) => name.toUpperCase())
+      .sort((a, b) => a.localeCompare(b));
+
+    const headerRow = ['S.N', 'DATE', 'CUSTOMER NAME', 'ADDRESS', 'PHONEPAY', 'CASH', 'COD', 'REMARKS', ...productNames, 'TOTAL PRODUCT'];
+    const dataRows = ledgerRows.map((entry, index) => {
+      const quantityMap = getProductQuantityMap(entry);
+      const method = String(entry.paymentMethod || 'cash').toLowerCase();
+      const phonepay = method === 'phonepay' ? Number(entry.amount || 0) : 0;
+      const cash = method === 'cash' ? Number(entry.amount || 0) : 0;
+      const cod = method === 'cod' ? Number(entry.amount || 0) : 0;
+      const row: Array<string | number> = [
+        index + 1,
+        entry.paymentDate || (entry.createdAt ? new Date(entry.createdAt).toISOString().slice(0, 10) : ''),
+        entry.customerName || 'Walk-in Customer',
+        entry.address || '',
+        phonepay || '',
+        cash || '',
+        cod || '',
+        entry.notes || entry.soldBy || '',
+      ];
+
+      productNames.forEach((productName) => {
+        const quantity = quantityMap.get(productName) || 0;
+        row.push(quantity || '');
+      });
+
+      const totalQty = productNames.reduce((sum, productName) => sum + (quantityMap.get(productName) || 0), 0);
+      row.push(totalQty);
+      return row;
+    });
+
+    const paymentTotals = ledgerRows.reduce(
+      (totals, entry) => {
+        const method = String(entry.paymentMethod || 'cash').toLowerCase();
+        const amount = Number(entry.amount || 0);
+        if (method === 'phonepay') totals.phonepay += amount;
+        if (method === 'cash') totals.cash += amount;
+        if (method === 'cod') totals.cod += amount;
+        return totals;
+      },
+      { phonepay: 0, cash: 0, cod: 0 }
+    );
+
+    const productTotals = productNames.map((productName) =>
+      ledgerRows.reduce((sum, entry) => sum + (getProductQuantityMap(entry).get(productName) || 0), 0)
+    );
 
     const totalRow = [
       'TOTAL',
       '',
       '',
       '',
+      paymentTotals.phonepay,
+      paymentTotals.cash,
+      paymentTotals.cod,
       '',
-      '',
-      '',
-      ledgerRows.reduce((sum, entry) => sum + Number(entry.amount || 0), 0),
-      ...productNames.map((productName) => ledgerRows.reduce((sum, entry) => sum + extractProductQuantity(String(entry.products || ''), productName), 0)),
-      ledgerRows.reduce((sum, entry) => sum + Number(entry.amount || 0), 0),
+      ...productTotals,
+      productTotals.reduce((sum, value) => sum + value, 0),
     ];
 
-    await downloadExcel('payment-ledger.xlsx', [
-      {
-        name: 'Ledger Entries',
-        data: [
-          ['Order #', 'Customer', 'Phone', 'Amount', 'Method', 'Date', 'Notes', 'Grand Total', ...productNames],
-          ...ledgerRows.map((entry) => {
-            const row: Array<string | number> = [
-              entry.orderNumber || '',
-              entry.customerName || '',
-              entry.customerContact || '',
-              Number(entry.amount || 0),
-              formatPaymentMethod(entry.paymentMethod || 'cash4'),
-              entry.paymentDate || new Date(entry.createdAt).toLocaleDateString(),
-              entry.notes || '',
-              Number(entry.amount || 0),
-            ];
-            productNames.forEach((productName) => {
-              row.push(extractProductQuantity(String(entry.products || ''), productName));
-            });
-            return row;
-          }),
-          totalRow,
-        ],
-      },
-    ]);
+    const styles: Record<string, any> = {};
+    const greenFill = { fgColor: { rgb: 'D9EAD3' } };
+    const headerStyle = { font: { bold: true, color: { rgb: 'FFFFFF' } }, fill: { fgColor: { rgb: '2F7D32' } }, border: { top: { style: 'thin', color: { rgb: '000000' } }, right: { style: 'thin', color: { rgb: '000000' } }, bottom: { style: 'thin', color: { rgb: '000000' } }, left: { style: 'thin', color: { rgb: '000000' } } }, alignment: { horizontal: 'center', vertical: 'center' } };
+    const dataStyle = { border: { top: { style: 'thin', color: { rgb: '000000' } }, right: { style: 'thin', color: { rgb: '000000' } }, bottom: { style: 'thin', color: { rgb: '000000' } }, left: { style: 'thin', color: { rgb: '000000' } } }, alignment: { vertical: 'center', wrapText: true } };
+    const totalStyle = { font: { bold: true, color: { rgb: '000000' } }, fill: greenFill, border: { top: { style: 'thin', color: { rgb: '000000' } }, right: { style: 'thin', color: { rgb: '000000' } }, bottom: { style: 'thin', color: { rgb: '000000' } }, left: { style: 'thin', color: { rgb: '000000' } } }, alignment: { horizontal: 'center', vertical: 'center' } };
+
+    headerRow.forEach((_, index) => {
+      const cell = `${String.fromCharCode(65 + (index % 26))}${1}`;
+      styles[cell] = headerStyle;
+    });
+
+    dataRows.forEach((_, rowIndex) => {
+      headerRow.forEach((_, colIndex) => {
+        const cell = `${String.fromCharCode(65 + (colIndex % 26))}${rowIndex + 2}`;
+        styles[cell] = dataStyle;
+      });
+    });
+
+    const totalCellIndex = dataRows.length + 2;
+    headerRow.forEach((_, colIndex) => {
+      const cell = `${String.fromCharCode(65 + (colIndex % 26))}${totalCellIndex}`;
+      styles[cell] = totalStyle;
+    });
+
+    const columnWidths = [
+      { wch: 6 },
+      { wch: 14 },
+      { wch: 22 },
+      { wch: 24 },
+      { wch: 14 },
+      { wch: 12 },
+      { wch: 12 },
+      { wch: 18 },
+      ...productNames.map(() => ({ wch: 14 })),
+      { wch: 14 },
+    ];
+
+    await downloadExcel('payment-ledger.xlsx', [{
+      name: 'Payment Ledger',
+      data: [headerRow, ...dataRows, totalRow],
+      cols: columnWidths,
+      styles,
+    }]);
   };
 
   useEffect(() => {
+    void loadProducts();
+  }, []);
+
+  useEffect(() => {
+    setPage(1);
+  }, [fromDate, toDate]);
+
+  useEffect(() => {
     void loadEntries();
-  }, [page]);
+  }, [page, fromDate, toDate]);
 
   return (
     <div className="space-y-8">
@@ -174,6 +255,20 @@ export default function PaymentLedgerPage() {
             <button type="button" onClick={exportLedgerExcel} className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-slate-100">
               <Download className="h-4 w-4" /> Export Excel
             </button>
+          </div>
+        </div>
+
+        <div className="mt-6 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+            From date
+            <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-primary" />
+          </label>
+          <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+            To date
+            <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-primary" />
+          </label>
+          <div className="flex items-end">
+            <button type="button" onClick={() => { setFromDate(''); setToDate(''); }} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100">Clear filters</button>
           </div>
         </div>
       </div>

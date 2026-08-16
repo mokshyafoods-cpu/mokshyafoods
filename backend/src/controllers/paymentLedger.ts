@@ -10,9 +10,57 @@ const normalizeString = (value: unknown): string => {
 };
 
 const normalizeLedgerPaymentMethod = (value: unknown): string => {
-  const raw = normalizeString(value || 'cash4').toLowerCase();
-  if (raw === 'cash') return 'cash4';
+  const raw = normalizeString(value || 'cash').toLowerCase();
+  if (!raw || raw === 'cash4' || raw === 'cash') return 'cash';
+  if (raw.includes('phonepay')) return 'phonepay';
+  if (raw === 'cod') return 'cod';
   return raw;
+};
+
+const buildAddressString = (shippingAddress: any): string => {
+  if (!shippingAddress || typeof shippingAddress !== 'object') return '';
+  return [
+    shippingAddress.street || shippingAddress.address || '',
+    shippingAddress.city || '',
+    shippingAddress.state || '',
+    shippingAddress.country || '',
+    shippingAddress.postalCode || shippingAddress.zipCode || '',
+  ].filter(Boolean).join(', ');
+};
+
+const buildOrderLedgerEntry = (order: any) => {
+  const shipping = order.shippingAddress || {};
+  const customerName = normalizeString(shipping.name || order.user?.name || order.customerName || 'Walk-in Customer');
+  const customerPhone = normalizeString(shipping.phone || order.user?.phone || order.customerPhone || '');
+  const address = buildAddressString(shipping);
+  const soldBy = normalizeString(order.soldBy || '');
+  const orderNotes = normalizeString(order.notes || '');
+  const remarks = soldBy ? (orderNotes ? `${soldBy} - ${orderNotes}` : soldBy) : (orderNotes || '');
+  const items = Array.isArray(order.items) ? order.items : [];
+  const productSummary = items.map((item: any) => {
+    const itemName = normalizeString(item.name || 'Product');
+    const qty = Number(item.quantity || 0);
+    return `${itemName} x${qty}`;
+  });
+
+  return {
+    _id: order._id,
+    orderId: String(order._id || order.orderId || ''),
+    orderNumber: normalizeString(order.orderNumber || order.invoiceNumber || ''),
+    customerName,
+    customerContact: customerPhone,
+    address,
+    products: productSummary.join(', '),
+    amount: Number(order.total || order.amount || 0),
+    paymentMethod: normalizeLedgerPaymentMethod(order.paymentMethod || order.paymentStatus || 'cash'),
+    paymentDate: normalizeString(order.createdAt ? new Date(order.createdAt).toISOString().slice(0, 10) : order.paymentDate || ''),
+    notes: remarks,
+    soldBy,
+    items,
+    createdAt: order.createdAt || new Date(),
+    shippingAddress: shipping,
+    user: order.user || null,
+  };
 };
 
 export const getAllPaymentLedger = async (req: AuthenticatedRequest, res: Response): Promise<Response> => {
@@ -21,23 +69,50 @@ export const getAllPaymentLedger = async (req: AuthenticatedRequest, res: Respon
     const limit = Number(req.query.limit) || 20;
     const skip = (page - 1) * limit;
     const search = req.query.search ? normalizeString(req.query.search) : '';
+    const fromDate = req.query.fromDate ? normalizeString(req.query.fromDate) : '';
+    const toDate = req.query.toDate ? normalizeString(req.query.toDate) : '';
 
-    const ledgerColl = mongoose.connection.collection('paymentLedger');
-    const filter: Record<string, any> = {};
+    const ordersColl = mongoose.connection.collection('orders');
+    const filter: Record<string, any> = {
+      isDeleted: { $ne: true },
+      $or: [
+        { status: { $nin: ['cancelled', 'failed', 'returned'] } },
+        { orderStatus: { $nin: ['cancelled', 'failed', 'returned'] } },
+      ],
+      $nor: [
+        { paymentStatus: 'cancelled' },
+        { paymentStatus: 'failed' },
+        { status: 'cancelled' },
+        { orderStatus: 'cancelled' },
+      ],
+    };
+
+    if (fromDate || toDate) {
+      const dateFilter: Record<string, any> = {};
+      if (fromDate) dateFilter.$gte = new Date(`${fromDate}T00:00:00.000Z`);
+      if (toDate) dateFilter.$lte = new Date(`${toDate}T23:59:59.999Z`);
+      filter.createdAt = dateFilter;
+    }
+
     if (search) {
       const regex = new RegExp(search, 'i');
-      filter.$or = [
-        { orderNumber: regex },
-        { customerName: regex },
-        { customerContact: regex },
-        { products: regex },
-        { paymentMethod: regex },
-        { notes: regex },
+      filter.$and = [
+        {
+          $or: [
+            { orderNumber: regex },
+            { 'shippingAddress.name': regex },
+            { 'user.name': regex },
+            { 'shippingAddress.phone': regex },
+            { soldBy: regex },
+            { notes: regex },
+          ],
+        },
       ];
     }
 
-    const total = await ledgerColl.countDocuments(filter);
-    const entries = await ledgerColl.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).toArray();
+    const total = await ordersColl.countDocuments(filter);
+    const orderRows = await ordersColl.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).toArray();
+    const entries = orderRows.map(buildOrderLedgerEntry);
 
     return res.json({
       success: true,
@@ -58,9 +133,13 @@ export const getPaymentLedgerByOrderId = async (req: AuthenticatedRequest, res: 
       return res.status(400).json({ success: false, message: 'Order id required' });
     }
 
-    const ledgerColl = mongoose.connection.collection('paymentLedger');
-    const entry = await ledgerColl.findOne({ orderId });
-    return res.json({ success: true, message: 'Payment ledger entry loaded', data: entry });
+    const ordersColl = mongoose.connection.collection('orders');
+    const order = await ordersColl.findOne({ _id: new mongoose.Types.ObjectId(orderId), isDeleted: { $ne: true } });
+    if (!order) {
+      return res.status(404).json({ success: false, message: 'Ledger entry not found' });
+    }
+
+    return res.json({ success: true, message: 'Payment ledger entry loaded', data: buildOrderLedgerEntry(order) });
   } catch (error: any) {
     console.error('getPaymentLedgerByOrderId error:', error);
     return res.status(500).json({ success: false, message: error.message || 'Failed to load payment ledger entry' });
@@ -83,7 +162,7 @@ export const createOrUpdatePaymentLedger = async (req: AuthenticatedRequest, res
       customerContact: normalizeString(payload.customerContact),
       products: normalizeString(payload.products),
       amount: Number(payload.amount || 0),
-      paymentMethod: normalizeLedgerPaymentMethod(payload.paymentMethod || 'cash4'),
+      paymentMethod: normalizeLedgerPaymentMethod(payload.paymentMethod || 'cash'),
       paymentDate: normalizeString(payload.paymentDate || new Date().toISOString().slice(0, 10)),
       notes: normalizeString(payload.notes),
       updatedAt: new Date(),
@@ -101,10 +180,7 @@ export const createOrUpdatePaymentLedger = async (req: AuthenticatedRequest, res
       return res.status(200).json({ success: true, message: 'Payment ledger entry updated', data: updatedEntry });
     }
 
-    const doc = {
-      ...baseDoc,
-      createdAt: new Date(),
-    };
+    const doc = { ...baseDoc, createdAt: new Date() };
     const insertResult = await ledgerColl.insertOne(doc);
     const createdEntry = await ledgerColl.findOne({ _id: insertResult.insertedId });
 
@@ -132,7 +208,7 @@ export const updatePaymentLedger = async (req: AuthenticatedRequest, res: Respon
       customerContact: normalizeString(payload.customerContact ?? existingEntry.customerContact),
       products: normalizeString(payload.products ?? existingEntry.products),
       amount: Number(payload.amount ?? existingEntry.amount ?? 0),
-      paymentMethod: normalizeLedgerPaymentMethod(payload.paymentMethod ?? (existingEntry.paymentMethod || 'cash4')),
+      paymentMethod: normalizeLedgerPaymentMethod(payload.paymentMethod ?? (existingEntry.paymentMethod || 'cash')),
       paymentDate: normalizeString(payload.paymentDate ?? (existingEntry.paymentDate || new Date().toISOString().slice(0, 10))),
       notes: normalizeString(payload.notes ?? existingEntry.notes),
       updatedAt: new Date(),
