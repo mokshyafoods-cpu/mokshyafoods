@@ -23,7 +23,8 @@ export default function PaymentLedgerPage() {
     cash4: 'Cash',
     cash: 'Cash',
     cod: 'Cash on Delivery',
-    phonepay: 'PhonePay',
+    fonepay: 'FonePay',
+    phonepay: 'FonePay',
     esewa: 'eSewa',
   };
 
@@ -143,11 +144,11 @@ export default function PaymentLedgerPage() {
       ])
     ).sort((a, b) => a.localeCompare(b));
 
-    const headerRow = ['S.N', 'DATE', 'CUSTOMER NAME', 'ADDRESS', 'PHONEPAY', 'CASH', 'COD', 'REMARKS', ...productNames, 'TOTAL PRODUCT'];
+    const headerRow = ['S.N', 'DATE', 'CUSTOMER NAME', 'ADDRESS', 'FONEPAY', 'CASH', 'COD', 'REMARKS', ...productNames, 'TOTAL PRODUCT'];
     const dataRows = ledgerRows.map((entry, index) => {
       const quantityMap = getProductQuantityMap(entry);
       const method = String(entry.paymentMethod || 'cash').toLowerCase();
-      const phonepay = method === 'phonepay' ? Number(entry.amount || 0) : 0;
+      const fonepay = method === 'fonepay' || method === 'phonepay' ? Number(entry.amount || 0) : 0;
       const cash = method === 'cash' ? Number(entry.amount || 0) : 0;
       const cod = method === 'cod' ? Number(entry.amount || 0) : 0;
       const row: Array<string | number> = [
@@ -155,7 +156,7 @@ export default function PaymentLedgerPage() {
         entry.paymentDate || (entry.createdAt ? new Date(entry.createdAt).toISOString().slice(0, 10) : ''),
         entry.customerName || 'Walk-in Customer',
         entry.address || '',
-        phonepay || '',
+        fonepay || '',
         cash || '',
         cod || '',
         entry.notes || entry.soldBy || '',
@@ -173,9 +174,9 @@ export default function PaymentLedgerPage() {
 
     const paymentTotals = ledgerRows.reduce(
       (totals, entry) => {
-        const method = String(entry.paymentMethod || 'cash').toLowerCase();
+          const method = String(entry.paymentMethod || 'cash').toLowerCase();
         const amount = Number(entry.amount || 0);
-        if (method === 'phonepay') totals.phonepay += amount;
+        if (method === 'fonepay' || method === 'phonepay') totals.phonepay += amount;
         if (method === 'cash') totals.cash += amount;
         if (method === 'cod') totals.cod += amount;
         return totals;
@@ -372,7 +373,7 @@ export default function PaymentLedgerPage() {
                 <option value="cash4">Cash</option>
                 <option value="cash">Cash</option>
                 <option value="cod">Cash on Delivery</option>
-                <option value="phonepay">PhonePay</option>
+                <option value="fonepay">FonePay</option>
                 <option value="esewa">eSewa</option>
               </select>
             </label>

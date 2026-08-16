@@ -15,7 +15,7 @@ const transactionTypeOptions = ['all', 'customer_sale', 'partner_product_taken',
 const paymentMethodOptions = [
   { value: 'cash4', label: 'Cash' },
   { value: 'cod', label: 'Cash on Delivery' },
-  { value: 'phonepay', label: 'PhonePay' },
+  { value: 'fonepay', label: 'FonePay' },
   { value: 'esewa', label: 'eSewa' },
 ];
 

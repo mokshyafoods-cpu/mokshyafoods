@@ -12,7 +12,7 @@ const normalizeString = (value: unknown): string => {
 const normalizeLedgerPaymentMethod = (value: unknown): string => {
   const raw = normalizeString(value || 'cash').toLowerCase();
   if (!raw || raw === 'cash4' || raw === 'cash') return 'cash';
-  if (raw.includes('phonepay')) return 'phonepay';
+  if (raw.includes('fonepay') || raw.includes('phonepay')) return 'fonepay';
   if (raw === 'cod') return 'cod';
   return raw;
 };

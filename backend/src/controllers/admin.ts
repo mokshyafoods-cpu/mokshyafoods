@@ -115,7 +115,7 @@ export const getSalesAnalytics = async (_req: Request, res: Response): Promise<R
     const normalizePaymentMethod = (value: unknown): string => {
       const raw = String(value ?? 'cash').trim().toLowerCase();
       if (!raw || raw === 'cash4' || raw === 'cash') return 'cash';
-      if (raw.includes('phonepay')) return 'phonepay';
+      if (raw.includes('fonepay') || raw.includes('phonepay')) return 'fonepay';
       if (raw === 'cod') return 'cod';
       return raw;
     };
