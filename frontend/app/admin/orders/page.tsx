@@ -405,11 +405,12 @@ export default function AdminOrdersPage() {
                       <button
                         type="button"
                         onClick={() => openLedger(order)}
-                        className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
-                        title={ledgerEntries[order._id]?._id ? 'View/edit payment ledger entry' : 'Create payment ledger entry'}
+                        disabled={Boolean(ledgerEntries[order._id]?._id)}
+                        className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm font-semibold transition ${ledgerEntries[order._id]?._id ? 'cursor-not-allowed border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'}`}
+                        title={ledgerEntries[order._id]?._id ? 'Ledger already created for this order' : 'Create payment ledger entry'}
                       >
                         {ledgerEntries[order._id]?._id ? <BookOpenCheck className="h-4 w-4 text-emerald-600" /> : <BookOpenCheck className="h-4 w-4 text-slate-700" />}
-                        <span>Ledger</span>
+                        <span>{ledgerEntries[order._id]?._id ? 'Done' : 'Ledger'}</span>
                       </button>
                       <button
                         type="button"

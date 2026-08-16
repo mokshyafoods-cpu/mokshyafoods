@@ -129,64 +129,66 @@ export default function PaymentLedgerPage() {
   };
 
   const exportLedgerExcel = async () => {
-    const ledgerRows = entries.length ? entries : [];
-    if (!ledgerRows.length) {
-      toast.error('No ledger rows available to export');
-      return;
-    }
+    try {
+      const exportResponse = await paymentLedgerAPI.getAll({ page: 1, limit: 10000, fromDate, toDate });
+      const ledgerRows = Array.isArray(exportResponse?.data?.data) ? exportResponse.data.data : [];
+      if (!ledgerRows.length) {
+        toast.error('No ledger rows available to export');
+        return;
+      }
 
-    const productNames = Array.from(
-      new Set([
-        ...allProducts
-          .map((product) => normalizeLedgerProductName(product?.name || ''))
-          .filter(Boolean),
-        ...ledgerRows.flatMap((entry) => Array.from(getProductQuantityMap(entry).keys())),
-      ])
-    ).sort((a, b) => a.localeCompare(b));
+      const productNames = Array.from(
+        new Set([
+          ...allProducts
+            .map((product: any) => normalizeLedgerProductName(product?.name || ''))
+            .filter(Boolean),
+          ...ledgerRows.flatMap((entry: any) => Array.from(getProductQuantityMap(entry).keys())),
+        ])
+      ).sort((a: string, b: string) => a.localeCompare(b));
 
-    const headerRow = ['S.N', 'DATE', 'CUSTOMER NAME', 'ADDRESS', 'FONEPAY', 'CASH', 'COD', 'REMARKS', ...productNames, 'TOTAL PRODUCT'];
-    const dataRows = ledgerRows.map((entry, index) => {
-      const quantityMap = getProductQuantityMap(entry);
-      const method = String(entry.paymentMethod || 'cash').toLowerCase();
-      const fonepay = method === 'fonepay' || method === 'phonepay' ? Number(entry.amount || 0) : 0;
-      const cash = method === 'cash' ? Number(entry.amount || 0) : 0;
-      const cod = method === 'cod' ? Number(entry.amount || 0) : 0;
-      const row: Array<string | number> = [
-        index + 1,
-        entry.paymentDate || (entry.createdAt ? new Date(entry.createdAt).toISOString().slice(0, 10) : ''),
-        entry.customerName || 'Walk-in Customer',
-        entry.address || '',
-        fonepay || '',
-        cash || '',
-        cod || '',
-        entry.notes || entry.soldBy || '',
-      ];
+      const headerRow = ['S.N', 'DATE', 'CUSTOMER NAME', 'ADDRESS', 'FONEPAY', 'CASH', 'COD', 'REMARKS', ...productNames, 'TOTAL PRODUCT'];
+      const dataRows = ledgerRows.map((entry: any, index: number) => {
+        const quantityMap = getProductQuantityMap(entry);
+        const method = String(entry.paymentMethod || 'cash').toLowerCase();
+        const fonepay = method === 'fonepay' || method === 'phonepay' ? Number(entry.amount || 0) : 0;
+        const cash = method === 'cash' ? Number(entry.amount || 0) : 0;
+        const cod = method === 'cod' ? Number(entry.amount || 0) : 0;
+        const row: Array<string | number> = [
+          index + 1,
+          entry.paymentDate || (entry.createdAt ? new Date(entry.createdAt).toISOString().slice(0, 10) : ''),
+          entry.customerName || 'Walk-in Customer',
+          entry.address || '',
+          fonepay || '',
+          cash || '',
+          cod || '',
+          entry.notes || entry.soldBy || '',
+        ];
 
-      productNames.forEach((productName) => {
-        const quantity = quantityMap.get(productName) || 0;
-        row.push(quantity || '');
+        productNames.forEach((productName: string) => {
+          const quantity = quantityMap.get(productName) || 0;
+          row.push(quantity || '');
+        });
+
+        const totalQty = productNames.reduce((sum: number, productName: string) => sum + (quantityMap.get(productName) || 0), 0);
+        row.push(totalQty);
+        return row;
       });
 
-      const totalQty = productNames.reduce((sum, productName) => sum + (quantityMap.get(productName) || 0), 0);
-      row.push(totalQty);
-      return row;
-    });
-
-    const paymentTotals = ledgerRows.reduce(
-      (totals, entry) => {
+      const paymentTotals = ledgerRows.reduce(
+        (totals: { phonepay: number; cash: number; cod: number }, entry: any) => {
           const method = String(entry.paymentMethod || 'cash').toLowerCase();
-        const amount = Number(entry.amount || 0);
-        if (method === 'fonepay' || method === 'phonepay') totals.phonepay += amount;
-        if (method === 'cash') totals.cash += amount;
-        if (method === 'cod') totals.cod += amount;
-        return totals;
-      },
-      { phonepay: 0, cash: 0, cod: 0 }
-    );
+          const amount = Number(entry.amount || 0);
+          if (method === 'fonepay' || method === 'phonepay') totals.phonepay += amount;
+          if (method === 'cash') totals.cash += amount;
+          if (method === 'cod') totals.cod += amount;
+          return totals;
+        },
+        { phonepay: 0, cash: 0, cod: 0 }
+      );
 
-    const productTotals = productNames.map((productName) =>
-      ledgerRows.reduce((sum, entry) => sum + (getProductQuantityMap(entry).get(productName) || 0), 0)
-    );
+      const productTotals = productNames.map((productName: string) =>
+        ledgerRows.reduce((sum: number, entry: any) => sum + (getProductQuantityMap(entry).get(productName) || 0), 0)
+      );
 
     const totalRow = [
       'TOTAL',
@@ -201,49 +203,52 @@ export default function PaymentLedgerPage() {
       productTotals.reduce((sum, value) => sum + value, 0),
     ];
 
-    const styles: Record<string, any> = {};
-    const greenFill = { fgColor: { rgb: 'D9EAD3' } };
-    const headerStyle = { font: { bold: true, color: { rgb: 'FFFFFF' } }, fill: { fgColor: { rgb: '2F7D32' } }, border: { top: { style: 'thin', color: { rgb: '000000' } }, right: { style: 'thin', color: { rgb: '000000' } }, bottom: { style: 'thin', color: { rgb: '000000' } }, left: { style: 'thin', color: { rgb: '000000' } } }, alignment: { horizontal: 'center', vertical: 'center' } };
-    const dataStyle = { border: { top: { style: 'thin', color: { rgb: '000000' } }, right: { style: 'thin', color: { rgb: '000000' } }, bottom: { style: 'thin', color: { rgb: '000000' } }, left: { style: 'thin', color: { rgb: '000000' } } }, alignment: { vertical: 'center', wrapText: true } };
-    const totalStyle = { font: { bold: true, color: { rgb: '000000' } }, fill: greenFill, border: { top: { style: 'thin', color: { rgb: '000000' } }, right: { style: 'thin', color: { rgb: '000000' } }, bottom: { style: 'thin', color: { rgb: '000000' } }, left: { style: 'thin', color: { rgb: '000000' } } }, alignment: { horizontal: 'center', vertical: 'center' } };
+      const styles: Record<string, any> = {};
+      const greenFill = { fgColor: { rgb: 'D9EAD3' } };
+      const headerStyle = { font: { bold: true, color: { rgb: 'FFFFFF' } }, fill: { fgColor: { rgb: '2F7D32' } }, border: { top: { style: 'thin', color: { rgb: '000000' } }, right: { style: 'thin', color: { rgb: '000000' } }, bottom: { style: 'thin', color: { rgb: '000000' } }, left: { style: 'thin', color: { rgb: '000000' } } }, alignment: { horizontal: 'center', vertical: 'center' } };
+      const dataStyle = { border: { top: { style: 'thin', color: { rgb: '000000' } }, right: { style: 'thin', color: { rgb: '000000' } }, bottom: { style: 'thin', color: { rgb: '000000' } }, left: { style: 'thin', color: { rgb: '000000' } } }, alignment: { vertical: 'center', wrapText: true } };
+      const totalStyle = { font: { bold: true, color: { rgb: '000000' } }, fill: greenFill, border: { top: { style: 'thin', color: { rgb: '000000' } }, right: { style: 'thin', color: { rgb: '000000' } }, bottom: { style: 'thin', color: { rgb: '000000' } }, left: { style: 'thin', color: { rgb: '000000' } } }, alignment: { horizontal: 'center', vertical: 'center' } };
 
-    headerRow.forEach((_, index) => {
-      const cell = `${String.fromCharCode(65 + (index % 26))}${1}`;
-      styles[cell] = headerStyle;
-    });
-
-    dataRows.forEach((_, rowIndex) => {
-      headerRow.forEach((_, colIndex) => {
-        const cell = `${String.fromCharCode(65 + (colIndex % 26))}${rowIndex + 2}`;
-        styles[cell] = dataStyle;
+      headerRow.forEach((_: string, index: number) => {
+        const cell = `${String.fromCharCode(65 + (index % 26))}${1}`;
+        styles[cell] = headerStyle;
       });
-    });
 
-    const totalCellIndex = dataRows.length + 2;
-    headerRow.forEach((_, colIndex) => {
-      const cell = `${String.fromCharCode(65 + (colIndex % 26))}${totalCellIndex}`;
-      styles[cell] = totalStyle;
-    });
+      dataRows.forEach((_: Array<string | number>, rowIndex: number) => {
+        headerRow.forEach((_: string, colIndex: number) => {
+          const cell = `${String.fromCharCode(65 + (colIndex % 26))}${rowIndex + 2}`;
+          styles[cell] = dataStyle;
+        });
+      });
 
-    const columnWidths = [
-      { wch: 6 },
-      { wch: 14 },
-      { wch: 22 },
-      { wch: 24 },
-      { wch: 14 },
-      { wch: 12 },
-      { wch: 12 },
-      { wch: 18 },
-      ...productNames.map(() => ({ wch: 14 })),
-      { wch: 14 },
-    ];
+      const totalCellIndex = dataRows.length + 2;
+      headerRow.forEach((_: string, colIndex: number) => {
+        const cell = `${String.fromCharCode(65 + (colIndex % 26))}${totalCellIndex}`;
+        styles[cell] = totalStyle;
+      });
 
-    await downloadExcel('payment-ledger.xlsx', [{
-      name: 'Payment Ledger',
-      data: [headerRow, ...dataRows, totalRow],
-      cols: columnWidths,
-      styles,
-    }]);
+      const columnWidths = [
+        { wch: 6 },
+        { wch: 14 },
+        { wch: 22 },
+        { wch: 24 },
+        { wch: 14 },
+        { wch: 12 },
+        { wch: 12 },
+        { wch: 18 },
+        ...productNames.map(() => ({ wch: 14 })),
+        { wch: 14 },
+      ];
+
+      await downloadExcel('payment-ledger.xlsx', [{
+        name: 'Payment Ledger',
+        data: [headerRow, ...dataRows, totalRow],
+        cols: columnWidths,
+        styles,
+      }]);
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || 'Failed to export payment ledger');
+    }
   };
 
   useEffect(() => {
@@ -286,8 +291,14 @@ export default function PaymentLedgerPage() {
             To date
             <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-primary" />
           </label>
-          <div className="flex items-end">
+          <div className="flex items-end gap-2">
             <button type="button" onClick={() => { setFromDate(''); setToDate(''); }} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100">Clear filters</button>
+          </div>
+          <div className="flex items-end gap-2">
+            <button type="button" onClick={() => { const today = new Date(); const last7 = new Date(today); last7.setDate(today.getDate() - 6); setFromDate(last7.toISOString().slice(0, 10)); setToDate(today.toISOString().slice(0, 10)); }} className="w-full rounded-2xl border border-primary/30 bg-primary/5 px-4 py-2 text-sm font-semibold text-primary hover:bg-primary/10">Last 7 days</button>
+          </div>
+          <div className="flex items-end gap-2 md:col-span-2 xl:col-span-1">
+            <button type="button" onClick={() => { const today = new Date(); const last30 = new Date(today); last30.setDate(today.getDate() - 29); setFromDate(last30.toISOString().slice(0, 10)); setToDate(today.toISOString().slice(0, 10)); }} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100">Last 30 days</button>
           </div>
         </div>
       </div>
