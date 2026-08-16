@@ -68,6 +68,26 @@ const normalizeOrderItem = async (item: any): Promise<any> => {
 
 type AuthenticatedRequest = Request & { userId?: string; userRole?: string };
 
+export const shouldRestoreCancelledStock = (order: any): boolean => {
+  if (!order || order.isDeleted) return false;
+  const status = String(order.status || order.orderStatus || '').toLowerCase();
+  return status !== 'cancelled';
+};
+
+export const restoreOrderStock = async (orderItems: any[] = []): Promise<void> => {
+  const productsColl = mongoose.connection.collection('products');
+  await Promise.all(
+    (orderItems || []).map(async (item: any) => {
+      if (!item?.productId || Number(item.quantity || 0) <= 0) return;
+      const productId = String(item.productId);
+      const filter = mongoose.Types.ObjectId.isValid(productId)
+        ? { _id: new mongoose.Types.ObjectId(productId) }
+        : { _id: productId };
+      await productsColl.updateOne(filter as any, { $inc: { quantity: Number(item.quantity || 0) } });
+    })
+  );
+};
+
 const buildOrderNumber = (): string => {
   const timestamp = new Date().toISOString().slice(2, 10).replace(/-/g, '');
   const random = Math.random().toString(36).slice(2, 6).toUpperCase();
@@ -526,6 +546,11 @@ export const deleteOrder = async (req: Request & { userId?: string; userRole?: s
       return res.status(404).json({ success: false, message: 'Order not found' });
     }
 
+    const shouldRestoreStock = shouldRestoreCancelledStock(existingOrder);
+    if (shouldRestoreStock) {
+      await restoreOrderStock(Array.isArray(existingOrder.items) ? existingOrder.items : []);
+    }
+
     const softDeleted = await ordersColl.updateOne(
       { _id: new mongoose.Types.ObjectId(id) },
       {
@@ -581,7 +606,12 @@ export const updateOrderStatus = async (req: Request & { userId?: string; userRo
 
     const previousStatus = String(existingOrder.orderStatus || existingOrder.status || 'pending').toLowerCase();
     const nextStatus = normalizedRequestedStatus ? normalizedRequestedStatus : previousStatus;
+    const wasAlreadyCancelled = previousStatus === 'cancelled' || existingOrder.isDeleted;
     const updatePayload: Record<string, any> = { updatedAt: new Date() };
+
+    if (nextStatus === 'cancelled' && !wasAlreadyCancelled) {
+      await restoreOrderStock(Array.isArray(existingOrder.items) ? existingOrder.items : []);
+    }
 
     if (isAdmin) {
       const allowedAdminFields = ['orderStatus', 'status', 'paymentStatus', 'trackingInfo', 'soldBy', 'staffNote', 'cancelReason', 'isCashCollected'];

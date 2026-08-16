@@ -42,19 +42,27 @@ const getReportRange = (month?: string, startDate?: string, endDate?: string) =>
   return getMonthRange(month);
 };
 
+export const shouldIncludeOrderInRevenue = (order: any): boolean => {
+  if (!order || order.isDeleted) return false;
+  const status = String(order.status || order.orderStatus || '').toLowerCase();
+  const paymentStatus = String(order.paymentStatus || '').toLowerCase();
+  return status !== 'cancelled' && paymentStatus !== 'cancelled';
+};
+
 export const getDashboardStats = async (_req: Request, res: Response): Promise<Response> => {
   try {
     const productsColl = mongoose.connection.collection('products');
     const ordersColl = mongoose.connection.collection('orders');
     const usersColl = mongoose.connection.collection('users');
+    const activeOrderFilter = { isDeleted: { $ne: true }, status: { $ne: 'cancelled' }, orderStatus: { $ne: 'cancelled' }, paymentStatus: { $ne: 'cancelled' } };
 
     const [totalProducts, totalOrders, totalCustomers, lowStockProducts, recentOrders, revenueResult] = await Promise.all([
       productsColl.countDocuments(),
-      ordersColl.countDocuments(),
+      ordersColl.countDocuments({ isDeleted: { $ne: true } }),
       usersColl.countDocuments(),
       productsColl.countDocuments({ quantity: { $lte: 10 } }),
-      ordersColl.find({}).sort({ createdAt: -1 }).limit(5).toArray(),
-      ordersColl.aggregate([{ $group: { _id: null, total: { $sum: '$total' } } }]).toArray(),
+      ordersColl.find({ isDeleted: { $ne: true } }).sort({ createdAt: -1 }).limit(5).toArray(),
+      ordersColl.aggregate([{ $match: activeOrderFilter }, { $group: { _id: null, total: { $sum: '$total' } } }]).toArray(),
     ]);
 
     const totalRevenue = revenueResult?.[0]?.total || 0;
