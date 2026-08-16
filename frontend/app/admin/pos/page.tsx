@@ -105,7 +105,7 @@ export default function POSPage() {
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerName, setCustomerName] = useState('');
   const [attachedCustomer, setAttachedCustomer] = useState<{ _id: string; name: string; phone: string } | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'cod' | 'phonepay'>('cash');
+  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'cod' | 'fonepay'>('cash');
   const [deliveryCharge, setDeliveryCharge] = useState(0);
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [discountValue, setDiscountValue] = useState(0);
@@ -355,7 +355,7 @@ export default function POSPage() {
       setPaymentMethod('cash');
       setTenderedAmount(0);
     }
-    if (transactionType !== 'customer_sale' || paymentMethod !== 'cod') {
+    if (transactionType !== 'customer_sale' || (paymentMethod !== 'cod' && paymentMethod !== 'fonepay')) {
       setDeliveryCharge(0);
     }
   }, [transactionType, paymentMethod]);
@@ -461,7 +461,7 @@ export default function POSPage() {
         customerPhone: customerPhone.trim() || attachedCustomer?.phone || '',
         customerEmail: '',
         ...(attachedCustomer?._id ? { customerId: attachedCustomer._id } : {}),
-        paymentMethod,
+        paymentMethod: paymentMethod === 'fonepay' ? 'fonepay' : paymentMethod,
         soldBy,
         notes: note,
         subtotal,
@@ -469,8 +469,8 @@ export default function POSPage() {
         discountMode,
         discountValue,
         discountReason,
-        deliveryCharge: paymentMethod === 'cod' ? deliveryCharge : 0,
-        shippingCost: paymentMethod === 'cod' ? deliveryCharge : 0,
+        deliveryCharge: paymentMethod === 'cod' || paymentMethod === 'fonepay' ? deliveryCharge : 0,
+        shippingCost: paymentMethod === 'cod' || paymentMethod === 'fonepay' ? deliveryCharge : 0,
         total,
         tenderedAmount: effectiveTenderedAmount,
         changeDue: paymentMethod === 'cash' ? Math.max(0, effectiveTenderedAmount - total) : 0,
@@ -759,7 +759,7 @@ export default function POSPage() {
                 <span>Discount</span>
                 <span>- RS {discountAmount}</span>
               </div>
-              {paymentMethod === 'cod' && deliveryCharge > 0 && (
+              {(paymentMethod === 'cod' || paymentMethod === 'fonepay') && deliveryCharge > 0 && (
                 <div className="mt-3 flex items-center justify-between text-sm text-slate-400">
                   <span>Delivery</span>
                   <span>RS {deliveryCharge}</span>
@@ -783,7 +783,13 @@ export default function POSPage() {
               <div className="flex items-center justify-between gap-4">
                 <p className="text-sm font-semibold uppercase tracking-[0.35em] text-slate-400">Payment method</p>
                 <span className="text-xs uppercase tracking-[0.35em] text-slate-400">
-                  {transactionType === 'customer_sale' ? (paymentMethod === 'cash' ? 'Cash sale' : 'Cash on delivery') : 'Cash (partner transaction)'}
+                  {transactionType === 'customer_sale'
+                    ? paymentMethod === 'cash'
+                      ? 'Cash sale'
+                      : paymentMethod === 'fonepay'
+                        ? 'FonePay'
+                        : 'Cash on delivery'
+                    : 'Cash (partner transaction)'}
                 </span>
               </div>
               <div className="mt-4 grid gap-2 sm:grid-cols-3">
@@ -805,10 +811,10 @@ export default function POSPage() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => setPaymentMethod('phonepay')}
-                      className={`rounded-full px-4 py-3 text-sm font-semibold transition ${paymentMethod === 'phonepay' ? 'bg-blue-600 text-white' : 'border border-slate-800 bg-slate-900 text-slate-300'}`}
+                      onClick={() => setPaymentMethod('fonepay')}
+                      className={`rounded-full px-4 py-3 text-sm font-semibold transition ${paymentMethod === 'fonepay' ? 'bg-blue-600 text-white' : 'border border-slate-800 bg-slate-900 text-slate-300'}`}
                     >
-                      PhonePay
+                      FonePay
                     </button>
                   </>
                 ) : (
@@ -817,7 +823,7 @@ export default function POSPage() {
                   </div>
                 )}
               </div>
-              {transactionType === 'customer_sale' && paymentMethod === 'cod' && (
+              {(transactionType === 'customer_sale' && (paymentMethod === 'cod' || paymentMethod === 'fonepay')) && (
                 <div className="mt-4 space-y-3">
                   <label className="block text-sm font-medium text-slate-300">Delivery charge</label>
                   <input
