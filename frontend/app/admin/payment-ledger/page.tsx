@@ -296,12 +296,12 @@ export default function PaymentLedgerPage() {
             <div className="divide-y divide-slate-200">
               {entries.map((entry: any) => (
                 <div key={entry._id} className="grid gap-4 px-6 py-5 md:grid-cols-[1.1fr_1fr_1.1fr_0.8fr_0.7fr_0.7fr_1fr_0.7fr]">
-                  <div className="font-semibold text-slate-900">{entry.orderNumber || entry.orderId || 'Manual'}</div>
-                  <div className="text-slate-800">{entry.customerName || 'Walk-in'}</div>
+                  <div className="font-semibold text-slate-900">{entry.orderNumber || entry.orderId || '—'}</div>
+                  <div className="text-slate-800">{entry.customerName || '—'}</div>
                   <div className="text-sm text-slate-700">{entry.products || '—'}</div>
                   <div className="font-semibold text-slate-900">RS {Number(entry.amount || 0).toLocaleString()}</div>
-                  <div className="text-slate-700">{formatPaymentMethod(entry.paymentMethod || 'cash4')}</div>
-                  <div className="text-slate-700">{entry.paymentDate || new Date(entry.createdAt).toLocaleDateString()}</div>
+                  <div className="text-slate-700">{entry.paymentMethod ? formatPaymentMethod(entry.paymentMethod) : '—'}</div>
+                  <div className="text-slate-700">{entry.paymentDate || (entry.createdAt ? new Date(entry.createdAt).toLocaleDateString() : '—')}</div>
                   <div className="text-sm text-slate-600">{entry.notes || '—'}</div>
                   <div className="flex items-center justify-start gap-2">
                     <button type="button" onClick={() => handleEditEntry(entry)} className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100">

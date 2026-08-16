@@ -131,17 +131,11 @@ export const getPaymentLedgerByOrderId = async (req: AuthenticatedRequest, res: 
 
     const ledgerColl = mongoose.connection.collection('paymentLedger');
     const savedEntry = await ledgerColl.findOne(buildLedgerLookupFilters(orderId));
-    if (savedEntry) {
-      return res.json({ success: true, message: 'Payment ledger entry loaded', data: savedEntry });
-    }
-
-    const ordersColl = mongoose.connection.collection('orders');
-    const order = await ordersColl.findOne({ _id: new mongoose.Types.ObjectId(orderId), isDeleted: { $ne: true } });
-    if (!order) {
+    if (!savedEntry) {
       return res.status(404).json({ success: false, message: 'Ledger entry not found' });
     }
 
-    return res.json({ success: true, message: 'Payment ledger entry loaded', data: buildOrderLedgerEntry(order) });
+    return res.json({ success: true, message: 'Payment ledger entry loaded', data: savedEntry });
   } catch (error: any) {
     console.error('getPaymentLedgerByOrderId error:', error);
     return res.status(500).json({ success: false, message: error.message || 'Failed to load payment ledger entry' });
