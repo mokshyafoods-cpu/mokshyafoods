@@ -125,7 +125,9 @@ export default function AdminOrdersPage() {
       orderNumber: order.orderNumber || order._id,
       customerName: order.user?.name || order.shippingAddress?.name || 'Guest',
       customerContact: order.shippingAddress?.phone || order.user?.phone || '',
-      products: (order.items || []).map((item: any) => `${item.name || 'Product'} x${item.quantity || 1}`).join(', '),
+      address: order.shippingAddress ? `${order.shippingAddress.street || ''} ${order.shippingAddress.city || ''} ${order.shippingAddress.state || ''}`.trim() : '',
+      products: (order.items || []).map((item: any) => `${item.name || item.productData?.name || 'Product'} x${item.quantity || 1}`).join(', '),
+      items: Array.isArray(order.items) ? order.items : [],
       amount: order.total || 0,
       paymentMethod: order.paymentMethod || 'cash4',
       paymentDate: new Date().toISOString().slice(0, 10),
@@ -203,7 +205,13 @@ export default function AdminOrdersPage() {
   const saveLedger = async (event: React.FormEvent) => {
     event.preventDefault();
     try {
-      const response = await paymentLedgerAPI.createOrUpdate({ ...ledgerForm, amount: Number(ledgerForm.amount || 0) });
+      const payload = {
+        ...ledgerForm,
+        amount: Number(ledgerForm.amount || 0),
+        items: Array.isArray(ledgerForm.items) ? ledgerForm.items : [],
+        products: ledgerForm.products || (Array.isArray(ledgerForm.items) ? ledgerForm.items.map((item: any) => `${item.name || item.productData?.name || 'Product'} x${item.quantity || 1}`).join(', ') : ''),
+      };
+      const response = await paymentLedgerAPI.createOrUpdate(payload);
       const savedEntry = response?.data?.data;
       if (savedEntry) {
         setLedgerEntries((prev) => ({ ...prev, [savedEntry.orderId]: savedEntry }));

@@ -103,11 +103,26 @@ export default function PaymentLedgerPage() {
     const items = Array.isArray(entry?.items) ? entry.items : [];
 
     items.forEach((item: any) => {
-      const name = normalizeLedgerProductName(item?.name || item?.productData?.name || item?.productName || '');
+      const name = normalizeLedgerProductName(item?.name || item?.productData?.name || item?.productName || item?.product?.name || '');
       if (!name) return;
       const quantity = Number(item?.quantity || 0);
       productMap.set(name, (productMap.get(name) || 0) + quantity);
     });
+
+    if (productMap.size === 0 && typeof entry?.products === 'string' && entry.products.trim()) {
+      entry.products.split(',').forEach((chunk: string) => {
+        const trimmed = chunk.trim();
+        if (!trimmed) return;
+        const match = trimmed.match(/^(.*?)(?:\s*x\s*|\s*X\s*)(\d+)$/i);
+        if (match) {
+          const name = normalizeLedgerProductName(match[1]);
+          const quantity = Number(match[2] || 0);
+          if (name && quantity > 0) {
+            productMap.set(name, (productMap.get(name) || 0) + quantity);
+          }
+        }
+      });
+    }
 
     return productMap;
   };

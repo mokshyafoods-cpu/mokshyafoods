@@ -434,13 +434,22 @@ export default function POSPage() {
     try {
       const response = await posAPI.createOrder({
         transactionType,
-        items: cart.map((item) => ({ product: item.productId, quantity: item.quantity, price: item.price })),
+        items: cart.map((item) => ({ product: item.productId, quantity: item.quantity, price: item.price, subtotal: item.subtotal })),
         customerName: customerName.trim() || attachedCustomer?.name || 'Walk-in Customer',
         customerPhone: customerPhone.trim() || attachedCustomer?.phone || '',
         customerEmail: '',
+        customerId: attachedCustomer?._id || '',
         paymentMethod,
         soldBy,
         notes: note,
+        subtotal,
+        discountAmount,
+        discountMode,
+        discountValue,
+        discountReason,
+        total,
+        tenderedAmount: paymentMethod === 'cash' ? tenderedAmount : 0,
+        changeDue: paymentMethod === 'cash' ? Math.max(0, tenderedAmount - total) : 0,
       });
 
       const payload = unwrapResponseData(response, null);

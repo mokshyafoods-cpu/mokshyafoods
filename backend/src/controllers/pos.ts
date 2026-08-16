@@ -94,9 +94,16 @@ export const createPOSOrder = async (req: AuthenticatedRequest, res: Response): 
       }
     }
 
-    const subtotal = normalizedItems.reduce((sum, item) => sum + Number(item.subtotal || 0), 0);
-    const discountAmount = Number(body.discountAmount || 0);
-    const total = Math.max(0, subtotal - discountAmount);
+    const subtotalFromItems = normalizedItems.reduce((sum, item) => sum + Number(item.subtotal || 0), 0);
+    const submittedSubtotal = Number(body.subtotal || subtotalFromItems || 0);
+    const submittedTotal = Number(body.total || 0);
+    const providedDiscountAmount = Number(body.discountAmount || 0);
+    const computedDiscountAmount = providedDiscountAmount > 0
+      ? providedDiscountAmount
+      : Math.max(0, submittedSubtotal - submittedTotal);
+    const subtotal = submittedSubtotal || subtotalFromItems;
+    const discountAmount = computedDiscountAmount;
+    const total = submittedTotal > 0 ? submittedTotal : Math.max(0, subtotal - discountAmount);
     const transactionType = String(body.transactionType || 'customer_sale').trim();
     const notes = String(body.notes || '').trim();
     const normalizedPaymentMethod = transactionType === 'customer_sale' ? String(body.paymentMethod || 'cash').toLowerCase() : 'cash';

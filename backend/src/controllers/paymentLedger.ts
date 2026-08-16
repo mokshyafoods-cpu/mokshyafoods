@@ -63,6 +63,27 @@ const buildOrderLedgerEntry = (order: any) => {
   };
 };
 
+const findExistingLedgerEntry = async (ledgerColl: any, orderId: string) => {
+  const normalizedOrderId = normalizeString(orderId);
+  const candidates = [normalizedOrderId];
+  if (normalizedOrderId) {
+    candidates.push(String(normalizedOrderId).replace(/^ObjectId\("|"\)$/g, ''));
+  }
+
+  const filters = [
+    { orderId: normalizedOrderId },
+    { orderId: { $in: candidates } },
+    { $or: [{ orderId: normalizedOrderId }, { orderId: { $in: candidates } }] },
+  ];
+
+  for (const filter of filters) {
+    const existingEntry = await ledgerColl.findOne(filter);
+    if (existingEntry) return existingEntry;
+  }
+
+  return null;
+};
+
 const buildLedgerLookupFilters = (id: string) => {
   const normalized = normalizeString(id);
   if (!normalized) {
@@ -153,20 +174,35 @@ export const createOrUpdatePaymentLedger = async (req: AuthenticatedRequest, res
     }
 
     const ledgerColl = mongoose.connection.collection('paymentLedger');
+    const items = Array.isArray(payload.items) ? payload.items : Array.isArray(payload.order?.items) ? payload.order.items : [];
+    const productSummary = Array.isArray(items)
+      ? items
+          .map((item: any) => {
+            const itemName = normalizeString(item?.name || item?.productData?.name || item?.productName || 'Product');
+            const qty = Number(item?.quantity || 0);
+            return qty > 0 ? `${itemName} x${qty}` : itemName;
+          })
+          .filter(Boolean)
+          .join(', ')
+      : normalizeString(payload.products);
+
     const baseDoc = {
       orderId,
       orderNumber: normalizeString(payload.orderNumber),
       customerName: normalizeString(payload.customerName),
       customerContact: normalizeString(payload.customerContact),
-      products: normalizeString(payload.products),
+      address: normalizeString(payload.address),
+      products: normalizeString(productSummary || payload.products),
       amount: Number(payload.amount || 0),
       paymentMethod: normalizeLedgerPaymentMethod(payload.paymentMethod || 'cash'),
       paymentDate: normalizeString(payload.paymentDate || new Date().toISOString().slice(0, 10)),
       notes: normalizeString(payload.notes),
+      soldBy: normalizeString(payload.soldBy),
+      items,
       updatedAt: new Date(),
     };
 
-    const existingEntry = await ledgerColl.findOne({ orderId });
+    const existingEntry = await findExistingLedgerEntry(ledgerColl, orderId);
 
     if (existingEntry) {
       const result = await ledgerColl.findOneAndUpdate(

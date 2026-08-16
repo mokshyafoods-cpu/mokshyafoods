@@ -32,17 +32,29 @@ export default function AdminLowStockPage() {
     );
   }, [products, search]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredProducts.length / PAGE_SIZE));
+  const sortedProducts = useMemo(() => {
+    return [...filteredProducts].sort((a: any, b: any) => {
+      const stockA = Number(a.quantity || 0);
+      const stockB = Number(b.quantity || 0);
+      if (stockA !== stockB) return stockA - stockB;
+      return String(a.name || '').localeCompare(String(b.name || ''));
+    });
+  }, [filteredProducts]);
+
+  const criticalCount = sortedProducts.filter((product: any) => Number(product.quantity || 0) <= Math.max(0, Math.floor(threshold / 2))).length;
+  const watchCount = sortedProducts.filter((product: any) => Number(product.quantity || 0) > Math.max(0, Math.floor(threshold / 2)) && Number(product.quantity || 0) <= threshold).length;
+
+  const totalPages = Math.max(1, Math.ceil(sortedProducts.length / PAGE_SIZE));
   const pagedProducts = useMemo(() => {
     const start = (page - 1) * PAGE_SIZE;
-    return filteredProducts.slice(start, start + PAGE_SIZE);
-  }, [filteredProducts, page]);
+    return sortedProducts.slice(start, start + PAGE_SIZE);
+  }, [sortedProducts, page]);
 
   useEffect(() => {
     setPage(1);
   }, [search, threshold]);
 
-  const lowAlertCount = filteredProducts.length;
+  const lowAlertCount = sortedProducts.length;
 
   const handleStockUpdate = async (productId: string, increment: number) => {
     const product = products.find((item: any) => item._id === productId);
@@ -106,6 +118,24 @@ export default function AdminLowStockPage() {
         </div>
       </div>
 
+      <div className="grid gap-4 md:grid-cols-3">
+        <div className="rounded-[1.75rem] border border-rose-200 bg-rose-50 p-5 shadow-sm">
+          <p className="text-[10px] uppercase tracking-[0.25em] text-rose-500">Critical</p>
+          <p className="mt-3 text-3xl font-semibold text-rose-700">{criticalCount}</p>
+          <p className="mt-1 text-sm text-rose-600">Products at or below half the threshold</p>
+        </div>
+        <div className="rounded-[1.75rem] border border-amber-200 bg-amber-50 p-5 shadow-sm">
+          <p className="text-[10px] uppercase tracking-[0.25em] text-amber-600">Watchlist</p>
+          <p className="mt-3 text-3xl font-semibold text-amber-700">{watchCount}</p>
+          <p className="mt-1 text-sm text-amber-600">Products approaching the danger zone</p>
+        </div>
+        <div className="rounded-[1.75rem] border border-emerald-200 bg-emerald-50 p-5 shadow-sm">
+          <p className="text-[10px] uppercase tracking-[0.25em] text-emerald-600">Needs reorder</p>
+          <p className="mt-3 text-3xl font-semibold text-emerald-700">{lowAlertCount}</p>
+          <p className="mt-1 text-sm text-emerald-600">Total items currently under the target stock level</p>
+        </div>
+      </div>
+
       {isLoading ? (
         <div className="rounded-[2rem] border border-slate-200 bg-white p-10 text-center text-slate-500 shadow-xl">Loading low stock products...</div>
       ) : error ? (
@@ -121,11 +151,11 @@ export default function AdminLowStockPage() {
 
             return (
               <div key={product._id} className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-xl">
-                <div className="flex h-44 w-full items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200">
+                <div className="flex h-52 w-full items-center justify-center bg-gradient-to-br from-slate-100 via-slate-50 to-slate-200">
                   {image ? (
                     <img src={image} alt={product.name} className="h-full w-full object-cover" />
                   ) : (
-                    <div className="flex h-20 w-20 items-center justify-center rounded-[1.5rem] bg-white text-slate-400 shadow-sm">
+                    <div className="flex h-24 w-24 items-center justify-center rounded-[1.5rem] bg-white text-slate-400 shadow-sm">
                       <Package className="h-10 w-10" />
                     </div>
                   )}
@@ -137,8 +167,8 @@ export default function AdminLowStockPage() {
                       <h2 className="text-xl font-semibold text-slate-900">{product.name}</h2>
                       <p className="mt-1 text-xs uppercase tracking-[0.2em] text-slate-400">{product.sku || 'No SKU'}</p>
                     </div>
-                    <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${qty <= threshold ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}`}>
-                      {qty <= threshold ? 'Low stock' : 'Healthy'}
+                    <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${qty <= Math.max(0, Math.floor(threshold / 2)) ? 'bg-rose-100 text-rose-700 ring-1 ring-rose-200' : qty <= threshold ? 'bg-amber-100 text-amber-700 ring-1 ring-amber-200' : 'bg-emerald-100 text-emerald-700 ring-1 ring-emerald-200'}`}>
+                      {qty <= Math.max(0, Math.floor(threshold / 2)) ? 'Critical' : qty <= threshold ? 'Watch' : 'Healthy'}
                     </span>
                   </div>
 
