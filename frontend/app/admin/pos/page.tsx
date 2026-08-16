@@ -593,6 +593,7 @@ export default function POSPage() {
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {visibleProducts.slice(0, 18).map((product) => {
                 const isSoldOut = product.quantity === 0;
+                const currentCartQuantity = productQuantities[product._id] || 0;
                 return (
                   <button
                     key={product._id}
@@ -601,6 +602,11 @@ export default function POSPage() {
                     disabled={isSoldOut}
                     className={`group relative overflow-hidden rounded-[2rem] border p-4 text-left text-slate-900 transition ${isSoldOut ? 'cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400' : 'border-slate-200 bg-white hover:border-primary hover:shadow-lg'}`}
                   >
+                    {currentCartQuantity > 0 && (
+                      <span className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white shadow-lg ring-2 ring-white">
+                        {currentCartQuantity}
+                      </span>
+                    )}
                     <div className="flex items-start gap-4">
                       <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-3xl bg-slate-100">
                         {product.images?.[0]?.url ? (
