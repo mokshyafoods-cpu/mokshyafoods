@@ -131,7 +131,7 @@ export default function Navigation() {
                     <span className="absolute left-0 -bottom-1 h-[3px] w-full bg-primary origin-left scale-x-0 transition-transform duration-150 ease-out group-hover:scale-x-100" />
                   </span>
                 </Link>
-                {filteredCategories.slice(0, 3).map((category) => (
+                {filteredCategories.slice(0, 2).map((category) => (
                   <Link
                     key={category._id || category.name}
                     href={`/products?category=${encodeURIComponent(category.slug || category._id || category.name)}`}
@@ -145,14 +145,6 @@ export default function Navigation() {
                     </span>
                   </Link>
                 ))}
-                {filteredCategories.length > 3 && (
-                  <Link href="/products" onClick={closeNav} className="text-slate-950 group">
-                    <span className="relative inline-block transform transition-transform duration-150 ease-out group-hover:-translate-y-1">
-                      More
-                      <span className="absolute left-0 -bottom-1 h-[3px] w-full bg-primary origin-left scale-x-0 transition-transform duration-150 ease-out group-hover:scale-x-100" />
-                    </span>
-                  </Link>
-                )}
                 <Link href="/contact" onClick={closeNav} className="flex items-center gap-2 text-slate-950 group">
                   <Phone className="h-4 w-4 text-primary" />
                   <span className="relative inline-block transform transition-transform duration-150 ease-out group-hover:-translate-y-1">
@@ -164,17 +156,17 @@ export default function Navigation() {
             </div>
 
             <div className="flex min-w-0 flex-1 items-center justify-center">
-              <form onSubmit={handleSearchSubmit} className="hidden md:flex w-full max-w-xl rounded-full border border-border bg-white px-3 py-2 shadow-sm">
-                <Search className="w-4 h-4 text-slate-500" />
+              <form onSubmit={handleSearchSubmit} className="hidden md:flex w-full max-w-2xl rounded-full border border-border bg-white px-3 py-3 shadow-sm ring-1 ring-slate-200/80 md:py-3.5">
+                <Search className="w-5 h-5 text-slate-500" />
                 <input
                   value={searchText}
                   onChange={(event) => setSearchText(event.target.value)}
                   name="search"
                   type="search"
-                  placeholder="Search products..."
-                  className="w-full bg-white px-3 text-sm text-slate-950 placeholder:text-slate-400 focus:outline-none"
+                  placeholder="Search products by name..."
+                  className="w-full bg-white px-3 text-base text-slate-950 placeholder:text-slate-400 focus:outline-none"
                 />
-                <button type="submit" className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-secondary transition">
+                <button type="submit" className="rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-secondary transition">
                   Search
                 </button>
               </form>

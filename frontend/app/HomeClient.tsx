@@ -58,18 +58,19 @@ export default function HomeClient() {
   const heroImage = products[0]?.thumbnail || products[0]?.images?.[0]?.url || '/placeholder.jpg';
   const rankedProducts = [...products]
     .map((item) => {
-      const ratingScore = Number(item.rating || 0) * 8;
-      const reviewScore = Number(item.reviewCount || 0) * 2;
-      const stockScore = Number(item.quantity || 0) > 0 ? Math.min(Number(item.quantity || 0), 100) / 20 : 0;
-      const featuredScore = item.featured ? 20 : 0;
-      const popularityScore = ratingScore + reviewScore + stockScore + featuredScore;
+      const ratingScore = Number(item.rating || 0) * 12;
+      const reviewScore = Number(item.reviewCount || 0) * 4;
+      const demandScore = Number(item.soldCount || item.salesCount || item.totalSold || item.popularity || item.demand || 0) * 18;
+      const stockScore = Number(item.quantity || 0) > 0 ? Math.min(Number(item.quantity || 0), 120) / 2 : 0;
+      const featuredScore = item.featured ? 80 : 0;
+      const popularityScore = ratingScore + reviewScore + demandScore + stockScore + featuredScore;
 
       return {
         ...item,
         popularityScore,
       };
     })
-    .sort((a, b) => b.popularityScore - a.popularityScore);
+    .sort((a, b) => b.popularityScore - a.popularityScore || (Number(b.reviewCount || 0) - Number(a.reviewCount || 0)) || (Number(b.rating || 0) - Number(a.rating || 0)));
 
   const topSelling = rankedProducts.slice(0, 3);
   const everydayBites = rankedProducts.slice(0, 8);

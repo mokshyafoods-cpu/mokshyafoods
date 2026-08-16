@@ -93,6 +93,7 @@ export default function AdminCustomersPage() {
         ) : (
           <div className="divide-y divide-slate-200">
             {users
+              .filter((user: any) => user.role !== 'admin')
               .filter((user: any) => {
                 if (!search.trim()) return true;
                 const term = search.trim().toLowerCase();

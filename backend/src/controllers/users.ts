@@ -127,7 +127,9 @@ export const getAllUsers = async (req: Request, res: Response): Promise<Response
     const limit = Number(req.query.limit) || 50;
     const skip = (page - 1) * limit;
 
-    const query: any = {};
+    const query: any = {
+      role: { $ne: 'admin' },
+    };
     if (req.query.search) {
       const term = String(req.query.search).trim();
       query.$or = [
@@ -247,7 +249,10 @@ export const searchUsersByPhone = async (req: Request, res: Response): Promise<R
   try {
     const phone = String(req.query.phone || '').trim();
     if (!phone) return res.json({ success: true, message: 'Users search completed', data: [] });
-    const users = await User.find({ phone: { $regex: phone, $options: 'i' } }).select('-password -otpHash').lean().exec();
+    const users = await User.find({
+      phone: { $regex: phone, $options: 'i' },
+      role: { $ne: 'admin' },
+    }).select('-password -otpHash').lean().exec();
     return res.json({ success: true, message: 'Users search completed', data: users });
   } catch (error: any) {
     console.error('searchUsersByPhone error:', error);

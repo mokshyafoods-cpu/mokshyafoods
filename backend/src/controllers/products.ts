@@ -36,10 +36,13 @@ export const getAllProducts = async (req: Request, res: Response): Promise<Respo
     if (search) {
       const textSearch = search.replace(/[^\p{L}\p{N}\s-]/gu, ' ').trim();
       const escaped = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const prefixPattern = `^${escaped}`;
 
       queryFilters.push({
         $or: [
           ...(textSearch ? [{ $text: { $search: textSearch } }] : []),
+          { name: { $regex: prefixPattern, $options: 'i' } },
+          { sku: { $regex: prefixPattern, $options: 'i' } },
           { name: { $regex: escaped, $options: 'i' } },
           { sku: { $regex: escaped, $options: 'i' } },
           { description: { $regex: escaped, $options: 'i' } },

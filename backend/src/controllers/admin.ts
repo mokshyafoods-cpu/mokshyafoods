@@ -199,10 +199,20 @@ export const getSalesAnalytics = async (_req: Request, res: Response): Promise<R
   }
 };
 
-export const getLowStockProducts = async (_req: Request, res: Response): Promise<Response> => {
+export const getLowStockProducts = async (req: Request, res: Response): Promise<Response> => {
   try {
+    const threshold = Number(req.query.threshold ?? 10);
+    const safeThreshold = Number.isFinite(threshold) && threshold >= 0 ? threshold : 10;
+
     const productsColl = mongoose.connection.collection('products');
-    const rows = await productsColl.find({ quantity: { $lte: 10 } }).sort({ quantity: 1 }).toArray();
+    const rows = await productsColl
+      .find({
+        isActive: { $ne: false },
+        quantity: { $lte: safeThreshold },
+      })
+      .sort({ quantity: 1, updatedAt: -1 })
+      .toArray();
+
     return res.json({ success: true, data: rows });
   } catch (error: any) {
     console.error('getLowStockProducts error:', error);

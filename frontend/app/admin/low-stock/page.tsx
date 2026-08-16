@@ -3,13 +3,17 @@
 import useSWR from 'swr';
 import { useEffect, useMemo, useState } from 'react';
 import { adminAPI } from '@/services/api';
-import { RefreshCcw, Search, ArrowUpRight, Plus, Minus } from 'lucide-react';
+import { RefreshCcw, Search, Plus, Minus, Package, AlertTriangle } from 'lucide-react';
+
+const getProductImage = (product: any) => product?.thumbnail || product?.images?.[0]?.url || '/placeholder.jpg';
 
 export default function AdminLowStockPage() {
   const [threshold, setThreshold] = useState(10);
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
+  const [restockInputs, setRestockInputs] = useState<Record<string, number>>({});
   const PAGE_SIZE = 8;
+
   const { data, error, isLoading, mutate } = useSWR(
     ['admin-low-stock', threshold],
     () => adminAPI.getLowStock(threshold).then((response) => response.data)
@@ -24,6 +28,7 @@ export default function AdminLowStockPage() {
       product.name?.toLowerCase().includes(term)
       || product.sku?.toLowerCase().includes(term)
       || product.description?.toLowerCase().includes(term)
+      || product.category?.name?.toLowerCase().includes(term)
     );
   }, [products, search]);
 
@@ -47,19 +52,34 @@ export default function AdminLowStockPage() {
     await mutate();
   };
 
+  const handleRestock = async (product: any) => {
+    const productId = product?._id;
+    if (!productId) return;
+
+    const amount = Number(restockInputs[productId] ?? 1);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      setRestockInputs((prev) => ({ ...prev, [productId]: 1 }));
+      return;
+    }
+
+    await adminAPI.updateStock(productId, { quantity: Number(product.quantity || 0) + amount });
+    setRestockInputs((prev) => ({ ...prev, [productId]: 1 }));
+    await mutate();
+  };
+
   return (
     <div className="space-y-8">
       <div className="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-xl">
-        <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p className="text-sm uppercase tracking-[0.3em] text-slate-400">Low stock</p>
-            <h1 className="mt-3 text-4xl font-semibold text-slate-900">Inventory Alerts</h1>
-            <p className="mt-4 text-sm text-slate-500">
-              Review products running low and adjust stock levels directly from the admin dashboard.
+            <h1 className="mt-3 text-4xl font-semibold text-slate-900">Inventory alerts</h1>
+            <p className="mt-4 max-w-2xl text-sm text-slate-500">
+              Review products running low, check the item image and stock level, and add restock quantity instantly from this dashboard.
             </p>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-[180px_auto]">
+          <div className="grid gap-3 sm:grid-cols-[160px_1fr] lg:min-w-[420px]">
             <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
               <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Threshold</label>
               <input
@@ -86,55 +106,104 @@ export default function AdminLowStockPage() {
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-[2rem] border border-slate-200 bg-white shadow-xl">
-        <div className="min-w-[860px]">
-          <div className="grid gap-0 border-b border-slate-200 bg-slate-100 px-6 py-4 text-sm font-semibold uppercase tracking-[0.2em] text-slate-500 sm:grid-cols-[2fr_1fr_1fr_1fr_120px]">
-            <span>Product</span>
-            <span>SKU</span>
-            <span>Stock</span>
-            <span>Category</span>
-            <span className="text-right">Actions</span>
-          </div>
+      {isLoading ? (
+        <div className="rounded-[2rem] border border-slate-200 bg-white p-10 text-center text-slate-500 shadow-xl">Loading low stock products...</div>
+      ) : error ? (
+        <div className="rounded-[2rem] border border-rose-200 bg-rose-50 p-10 text-center text-red-700 shadow-xl">Unable to load low stock products.</div>
+      ) : pagedProducts.length === 0 ? (
+        <div className="rounded-[2rem] border border-slate-200 bg-white p-12 text-center text-slate-500 shadow-xl">No low stock products found.</div>
+      ) : (
+        <div className="grid gap-6 xl:grid-cols-2">
+          {pagedProducts.map((product: any) => {
+            const qty = Number(product.quantity || 0);
+            const reorderNeeded = Math.max(0, threshold - qty);
+            const image = getProductImage(product);
 
-        {isLoading ? (
-          <div className="p-10 text-center text-slate-500">Loading low stock products...</div>
-        ) : error ? (
-          <div className="p-10 text-center text-red-700">Unable to load low stock products.</div>
-        ) : pagedProducts.length === 0 ? (
-          <div className="p-12 text-center text-slate-500">No low stock products found.</div>
-        ) : (
-          <div className="divide-y divide-slate-200">
-            {pagedProducts.map((product: any) => (
-              <div key={product._id} className="grid items-center gap-4 px-6 py-5 sm:grid-cols-[2fr_1fr_1fr_1fr_120px]">
-                <div>
-                  <p className="font-semibold text-slate-900">{product.name}</p>
-                  <p className="mt-1 text-sm text-slate-500">{product.description || 'No description'}</p>
+            return (
+              <div key={product._id} className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-xl">
+                <div className="flex h-44 w-full items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200">
+                  {image ? (
+                    <img src={image} alt={product.name} className="h-full w-full object-cover" />
+                  ) : (
+                    <div className="flex h-20 w-20 items-center justify-center rounded-[1.5rem] bg-white text-slate-400 shadow-sm">
+                      <Package className="h-10 w-10" />
+                    </div>
+                  )}
                 </div>
-                <div className="text-slate-900">{product.sku}</div>
-                <div className="text-slate-900">{product.quantity}</div>
-                <div className="text-slate-900">{product.category?.name || 'Uncategorized'}</div>
-                <div className="flex items-center justify-end gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleStockUpdate(product._id, 1)}
-                    className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 transition hover:bg-slate-50"
-                  >
-                    <Plus className="h-4 w-4" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleStockUpdate(product._id, -1)}
-                    className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 transition hover:bg-slate-50"
-                  >
-                    <Minus className="h-4 w-4" />
-                  </button>
+
+                <div className="space-y-5 p-5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <h2 className="text-xl font-semibold text-slate-900">{product.name}</h2>
+                      <p className="mt-1 text-xs uppercase tracking-[0.2em] text-slate-400">{product.sku || 'No SKU'}</p>
+                    </div>
+                    <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${qty <= threshold ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                      {qty <= threshold ? 'Low stock' : 'Healthy'}
+                    </span>
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    <div className="rounded-2xl bg-slate-50 p-3">
+                      <p className="text-[10px] uppercase tracking-[0.2em] text-slate-400">Current stock</p>
+                      <p className="mt-2 text-lg font-semibold text-slate-900">{qty}</p>
+                    </div>
+                    <div className="rounded-2xl bg-slate-50 p-3">
+                      <p className="text-[10px] uppercase tracking-[0.2em] text-slate-400">Threshold</p>
+                      <p className="mt-2 text-lg font-semibold text-slate-900">{threshold}</p>
+                    </div>
+                    <div className="rounded-2xl bg-slate-50 p-3">
+                      <p className="text-[10px] uppercase tracking-[0.2em] text-slate-400">Need</p>
+                      <p className="mt-2 text-lg font-semibold text-slate-900">{reorderNeeded}</p>
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600">
+                    <div className="flex items-center gap-2 font-medium text-slate-700">
+                      <AlertTriangle className="h-4 w-4 text-amber-500" />
+                      {reorderNeeded > 0 ? `Restock by ${reorderNeeded} units to meet the target threshold.` : 'Stock is meeting the target threshold.'}
+                    </div>
+                    <p className="mt-2 text-slate-500">{product.category?.name || 'Uncategorized'} • {product.description || 'No description available'}</p>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min={1}
+                      step={1}
+                      value={restockInputs[product._id] ?? 1}
+                      onChange={(e) => setRestockInputs((prev) => ({ ...prev, [product._id]: Number(e.target.value) || 1 }))}
+                      className="w-28 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-primary"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleRestock(product)}
+                      className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-white transition hover:opacity-90"
+                    >
+                      <Plus className="h-4 w-4" /> Add stock
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleStockUpdate(product._id, 1)}
+                      className="inline-flex h-12 w-12 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 transition hover:bg-slate-50"
+                      aria-label={`Increase stock for ${product.name}`}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleStockUpdate(product._id, -1)}
+                      className="inline-flex h-12 w-12 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 transition hover:bg-slate-50"
+                      aria-label={`Decrease stock for ${product.name}`}
+                    >
+                      <Minus className="h-4 w-4" />
+                    </button>
+                  </div>
                 </div>
               </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
+            );
+          })}
+        </div>
+      )}
 
       <div className="flex flex-wrap items-center justify-between gap-4 rounded-[2rem] border border-slate-200 bg-slate-50 px-6 py-5 text-sm text-slate-500">
         <div>{lowAlertCount} low stock items shown.</div>
