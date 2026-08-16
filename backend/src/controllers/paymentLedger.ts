@@ -65,7 +65,9 @@ const buildOrderLedgerEntry = (order: any) => {
 
 const buildLedgerLookupFilters = (id: string) => {
   const normalized = normalizeString(id);
-  if (!normalized) return { _id: null };
+  if (!normalized) {
+    return { _id: new mongoose.Types.ObjectId('000000000000000000000000') };
+  }
 
   const objectId = mongoose.Types.ObjectId.isValid(normalized) ? new mongoose.Types.ObjectId(normalized) : null;
   return {
