@@ -439,7 +439,9 @@ export default function POSPage() {
       return;
     }
 
-    if (paymentMethod === 'cash' && tenderedAmount < total) {
+    const effectiveTenderedAmount = paymentMethod === 'cash' ? (tenderedAmount > 0 ? tenderedAmount : total) : 0;
+
+    if (paymentMethod === 'cash' && effectiveTenderedAmount < total) {
       toast.error('Amount tendered must cover total');
       return;
     }
@@ -463,8 +465,8 @@ export default function POSPage() {
         discountValue,
         discountReason,
         total,
-        tenderedAmount: paymentMethod === 'cash' ? tenderedAmount : 0,
-        changeDue: paymentMethod === 'cash' ? Math.max(0, tenderedAmount - total) : 0,
+        tenderedAmount: effectiveTenderedAmount,
+        changeDue: paymentMethod === 'cash' ? Math.max(0, effectiveTenderedAmount - total) : 0,
       });
 
       const payload = unwrapResponseData(response, null);
@@ -807,7 +809,7 @@ export default function POSPage() {
                   <input
                     type="number"
                     min={0}
-                    value={tenderedAmount || ''}
+                    value={tenderedAmount || total}
                     onChange={(e) => setTenderedAmount(Number(e.target.value || 0))}
                     placeholder="0.00"
                     className="w-full rounded-[1.75rem] border border-slate-800 bg-slate-900 px-4 py-3 text-sm text-white placeholder:text-slate-500 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
@@ -976,8 +978,8 @@ export default function POSPage() {
                         <input
                           type="number"
                           min={0}
-                          value={tenderedAmount}
-                          onChange={(e) => setTenderedAmount(Number(e.target.value))}
+                          value={tenderedAmount || total}
+                          onChange={(e) => setTenderedAmount(Number(e.target.value || 0))}
                           placeholder="Enter cash received"
                           className="w-full rounded-3xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-500 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
                         />
