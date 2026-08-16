@@ -63,7 +63,24 @@ export default function AdminOrdersPage() {
       const orderStatus = (order.orderStatus || order.status || 'pending').toString().toLowerCase();
       const matchesStatus = status === 'all' || orderStatus === status;
       const matchesSoldBy = soldBy === 'all' || (order.soldBy || 'Not Recorded') === soldBy;
-      const searchable = `${order.orderNumber || ''} ${order.user?.name || ''} ${order.shippingAddress?.name || ''} ${order.shippingAddress?.phone || ''} ${order.soldBy || ''}`.toLowerCase();
+
+      const searchable = [
+        order.orderNumber || '',
+        order._id || '',
+        order.user?.name || '',
+        order.user?.email || '',
+        order.user?.phone || '',
+        order.shippingAddress?.name || '',
+        order.shippingAddress?.phone || '',
+        order.shippingAddress?.city || '',
+        order.soldBy || '',
+        order.paymentMethod || '',
+        order.transactionType || '',
+        order.customerName || '',
+      ]
+        .join(' ')
+        .toLowerCase();
+
       const matchesSearch = !normalized || searchable.includes(normalized);
       return matchesStatus && matchesSoldBy && matchesSearch;
     });
