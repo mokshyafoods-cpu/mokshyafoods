@@ -60,6 +60,21 @@ export default function AdminPage() {
     };
 
     loadAdminData();
+
+    const refreshTimer = window.setInterval(() => {
+      loadAdminData();
+    }, 15000);
+
+    const handleFocus = () => {
+      loadAdminData();
+    };
+
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      window.clearInterval(refreshTimer);
+      window.removeEventListener('focus', handleFocus);
+    };
   }, []);
 
   const salesSeries = useMemo(() => {

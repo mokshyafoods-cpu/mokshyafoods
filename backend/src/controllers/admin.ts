@@ -54,11 +54,29 @@ export const getDashboardStats = async (_req: Request, res: Response): Promise<R
     const productsColl = mongoose.connection.collection('products');
     const ordersColl = mongoose.connection.collection('orders');
     const usersColl = mongoose.connection.collection('users');
-    const activeOrderFilter = { isDeleted: { $ne: true }, status: { $ne: 'cancelled' }, orderStatus: { $ne: 'cancelled' }, paymentStatus: { $ne: 'cancelled' } };
+    const activeOrderFilter = {
+      isDeleted: { $ne: true },
+      $and: [
+        {
+          $or: [
+            { status: { $ne: 'cancelled' } },
+            { status: { $exists: false } },
+            { orderStatus: { $ne: 'cancelled' } },
+            { orderStatus: { $exists: false } },
+          ],
+        },
+        {
+          $or: [
+            { paymentStatus: { $ne: 'cancelled' } },
+            { paymentStatus: { $exists: false } },
+          ],
+        },
+      ],
+    };
 
     const [totalProducts, totalOrders, totalCustomers, lowStockProducts, recentOrders, revenueResult] = await Promise.all([
       productsColl.countDocuments(),
-      ordersColl.countDocuments({ isDeleted: { $ne: true } }),
+      ordersColl.countDocuments(activeOrderFilter),
       usersColl.countDocuments(),
       productsColl.countDocuments({ quantity: { $lte: 10 } }),
       ordersColl.find({ isDeleted: { $ne: true } }).sort({ createdAt: -1 }).limit(5).toArray(),
