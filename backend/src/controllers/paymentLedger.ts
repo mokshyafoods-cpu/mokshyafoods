@@ -63,18 +63,44 @@ const buildOrderLedgerEntry = (order: any) => {
   };
 };
 
-const findExistingLedgerEntry = async (ledgerColl: any, orderId: string) => {
-  const normalizedOrderId = normalizeString(orderId);
-  const candidates = [normalizedOrderId];
-  if (normalizedOrderId) {
-    candidates.push(String(normalizedOrderId).replace(/^ObjectId\("|"\)$/g, ''));
+export const normalizeOrderIdCandidates = (orderId: unknown): string[] => {
+  const raw = normalizeString(orderId);
+  if (!raw) return [];
+
+  const stripped = raw
+    .replace(/^ObjectId\s*\(\s*["']?/, '')
+    .replace(/["']?\s*\)\s*$/, '')
+    .trim();
+
+  const objectIdMatches = Array.from(raw.matchAll(/[0-9a-fA-F]{24}/g), (match) => match[0]);
+  const normalizedCandidates = new Set<string>();
+
+  for (const candidate of [raw, stripped, ...objectIdMatches]) {
+    const cleanCandidate = candidate.trim();
+    if (!cleanCandidate) continue;
+    if (/^ObjectId\s*\(/i.test(cleanCandidate)) {
+      const unwrapped = cleanCandidate
+        .replace(/^ObjectId\s*\(\s*["']?/, '')
+        .replace(/["']?\s*\)\s*$/, '')
+        .trim();
+      if (unwrapped) normalizedCandidates.add(unwrapped);
+      continue;
+    }
+    normalizedCandidates.add(cleanCandidate);
   }
 
-  const filters = [
-    { orderId: normalizedOrderId },
-    { orderId: { $in: candidates } },
-    { $or: [{ orderId: normalizedOrderId }, { orderId: { $in: candidates } }] },
-  ];
+  return [...normalizedCandidates].filter((candidate) => /^[0-9a-fA-F]{24}$/.test(candidate) || !/^ObjectId\s*\(/i.test(candidate));
+};
+
+const findExistingLedgerEntry = async (ledgerColl: any, orderId: string) => {
+  const candidates = normalizeOrderIdCandidates(orderId);
+  if (!candidates.length) {
+    return null;
+  }
+
+  const filters: Record<string, any>[] = candidates.map((candidate) => ({ orderId: candidate }));
+  filters.push({ orderId: { $in: candidates } });
+  filters.push({ $or: candidates.map((candidate) => ({ orderId: candidate })) });
 
   for (const filter of filters) {
     const existingEntry = await ledgerColl.findOne(filter);
@@ -90,12 +116,15 @@ const buildLedgerLookupFilters = (id: string) => {
     return { _id: new mongoose.Types.ObjectId('000000000000000000000000') };
   }
 
+  const candidates = normalizeOrderIdCandidates(normalized);
+  const filterCandidates = [...new Set(candidates.filter(Boolean))];
   const objectId = mongoose.Types.ObjectId.isValid(normalized) ? new mongoose.Types.ObjectId(normalized) : null;
+
   return {
     $or: [
       ...(objectId ? [{ _id: objectId }] : []),
-      { orderId: normalized },
-      { orderId: { $in: [normalized, objectId?.toString()] } },
+      ...filterCandidates.map((candidate) => ({ orderId: candidate })),
+      { orderId: { $in: filterCandidates } },
     ],
   };
 };
@@ -211,7 +240,7 @@ export const createOrUpdatePaymentLedger = async (req: AuthenticatedRequest, res
         { returnDocument: 'after' as any }
       );
       const updatedEntry = (result as any)?.value ?? result;
-      return res.status(200).json({ success: true, message: 'Payment ledger entry updated', data: updatedEntry });
+      return res.status(200).json({ success: true, message: 'Payment ledger entry already existed and was updated', data: updatedEntry });
     }
 
     const doc = { ...baseDoc, createdAt: new Date() };
