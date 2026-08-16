@@ -98,11 +98,26 @@ export const createPOSOrder = async (req: AuthenticatedRequest, res: Response): 
     const submittedSubtotal = Number(body.subtotal || subtotalFromItems || 0);
     const submittedTotal = Number(body.total || 0);
     const providedDiscountAmount = Number(body.discountAmount || 0);
+    const discountMode = String(body.discountMode || 'flat').trim();
+    const discountValue = Number(body.discountValue || 0);
     const computedDiscountAmount = providedDiscountAmount > 0
       ? providedDiscountAmount
       : Math.max(0, submittedSubtotal - submittedTotal);
     const subtotal = submittedSubtotal || subtotalFromItems;
-    const discountAmount = computedDiscountAmount;
+    const percentDiscount = discountMode === 'percent' ? Math.min(Math.max(0, discountValue), 100) : 0;
+    const safeDiscountAmount = discountMode === 'percent'
+      ? Math.round((subtotal * percentDiscount) / 100)
+      : Math.max(0, Number(discountValue || computedDiscountAmount || 0));
+    const discountAmount = Math.min(safeDiscountAmount, subtotal);
+
+    if (discountMode === 'percent' && Number(body.discountValue || 0) > 100) {
+      return res.status(400).json({ success: false, message: 'Discount percentage cannot exceed 100%' });
+    }
+
+    if (discountAmount > subtotal) {
+      return res.status(400).json({ success: false, message: 'Discount amount cannot be greater than the order subtotal' });
+    }
+
     const total = submittedTotal > 0 ? submittedTotal : Math.max(0, subtotal - discountAmount);
     const transactionType = String(body.transactionType || 'customer_sale').trim();
     const notes = String(body.notes || '').trim();

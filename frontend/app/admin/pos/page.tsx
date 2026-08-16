@@ -424,6 +424,21 @@ export default function POSPage() {
       return;
     }
 
+    if (discountValue < 0) {
+      toast.error('Discount cannot be negative');
+      return;
+    }
+
+    if (discountMode === 'percent' && discountValue > 100) {
+      toast.error('Discount percentage cannot exceed 100%');
+      return;
+    }
+
+    if (discountAmount > subtotal) {
+      toast.error('Discount amount cannot be greater than the order subtotal');
+      return;
+    }
+
     if (paymentMethod === 'cash' && tenderedAmount < total) {
       toast.error('Amount tendered must cover total');
       return;
