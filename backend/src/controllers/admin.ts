@@ -201,22 +201,42 @@ export const getSalesAnalytics = async (_req: Request, res: Response): Promise<R
       });
     }
 
-    const paymentBreakdown = paymentBreakdownAgg
-      .map((row: any) => ({
-        method: normalizePaymentMethod(row._id),
-        total: Number(row.total || 0),
-        count: Number(row.count || 0),
-      }))
-      .sort((a: any, b: any) => b.total - a.total);
+    const paymentBreakdown = Object.values(
+      paymentBreakdownAgg
+        .map((row: any) => ({
+          method: normalizePaymentMethod(row._id),
+          total: Number(row.total || 0),
+          count: Number(row.count || 0),
+        }))
+        .reduce((acc: Record<string, any>, item: any) => {
+          const key = item.method || 'unknown';
+          if (!acc[key]) {
+            acc[key] = { method: key, total: 0, count: 0 };
+          }
+          acc[key].total += item.total;
+          acc[key].count += item.count;
+          return acc;
+        }, {})
+    ).sort((a: any, b: any) => b.total - a.total);
 
-    const productByPaymentMethod = paymentProductAgg
-      .map((row: any) => ({
-        method: normalizePaymentMethod(row._id?.paymentMethod),
-        product: String(row._id?.product || 'Unknown product'),
-        quantity: Number(row.quantity || 0),
-        total: Number(row.total || 0),
-      }))
-      .sort((a: any, b: any) => b.total - a.total);
+    const productByPaymentMethod = Object.values(
+      paymentProductAgg
+        .map((row: any) => ({
+          method: normalizePaymentMethod(row._id?.paymentMethod),
+          product: String(row._id?.product || 'Unknown product'),
+          quantity: Number(row.quantity || 0),
+          total: Number(row.total || 0),
+        }))
+        .reduce((acc: Record<string, any>, item: any) => {
+          const key = `${item.method || 'unknown'}::${item.product || 'Unknown product'}`;
+          if (!acc[key]) {
+            acc[key] = { method: item.method, product: item.product, quantity: 0, total: 0 };
+          }
+          acc[key].quantity += item.quantity;
+          acc[key].total += item.total;
+          return acc;
+        }, {})
+    ).sort((a: any, b: any) => b.total - a.total);
 
     return res.json({ success: true, data: { salesByDate, topProducts, paymentBreakdown, productByPaymentMethod } });
   } catch (error: any) {

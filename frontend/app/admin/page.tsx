@@ -86,7 +86,18 @@ export default function AdminPage() {
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   }, [analyticsData]);
 
-  const paymentBreakdown = useMemo(() => analyticsData?.paymentBreakdown ?? [], [analyticsData]);
+  const paymentBreakdown = useMemo(() => {
+    const groups = new Map<string, { method: string; total: number; count: number }>();
+    for (const item of analyticsData?.paymentBreakdown ?? []) {
+      const method = String(item?.method ?? 'unknown').trim().toLowerCase();
+      const normalizedMethod = method.includes('fonepay') || method.includes('phonepay') ? 'fonepay' : method;
+      const existing = groups.get(normalizedMethod) ?? { method: normalizedMethod, total: 0, count: 0 };
+      existing.total += Number(item?.total ?? 0);
+      existing.count += Number(item?.count ?? 0);
+      groups.set(normalizedMethod, existing);
+    }
+    return [...groups.values()].sort((a, b) => b.total - a.total);
+  }, [analyticsData]);
   const preferredPayment = useMemo(() => {
     if (!paymentBreakdown.length) return null;
     return paymentBreakdown.reduce((best, current) => (current.total > best.total ? current : best), paymentBreakdown[0]);
