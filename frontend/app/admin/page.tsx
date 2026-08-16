@@ -19,6 +19,8 @@ type DashboardData = {
 type AnalyticsData = {
   salesByDate: Record<string, number>;
   topProducts: Array<{ name: string; quantity: number }>;
+  paymentBreakdown: Array<{ method: string; total: number; count: number }>;
+  productByPaymentMethod: Array<{ method: string; product: string; quantity: number; total: number }>;
 };
 
 type LowStockItem = {
@@ -68,6 +70,13 @@ export default function AdminPage() {
       .map(([date, amount]) => ({ date, amount: Number(amount ?? 0) }))
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   }, [analyticsData]);
+
+  const paymentBreakdown = useMemo(() => analyticsData?.paymentBreakdown ?? [], [analyticsData]);
+  const preferredPayment = useMemo(() => {
+    if (!paymentBreakdown.length) return null;
+    return paymentBreakdown.reduce((best, current) => (current.total > best.total ? current : best), paymentBreakdown[0]);
+  }, [paymentBreakdown]);
+  const productByPaymentMethod = useMemo(() => analyticsData?.productByPaymentMethod ?? [], [analyticsData]);
 
   const formatCurrency = (value?: number) => `RS ${Number(value ?? 0).toLocaleString('en-IN')}`;
   const getStatusBadge = (status: string) => {
@@ -153,25 +162,40 @@ export default function AdminPage() {
         <div className="rounded-[2rem] border border-slate-700/70 bg-[linear-gradient(135deg,_rgba(15,23,42,0.95),_rgba(17,24,39,0.95))] p-6 shadow-[0_24px_70px_rgba(2,6,23,0.35)] backdrop-blur sm:p-8">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="text-sm uppercase tracking-[0.3em] text-slate-400">Inventory</p>
-              <h2 className="mt-2 text-2xl font-semibold text-white">Low stock alerts</h2>
+              <p className="text-sm uppercase tracking-[0.3em] text-slate-400">Payment mix</p>
+              <h2 className="mt-2 text-2xl font-semibold text-white">Preferred method</h2>
             </div>
-            <a href="/admin/low-stock" className="inline-flex items-center gap-2 text-sm font-semibold text-sky-300">
-              Manage <ArrowUpRight className="h-4 w-4" />
-            </a>
+            {preferredPayment ? (
+              <span className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-2 text-sm font-medium text-emerald-200">
+                {preferredPayment.method.toUpperCase()} · {formatCurrency(preferredPayment.total)}
+              </span>
+            ) : null}
           </div>
-          <div className="mt-6 space-y-3">
-            {lowStockItems.length > 0 ? lowStockItems.slice(0, 4).map((item) => (
-              <div key={item._id || item.name} className="flex items-center justify-between rounded-2xl border border-slate-700/70 bg-slate-950/50 px-4 py-3">
-                <div>
-                  <p className="font-semibold text-slate-100">{item.name || 'Unnamed product'}</p>
-                  <p className="text-sm text-slate-400">Qty left: {item.quantity ?? 0}</p>
-                </div>
-                <span className="rounded-full border border-amber-400/20 bg-amber-400/10 px-3 py-1 text-xs font-semibold text-amber-300">Restock</span>
-              </div>
-            )) : (
+
+          <div className="mt-6 space-y-4">
+            {paymentBreakdown.length > 0 ? (
+              <>
+                {(() => {
+                  const maxTotal = Math.max(...paymentBreakdown.map((item) => Number(item.total || 0)), 1);
+                  return paymentBreakdown.map((item) => (
+                    <div key={item.method} className="space-y-2 rounded-2xl border border-slate-700/70 bg-slate-950/50 px-4 py-3">
+                      <div className="flex items-center justify-between gap-4 text-sm text-slate-300">
+                        <span className="font-semibold text-slate-100">{item.method.toUpperCase()}</span>
+                        <span>{formatCurrency(item.total)}</span>
+                      </div>
+                      <div className="h-2.5 rounded-full bg-slate-800">
+                        <div
+                          className="h-full rounded-full bg-[linear-gradient(90deg,_#34d399_0%,_#22c55e_50%,_#10b981_100%)]"
+                          style={{ width: `${((Number(item.total || 0) / maxTotal) * 100).toFixed(2)}%` }}
+                        />
+                      </div>
+                    </div>
+                  ));
+                })()}
+              </>
+            ) : (
               <div className="rounded-2xl border border-dashed border-slate-700/70 bg-slate-950/50 p-6 text-sm text-slate-400">
-                No low stock products right now.
+                No payment data available yet.
               </div>
             )}
           </div>
@@ -216,6 +240,36 @@ export default function AdminPage() {
           <div className="mt-6 space-y-4">
             <BarChart data={analyticsData?.topProducts ?? []} />
           </div>
+        </div>
+      </section>
+
+      <section className="rounded-[2rem] border border-slate-700/70 bg-[linear-gradient(135deg,_rgba(15,23,42,0.95),_rgba(17,24,39,0.95))] p-6 shadow-[0_24px_70px_rgba(2,6,23,0.35)] backdrop-blur sm:p-8">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-sm uppercase tracking-[0.3em] text-slate-400">Product vs payment</p>
+            <h2 className="mt-2 text-2xl font-semibold text-white">Top products by payment method</h2>
+          </div>
+        </div>
+
+        <div className="mt-6 grid gap-4 lg:grid-cols-2">
+          {productByPaymentMethod.length > 0 ? (
+            productByPaymentMethod.slice(0, 8).map((item) => (
+              <div key={`${item.method}-${item.product}`} className="rounded-2xl border border-slate-700/70 bg-slate-950/50 px-4 py-4">
+                <div className="flex items-center justify-between gap-3 text-sm text-slate-300">
+                  <span className="font-semibold text-slate-100">{item.product}</span>
+                  <span className="rounded-full border border-sky-400/20 bg-sky-400/10 px-2 py-1 text-xs font-semibold text-sky-200">{item.method.toUpperCase()}</span>
+                </div>
+                <div className="mt-3 flex items-center justify-between text-sm text-slate-400">
+                  <span>{item.quantity} units</span>
+                  <span className="font-semibold text-white">{formatCurrency(item.total)}</span>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="rounded-2xl border border-dashed border-slate-700/70 bg-slate-950/50 p-6 text-sm text-slate-400 lg:col-span-2">
+              No product-purchase data is available for payment methods yet.
+            </div>
+          )}
         </div>
       </section>
     </div>

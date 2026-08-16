@@ -95,15 +95,17 @@ export default function PaymentLedgerPage() {
     }
   };
 
+  const normalizeLedgerProductName = (value: unknown) => String(value ?? '').trim().replace(/\s+/g, ' ').toUpperCase();
+
   const getProductQuantityMap = (entry: any) => {
     const productMap = new Map<string, number>();
     const items = Array.isArray(entry?.items) ? entry.items : [];
 
     items.forEach((item: any) => {
-      const name = String(item?.name || item?.productData?.name || item?.productName || '').trim();
+      const name = normalizeLedgerProductName(item?.name || item?.productData?.name || item?.productName || '');
       if (!name) return;
       const quantity = Number(item?.quantity || 0);
-      productMap.set(name.toUpperCase(), (productMap.get(name.toUpperCase()) || 0) + quantity);
+      productMap.set(name, (productMap.get(name) || 0) + quantity);
     });
 
     return productMap;
@@ -118,12 +120,12 @@ export default function PaymentLedgerPage() {
 
     const productNames = Array.from(
       new Set([
-        ...allProducts.map((product) => String(product?.name || '').trim()).filter(Boolean),
-        ...ledgerRows.flatMap((entry) => Array.from(getProductQuantityMap(entry).keys()).map((key) => key)),
+        ...allProducts
+          .map((product) => normalizeLedgerProductName(product?.name || ''))
+          .filter(Boolean),
+        ...ledgerRows.flatMap((entry) => Array.from(getProductQuantityMap(entry).keys())),
       ])
-    )
-      .map((name) => name.toUpperCase())
-      .sort((a, b) => a.localeCompare(b));
+    ).sort((a, b) => a.localeCompare(b));
 
     const headerRow = ['S.N', 'DATE', 'CUSTOMER NAME', 'ADDRESS', 'PHONEPAY', 'CASH', 'COD', 'REMARKS', ...productNames, 'TOTAL PRODUCT'];
     const dataRows = ledgerRows.map((entry, index) => {

@@ -86,10 +86,18 @@ export const getSalesAnalytics = async (_req: Request, res: Response): Promise<R
   try {
     const ordersColl = mongoose.connection.collection('orders');
 
-    const [sales, topProductsAgg] = await Promise.all([
+    const normalizePaymentMethod = (value: unknown): string => {
+      const raw = String(value ?? 'cash').trim().toLowerCase();
+      if (!raw || raw === 'cash4' || raw === 'cash') return 'cash';
+      if (raw.includes('phonepay')) return 'phonepay';
+      if (raw === 'cod') return 'cod';
+      return raw;
+    };
+
+    const [sales, topProductsAgg, paymentBreakdownAgg, paymentProductAgg] = await Promise.all([
       ordersColl
         .aggregate([
-          { $match: { total: { $exists: true } } },
+          { $match: { total: { $exists: true }, isDeleted: { $ne: true } } },
           {
             $group: {
               _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
@@ -101,10 +109,52 @@ export const getSalesAnalytics = async (_req: Request, res: Response): Promise<R
         .toArray(),
       ordersColl
         .aggregate([
+          { $match: { isDeleted: { $ne: true } } },
           { $unwind: '$items' },
           { $group: { _id: '$items.productId', quantity: { $sum: '$items.quantity' } } },
           { $sort: { quantity: -1 } },
           { $limit: 10 },
+        ])
+        .toArray(),
+      ordersColl
+        .aggregate([
+          { $match: { total: { $exists: true }, isDeleted: { $ne: true } } },
+          {
+            $project: {
+              paymentMethod: { $ifNull: ['$paymentMethod', '$paymentStatus'] },
+              total: { $ifNull: ['$total', 0] },
+            },
+          },
+          {
+            $group: {
+              _id: '$paymentMethod',
+              total: { $sum: '$total' },
+              count: { $sum: 1 },
+            },
+          },
+          { $sort: { total: -1, count: -1 } },
+        ])
+        .toArray(),
+      ordersColl
+        .aggregate([
+          { $match: { isDeleted: { $ne: true } } },
+          { $unwind: '$items' },
+          {
+            $project: {
+              paymentMethod: { $ifNull: ['$paymentMethod', '$paymentStatus'] },
+              product: { $ifNull: ['$items.name', '$items.productName', 'Unknown product'] },
+              quantity: { $ifNull: ['$items.quantity', 0] },
+              subtotal: { $ifNull: ['$items.subtotal', 0] },
+            },
+          },
+          {
+            $group: {
+              _id: { paymentMethod: '$paymentMethod', product: '$product' },
+              quantity: { $sum: '$quantity' },
+              total: { $sum: '$subtotal' },
+            },
+          },
+          { $sort: { total: -1, quantity: -1 } },
         ])
         .toArray(),
     ]);
@@ -125,7 +175,24 @@ export const getSalesAnalytics = async (_req: Request, res: Response): Promise<R
       });
     }
 
-    return res.json({ success: true, data: { salesByDate, topProducts } });
+    const paymentBreakdown = paymentBreakdownAgg
+      .map((row: any) => ({
+        method: normalizePaymentMethod(row._id),
+        total: Number(row.total || 0),
+        count: Number(row.count || 0),
+      }))
+      .sort((a: any, b: any) => b.total - a.total);
+
+    const productByPaymentMethod = paymentProductAgg
+      .map((row: any) => ({
+        method: normalizePaymentMethod(row._id?.paymentMethod),
+        product: String(row._id?.product || 'Unknown product'),
+        quantity: Number(row.quantity || 0),
+        total: Number(row.total || 0),
+      }))
+      .sort((a: any, b: any) => b.total - a.total);
+
+    return res.json({ success: true, data: { salesByDate, topProducts, paymentBreakdown, productByPaymentMethod } });
   } catch (error: any) {
     console.error('getSalesAnalytics error:', error);
     return res.status(500).json({ success: false, message: error.message || 'Failed to compute analytics' });
