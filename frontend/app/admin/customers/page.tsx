@@ -74,9 +74,12 @@ export default function AdminCustomersPage() {
 
       <div className="overflow-x-auto rounded-[2rem] border border-slate-200 bg-white shadow-xl">
         <div className="min-w-[820px]">
-          <div className="grid gap-0 border-b border-slate-200 bg-slate-100 px-6 py-4 text-sm font-semibold uppercase tracking-[0.2em] text-slate-500 sm:grid-cols-[2fr_1.2fr_1fr_1fr]">
+          <div className="grid gap-0 border-b border-slate-200 bg-slate-100 px-6 py-4 text-sm font-semibold uppercase tracking-[0.2em] text-slate-500 sm:grid-cols-[1.8fr_1.5fr_1.2fr_0.8fr_0.8fr_1fr_0.8fr]">
             <span>Customer</span>
-            <span>Email</span>
+            <span>Address</span>
+            <span>Phone</span>
+            <span>Status</span>
+            <span>Purchases</span>
             <span>Role</span>
             <span className="text-right">Joined</span>
           </div>
@@ -98,15 +101,24 @@ export default function AdminCustomersPage() {
                   || user.phone?.toLowerCase().includes(term);
               })
               .map((customer: any) => (
-                <div key={customer._id} className="grid items-center gap-4 px-6 py-5 sm:grid-cols-[2fr_1.2fr_1fr_1fr]">
+                <div key={customer._id} className="grid items-center gap-4 px-6 py-5 sm:grid-cols-[1.8fr_1.5fr_1.2fr_0.8fr_0.8fr_1fr_0.8fr]">
                   <div>
                     <p className="font-semibold text-slate-900">{customer.name}</p>
-                    <p className="text-sm text-slate-500">{customer.phone || 'No phone'}</p>
+                    <p className="text-sm text-slate-500">{customer.email || 'No email'}</p>
                     <button type="button" onClick={() => setCustomerToDelete(customer)} className="mt-3 inline-flex items-center gap-2 rounded-full border border-rose-200 px-3 py-2 text-xs font-semibold text-rose-600 transition hover:bg-rose-50">
                       <Trash2 className="h-3.5 w-3.5" /> Delete
                     </button>
                   </div>
-                  <div className="text-slate-900">{customer.email}</div>
+                  <div className="text-sm text-slate-700">
+                    {customer.address ? `${customer.address.street || ''}${customer.address.street && customer.address.city ? ', ' : ''}${customer.address.city || ''}${customer.address.city && customer.address.state ? ', ' : ''}${customer.address.state || ''}`.trim() || 'No address' : 'No address'}
+                  </div>
+                  <div className="text-slate-900">{customer.phone || 'No phone'}</div>
+                  <div>
+                    <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${customer.isActive === false ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                      {customer.isActive === false ? 'Inactive' : 'Active'}
+                    </span>
+                  </div>
+                  <div className="font-semibold text-slate-900">{customer.purchaseCount ?? 0}</div>
                   <div>
                     <select
                       className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-primary"

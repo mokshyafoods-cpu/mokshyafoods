@@ -81,7 +81,7 @@ export const createOrderValidator: ValidationChain[] = [
   body('items.*.product').isMongoId().withMessage('Valid product ID is required'),
   body('items.*.quantity').isInt({ min: 1 }).withMessage('Quantity must be at least 1'),
   body('shippingAddress').notEmpty().withMessage('Shipping address is required'),
-  body('paymentMethod').trim().notEmpty().isIn(['cash', 'cod']).withMessage('Payment method must be cash or cod'),
+  body('paymentMethod').trim().notEmpty().isIn(['cash', 'cod', 'phonepay']).withMessage('Payment method must be cash, cod, or phonepay'),
   body('couponCode').optional().trim(),
   body('channel').optional().trim(),
 ];
@@ -130,7 +130,7 @@ export const posOrderValidator: ValidationChain[] = [
   body('items').isArray({ min: 1 }).withMessage('Items are required'),
   body('items.*.product').isMongoId().withMessage('Valid product ID is required'),
   body('items.*.quantity').isInt({ min: 1 }).withMessage('Quantity must be at least 1'),
-  body('paymentMethod').trim().notEmpty().withMessage('Payment method is required'),
+  body('paymentMethod').trim().notEmpty().isIn(['cash', 'cod', 'phonepay']).withMessage('Payment method must be cash, cod, or phonepay'),
   body('soldBy').trim().notEmpty().isIn(['Bishal', 'Krishna', 'Ukesh']).withMessage('Sold By must be one of Bishal, Krishna, or Ukesh'),
   body('discountAmount').optional().isFloat({ min: 0 }).withMessage('Discount amount must be a valid number'),
   body('tenderedAmount').optional().isFloat({ min: 0 }).withMessage('Tendered amount must be a valid number'),

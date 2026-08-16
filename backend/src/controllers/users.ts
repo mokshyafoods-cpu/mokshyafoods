@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import User from '../models/User';
 
@@ -141,10 +142,72 @@ export const getAllUsers = async (req: Request, res: Response): Promise<Response
       User.find(query).select('-password -otpHash').sort({ createdAt: -1 }).skip(skip).limit(limit).lean().exec(),
     ]);
 
+    const customerIds = users
+      .map((user) => (user as any)._id?.toString?.() || '')
+      .filter(Boolean);
+    const customerPhones = users
+      .map((user) => String((user as any).phone || '').trim())
+      .filter(Boolean);
+
+    const ordersColl = mongoose.connection.collection('orders');
+    const orderMetrics = customerIds.length || customerPhones.length
+      ? await ordersColl.aggregate([
+          {
+            $match: {
+              isDeleted: { $ne: true },
+              $or: [
+                { userId: { $in: customerIds } },
+                { 'user._id': { $in: customerIds } },
+                { 'user.id': { $in: customerIds } },
+                { 'user.phone': { $in: customerPhones } },
+                { customerPhone: { $in: customerPhones } },
+              ],
+            },
+          },
+          {
+            $project: {
+              customerKey: {
+                $ifNull: ['$user._id', '$userId'],
+              },
+              customerPhone: { $ifNull: ['$user.phone', '$customerPhone'] },
+              total: { $ifNull: ['$total', 0] },
+            },
+          },
+          {
+            $group: {
+              _id: '$customerKey',
+              purchaseCount: { $sum: 1 },
+              totalSpent: { $sum: '$total' },
+            },
+          },
+        ]).toArray()
+      : [];
+
+    const purchaseMap = new Map<string, { purchaseCount: number; totalSpent: number }>();
+    for (const metric of orderMetrics) {
+      const key = String(metric._id || '').trim();
+      if (!key) continue;
+      purchaseMap.set(key, {
+        purchaseCount: Number(metric.purchaseCount || 0),
+        totalSpent: Number(metric.totalSpent || 0),
+      });
+    }
+
+    const enrichedUsers = users.map((user: any) => {
+      const key = String(user._id?.toString?.() || '').trim();
+      const metric = purchaseMap.get(key);
+      return {
+        ...user,
+        purchaseCount: Number(metric?.purchaseCount || 0),
+        totalSpent: Number(metric?.totalSpent || 0),
+        isActive: user.isActive !== false,
+      };
+    });
+
     return res.json({
       success: true,
       message: 'Users loaded',
-      data: users,
+      data: enrichedUsers,
       pagination: { page, limit, total },
     });
   } catch (error: any) {

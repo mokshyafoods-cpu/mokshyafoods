@@ -105,7 +105,7 @@ export default function POSPage() {
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerName, setCustomerName] = useState('');
   const [attachedCustomer, setAttachedCustomer] = useState<{ _id: string; name: string; phone: string } | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'cod'>('cash');
+  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'cod' | 'phonepay'>('cash');
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [discountValue, setDiscountValue] = useState(0);
   const [discountMode, setDiscountMode] = useState<'flat' | 'percent'>('flat');
@@ -120,7 +120,10 @@ export default function POSPage() {
   const [countedCash, setCountedCash] = useState('');
   const [receiptOrder, setReceiptOrder] = useState<any>(null);
   const [showReceipt, setShowReceipt] = useState(false);
+  const [printBillEnabled, setPrintBillEnabled] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [payButtonLoading, setPayButtonLoading] = useState(false);
+  const [productQuantities, setProductQuantities] = useState<Record<string, number>>({});
   const [isSearchLoading, setIsSearchLoading] = useState(false);
   const [saleNumber] = useState(() => `INV-${Date.now()}`);
   const [invoiceNumber, setInvoiceNumber] = useState('BILL-TBD');
@@ -247,25 +250,31 @@ export default function POSPage() {
 
     setCart((current) => {
       const existing = current.find((item) => item.productId === product._id);
+      const existingQuantity = existing?.quantity ?? 0;
+      const allowedQuantity = Math.min(existingQuantity + quantity, product.quantity);
+
+      if (existing && allowedQuantity === existingQuantity) {
+        toast.error(`Only ${product.quantity} item${product.quantity === 1 ? '' : 's'} available`);
+        return current;
+      }
+
+      if (existing && allowedQuantity < existingQuantity + quantity) {
+        toast.error(`Limited to ${product.quantity} item${product.quantity === 1 ? '' : 's'} due to stock`);
+      }
+
+      const nextQuantity = existing ? allowedQuantity : Math.min(quantity, product.quantity);
+
+      setProductQuantities((prev) => ({
+        ...prev,
+        [product._id]: nextQuantity,
+      }));
+
       if (existing) {
-        const nextQuantity = Math.min(existing.quantity + quantity, product.quantity);
-        if (nextQuantity === existing.quantity) {
-          toast.error(`Only ${product.quantity} item${product.quantity === 1 ? '' : 's'} available`);
-          return current;
-        }
-        if (nextQuantity < existing.quantity + quantity) {
-          toast.error(`Limited to ${product.quantity} item${product.quantity === 1 ? '' : 's'} due to stock`);
-        }
         return current.map((item) =>
           item.productId === product._id
             ? { ...item, quantity: nextQuantity, subtotal: nextQuantity * item.price }
             : item
         );
-      }
-
-      if (quantity > product.quantity) {
-        toast.error(`Only ${product.quantity} item${product.quantity === 1 ? '' : 's'} available`);
-        quantity = product.quantity;
       }
 
       return [
@@ -275,9 +284,9 @@ export default function POSPage() {
           sku: product.sku,
           name: product.name,
           price: product.price,
-          quantity,
+          quantity: nextQuantity,
           stock: product.quantity,
-          subtotal: product.price * quantity,
+          subtotal: product.price * nextQuantity,
         },
       ];
     });
@@ -313,6 +322,10 @@ export default function POSPage() {
       current.map((item) => {
         if (item.productId !== productId) return item;
         const nextQuantity = Math.min(Math.max(1, quantity), item.stock);
+        setProductQuantities((prev) => ({
+          ...prev,
+          [productId]: nextQuantity,
+        }));
         return { ...item, quantity: nextQuantity, subtotal: nextQuantity * item.price };
       })
     );
@@ -320,10 +333,17 @@ export default function POSPage() {
 
   const removeCartItem = (productId: string) => {
     setCart((current) => current.filter((item) => item.productId !== productId));
+    setProductQuantities((prev) => {
+      const next = { ...prev };
+      delete next[productId];
+      return next;
+    });
   };
 
   const clearSale = () => {
     setCart([]);
+    setProductQuantities({});
+    setShowReceipt(false);
     setAttachedCustomer(null);
     setCustomerPhone('');
     setCustomerName('');
@@ -402,55 +422,62 @@ export default function POSPage() {
   };
 
   const confirmPayment = async () => {
+    if (payButtonLoading) return;
     if (cart.length === 0) {
       toast.error('Add items before charging');
       return;
     }
 
-      if (!soldBy) {
-        toast.error('Please select who sold this order');
-        return;
-      }
+    if (!soldBy) {
+      toast.error('Please select who sold this order');
+      return;
+    }
 
-      if (paymentMethod === 'cash' && tenderedAmount < total) {
-        toast.error('Amount tendered must cover total');
-        return;
-      }
+    if (paymentMethod === 'cash' && tenderedAmount < total) {
+      toast.error('Amount tendered must cover total');
+      return;
+    }
 
-      setIsLoading(true);
-      try {
-        const response = await posAPI.createOrder({
-          transactionType,
-          items: cart.map((item) => ({ product: item.productId, quantity: item.quantity, price: item.price })),
-          customerName: customerName.trim() || attachedCustomer?.name || 'Walk-in Customer',
-          customerPhone: customerPhone.trim() || attachedCustomer?.phone || '',
-          customerEmail: '',
-          paymentMethod,
-          soldBy,
-          notes: note,
-        });
+    setPayButtonLoading(true);
+    setIsLoading(true);
+    try {
+      const response = await posAPI.createOrder({
+        transactionType,
+        items: cart.map((item) => ({ product: item.productId, quantity: item.quantity, price: item.price })),
+        customerName: customerName.trim() || attachedCustomer?.name || 'Walk-in Customer',
+        customerPhone: customerPhone.trim() || attachedCustomer?.phone || '',
+        customerEmail: '',
+        paymentMethod,
+        soldBy,
+        notes: note,
+      });
 
-        const payload = unwrapResponseData(response, null);
-        const nextReceiptOrder = payload && typeof payload === 'object' ? payload : null;
-        setReceiptOrder(nextReceiptOrder);
-        setInvoiceNumber(nextReceiptOrder?.invoiceNumber || 'BILL-TBD');
+      const payload = unwrapResponseData(response, null);
+      const nextReceiptOrder = payload && typeof payload === 'object' ? payload : null;
+      setReceiptOrder(nextReceiptOrder);
+      setInvoiceNumber(nextReceiptOrder?.invoiceNumber || 'BILL-TBD');
+      if (printBillEnabled) {
         setShowReceipt(true);
-        setCart([]);
-        setAttachedCustomer(null);
-        setCustomerPhone('');
-        setCustomerName('');
-        setDiscountValue(0);
-        setDiscountMode('flat');
-        setDiscountReason('');
-        setTenderedAmount(0);
-        setPaymentOpen(false);
-        loadTillHistory();
-      } catch (error) {
-        toast.error('Payment failed');
-      } finally {
-        setIsLoading(false);
       }
-    };
+      setCart([]);
+      setProductQuantities({});
+      setAttachedCustomer(null);
+      setCustomerPhone('');
+      setCustomerName('');
+      setDiscountValue(0);
+      setDiscountMode('flat');
+      setDiscountReason('');
+      setTenderedAmount(0);
+      setPaymentOpen(false);
+      loadTillHistory();
+      toast.success('Order completed successfully');
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || 'Payment failed');
+    } finally {
+      setIsLoading(false);
+      setPayButtonLoading(false);
+    }
+  };
 
   if (!user || !['admin', 'cashier'].includes(user.role)) {
     return (
@@ -724,7 +751,7 @@ export default function POSPage() {
                   {transactionType === 'customer_sale' ? (paymentMethod === 'cash' ? 'Cash sale' : 'Cash on delivery') : 'Cash (partner transaction)'}
                 </span>
               </div>
-              <div className="mt-4 grid gap-2 sm:grid-cols-2">
+              <div className="mt-4 grid gap-2 sm:grid-cols-3">
                 {transactionType === 'customer_sale' ? (
                   <>
                     <button
@@ -741,6 +768,13 @@ export default function POSPage() {
                     >
                       COD
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => setPaymentMethod('phonepay')}
+                      className={`rounded-full px-4 py-3 text-sm font-semibold transition ${paymentMethod === 'phonepay' ? 'bg-blue-600 text-white' : 'border border-slate-800 bg-slate-900 text-slate-300'}`}
+                    >
+                      PhonePay
+                    </button>
                   </>
                 ) : (
                   <div className="rounded-full border border-slate-800 bg-slate-900 px-4 py-3 text-sm text-white">
@@ -753,9 +787,9 @@ export default function POSPage() {
                   <input
                     type="number"
                     min={0}
-                    value={tenderedAmount}
-                    onChange={(e) => setTenderedAmount(Number(e.target.value))}
-                    placeholder="Paid amount"
+                    value={tenderedAmount || ''}
+                    onChange={(e) => setTenderedAmount(Number(e.target.value || 0))}
+                    placeholder="0.00"
                     className="w-full rounded-[1.75rem] border border-slate-800 bg-slate-900 px-4 py-3 text-sm text-white placeholder:text-slate-500 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
                   />
                   <div className="flex items-center justify-between text-sm text-slate-400">
@@ -777,14 +811,26 @@ export default function POSPage() {
                 <button
                   type="button"
                   onClick={confirmPayment}
-                  disabled={cart.length === 0}
+                  disabled={cart.length === 0 || payButtonLoading}
                   className="inline-flex w-full items-center justify-center rounded-[2rem] bg-blue-600 px-6 py-4 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  Pay RS {total}
+                  {payButtonLoading ? (
+                    <span className="inline-flex items-center gap-2">
+                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                      Processing...
+                    </span>
+                  ) : (
+                    `Pay RS ${total}`
+                  )}
                 </button>
               </div>
-              <label className="inline-flex items-center gap-3 rounded-[2rem] border border-slate-800 bg-slate-900 px-4 py-3 text-sm text-slate-300">
-                <input type="checkbox" checked readOnly className="h-4 w-4 rounded border-slate-700 bg-slate-950 text-primary focus:ring-primary" />
+              <label className="inline-flex cursor-pointer items-center gap-3 rounded-[2rem] border border-slate-800 bg-slate-900 px-4 py-3 text-sm text-slate-300">
+                <input
+                  type="checkbox"
+                  checked={printBillEnabled}
+                  onChange={(e) => setPrintBillEnabled(e.target.checked)}
+                  className="h-4 w-4 rounded border-slate-700 bg-slate-950 text-primary focus:ring-primary"
+                />
                 Print bill after order
               </label>
             </div>

@@ -1,5 +1,5 @@
-'use client';
+import { redirect } from 'next/navigation';
 
-import AboutPage from '../about/page';
-
-export default AboutPage;
+export default function AboutUsPage() {
+  redirect('/about');
+}

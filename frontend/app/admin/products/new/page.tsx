@@ -11,6 +11,8 @@ import { api, categoryAPI } from '@/services/api';
 const defaultTagOptions = ['organic', 'premium', 'dried', 'gluten-free', 'handpicked', 'fresh', 'seasonal'];
 const fallbackCategoryOptions = [
   { label: 'Dried Fruits', value: 'dried-fruits' },
+  { label: 'Powder', value: 'powder' },
+  { label: 'Food Powders', value: 'food-powders' },
   { label: 'Dried Vegetables', value: 'dried-vegetables' },
   { label: 'Dry Nuts', value: 'dry-nuts' },
   { label: 'Seeds', value: 'seeds' },

@@ -34,9 +34,12 @@ export const getAllProducts = async (req: Request, res: Response): Promise<Respo
     }
 
     if (search) {
+      const textSearch = search.replace(/[^\p{L}\p{N}\s-]/gu, ' ').trim();
       const escaped = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
       queryFilters.push({
         $or: [
+          ...(textSearch ? [{ $text: { $search: textSearch } }] : []),
           { name: { $regex: escaped, $options: 'i' } },
           { sku: { $regex: escaped, $options: 'i' } },
           { description: { $regex: escaped, $options: 'i' } },

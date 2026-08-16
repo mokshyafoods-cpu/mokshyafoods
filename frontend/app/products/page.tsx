@@ -180,6 +180,17 @@ function ProductsPageContent() {
 
   const visibleCategories = useMemo(() => (Array.isArray(categories) ? categories : []), [categories]);
 
+  const normalizeCategoryToken = (value: any) => {
+    const raw = String(value ?? '').toLowerCase().trim();
+    const normalized = raw
+      .replace(/[_\s]+/g, '-')
+      .replace(/[^a-z0-9-]/g, '')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
+
+    return normalized.replace(/^category-/, '');
+  };
+
   const getCategoryValues = (category: any) => [
     category?._id,
     category?.id,
@@ -187,20 +198,20 @@ function ProductsPageContent() {
     category?.name,
     category?.value,
     category?.key,
-  ].filter(Boolean).map((value) => String(value).toLowerCase().trim());
+  ].filter(Boolean).map((value) => normalizeCategoryToken(value));
 
   const isCategorySelected = (category: any) => {
     const values = getCategoryValues(category);
-    return selectedCategories.some((value) => values.includes(String(value).toLowerCase().trim()));
+    return selectedCategories.some((value) => values.includes(normalizeCategoryToken(value)));
   };
 
   const handleCategoryToggle = (category: any) => {
     const values = getCategoryValues(category);
     const categoryKey = category?.slug || category?.name || category?._id || category?.id || category?.value || category?.key || values[0] || '';
     setSelectedCategories((current) => {
-      const isSelected = current.some((value) => values.includes(String(value).toLowerCase().trim()));
+      const isSelected = current.some((value) => values.includes(normalizeCategoryToken(value)));
       if (isSelected) {
-        return current.filter((value) => !values.includes(String(value).toLowerCase().trim()));
+        return current.filter((value) => !values.includes(normalizeCategoryToken(value)));
       }
       return [...current, categoryKey];
     });
@@ -293,9 +304,9 @@ function ProductsPageContent() {
   };
 
   const matchesSelectedCategory = (product: any, categoryValue: string) => {
-    const normalized = categoryValue.toLowerCase().trim();
-    const candidates = getCategoryCandidates(product);
-    return candidates.some((value) => value === normalized || value.includes(normalized));
+    const normalized = normalizeCategoryToken(categoryValue);
+    const candidates = getCategoryCandidates(product).map((value) => normalizeCategoryToken(value));
+    return candidates.some((value) => value === normalized || value.includes(normalized) || normalized.includes(value));
   };
 
   const displayedProducts = useMemo(() => {

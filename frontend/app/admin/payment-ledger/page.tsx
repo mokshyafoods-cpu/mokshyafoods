@@ -82,22 +82,73 @@ export default function PaymentLedgerPage() {
     }
   };
 
+  const extractProductQuantity = (productList: string, productName: string) => {
+    if (!productList || !productName) return 0;
+    const normalizedProductName = productName.trim();
+    const match = String(productList)
+      .split(',')
+      .map((item) => item.trim())
+      .find((item) => {
+        const itemName = item.replace(/\s*x\s*\d+$/i, '').trim();
+        return itemName.toLowerCase() === normalizedProductName.toLowerCase();
+      });
+
+    if (!match) return 0;
+    const quantityMatch = match.match(/x\s*(\d+)/i);
+    return quantityMatch ? Number(quantityMatch[1] || 0) : 0;
+  };
+
   const exportLedgerExcel = async () => {
-    if (!entries.length) return;
+    const ledgerRows = entries.length ? entries : [];
+    if (!ledgerRows.length) return;
+
+    const productNames = Array.from(
+      new Set(
+        ledgerRows.flatMap((entry) => {
+          const value = String(entry.products || '');
+          return value
+            .split(',')
+            .map((item) => item.replace(/\s*x\s*\d+$/i, '').trim())
+            .filter(Boolean);
+        })
+      )
+    ).sort((a, b) => a.localeCompare(b));
+
+    const totalRow = [
+      'TOTAL',
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+      ledgerRows.reduce((sum, entry) => sum + Number(entry.amount || 0), 0),
+      ...productNames.map((productName) => ledgerRows.reduce((sum, entry) => sum + extractProductQuantity(String(entry.products || ''), productName), 0)),
+      ledgerRows.reduce((sum, entry) => sum + Number(entry.amount || 0), 0),
+    ];
+
     await downloadExcel('payment-ledger.xlsx', [
       {
         name: 'Ledger Entries',
         data: [
-          ['Order #', 'Customer', 'Products', 'Amount', 'Method', 'Date', 'Notes'],
-          ...entries.map((entry) => [
-            entry.orderNumber || '',
-            entry.customerName || '',
-            entry.products || '',
-            Number(entry.amount || 0),
-            entry.paymentMethod || '',
-            entry.paymentDate || new Date(entry.createdAt).toLocaleDateString(),
-            entry.notes || '',
-          ]),
+          ['Order #', 'Customer', 'Phone', 'Amount', 'Method', 'Date', 'Notes', 'Grand Total', ...productNames],
+          ...ledgerRows.map((entry) => {
+            const row: Array<string | number> = [
+              entry.orderNumber || '',
+              entry.customerName || '',
+              entry.customerContact || '',
+              Number(entry.amount || 0),
+              formatPaymentMethod(entry.paymentMethod || 'cash4'),
+              entry.paymentDate || new Date(entry.createdAt).toLocaleDateString(),
+              entry.notes || '',
+              Number(entry.amount || 0),
+            ];
+            productNames.forEach((productName) => {
+              row.push(extractProductQuantity(String(entry.products || ''), productName));
+            });
+            return row;
+          }),
+          totalRow,
         ],
       },
     ]);

@@ -411,7 +411,7 @@ export const getAllOrders = async (req: AuthenticatedRequest, res: Response): Pr
     const search = req.query.search ? String(req.query.search).trim() : undefined;
 
     const ordersColl = mongoose.connection.collection('orders');
-    const filter: any = {};
+    const filter: any = { isDeleted: { $ne: true } };
     if (status && status !== 'all') filter.$or = [{ status }, { orderStatus: status }];
     if (transactionType && transactionType !== 'all') {
       if (transactionType === 'customer_sale') {
@@ -459,6 +459,7 @@ export const getUserOrders = async (req: AuthenticatedRequest, res: Response): P
 
     const orders = await ordersColl
       .find({
+        isDeleted: { $ne: true },
         $or: [{ 'user._id': userId }, { 'user.id': userId }, { userId }, { user: userId }],
       })
       .sort({ createdAt: -1 })
@@ -501,6 +502,51 @@ export const getOrderById = async (req: AuthenticatedRequest, res: Response): Pr
   } catch (error: any) {
     console.error('getOrderById error:', error);
     return res.status(500).json({ success: false, message: error.message || 'Failed to load order' });
+  }
+};
+
+export const deleteOrder = async (req: Request & { userId?: string; userRole?: string }, res: Response): Promise<Response> => {
+  try {
+    const rawId = req.params.id;
+    const id = Array.isArray(rawId) ? rawId[0] : rawId;
+    if (!id) return res.status(400).json({ success: false, message: 'Order id required' });
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ success: false, message: 'Invalid order id' });
+    }
+
+    const userRole = String(req.userRole || '').trim().toLowerCase();
+    const isAdmin = userRole === 'admin' || userRole === 'superadmin' || userRole === 'administrator' || userRole.includes('admin');
+    if (!isAdmin) {
+      return res.status(403).json({ success: false, message: 'You do not have permission to delete this order' });
+    }
+
+    const ordersColl = mongoose.connection.collection('orders');
+    const existingOrder = await ordersColl.findOne({ _id: new mongoose.Types.ObjectId(id) });
+    if (!existingOrder) {
+      return res.status(404).json({ success: false, message: 'Order not found' });
+    }
+
+    const softDeleted = await ordersColl.updateOne(
+      { _id: new mongoose.Types.ObjectId(id) },
+      {
+        $set: {
+          isDeleted: true,
+          deletedAt: new Date(),
+          status: 'cancelled',
+          orderStatus: 'cancelled',
+          updatedAt: new Date(),
+        },
+      }
+    );
+
+    if (softDeleted.matchedCount === 0) {
+      return res.status(404).json({ success: false, message: 'Order not found' });
+    }
+
+    return res.json({ success: true, message: 'Order deleted successfully', data: { id } });
+  } catch (error: any) {
+    console.error('deleteOrder error:', error);
+    return res.status(500).json({ success: false, message: error.message || 'Failed to delete order' });
   }
 };
 
@@ -638,5 +684,6 @@ export default {
   getAllOrders,
   getUserOrders,
   getOrderById,
+  deleteOrder,
   updateOrderStatus,
 };

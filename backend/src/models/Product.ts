@@ -63,6 +63,11 @@ const productSchema = new Schema<IProduct>({
 }, { timestamps: true });
 
 productSchema.index({ isActive: 1, createdAt: -1 }, { background: true });
+productSchema.index({ isActive: 1, featured: 1, createdAt: -1 }, { background: true });
+productSchema.index({ isActive: 1, category: 1, createdAt: -1 }, { background: true });
+productSchema.index({ isActive: 1, price: 1 }, { background: true });
+productSchema.index({ isActive: 1, rating: -1, reviewCount: -1, createdAt: -1 }, { background: true });
+productSchema.index({ isActive: 1, slug: 1 }, { background: true, unique: true, sparse: true });
 productSchema.index({ featured: 1, createdAt: -1 }, { background: true });
 productSchema.index({ price: 1 }, { background: true });
 productSchema.index({ rating: -1, reviewCount: -1, createdAt: -1 }, { background: true });

@@ -119,6 +119,7 @@ export const orderAPI = {
   getAll: (params?: any) => apiClient.get('/orders', { params }),
   getById: (id: string) => apiClient.get(`/orders/${id}`),
   update: (id: string, data: any) => apiClient.put(`/orders/${id}`, data),
+  delete: (id: string) => apiClient.delete(`/orders/${id}`),
   cancel: (id: string, reason: string) => apiClient.put(`/orders/${id}`, { status: 'cancelled', cancelReason: reason }),
 };
 

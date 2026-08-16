@@ -131,19 +131,26 @@ export function buildPageMetadata(title: string, description: string, path: stri
 }
 
 export function buildProductMetadata(product: any, url: string): Metadata {
-  const title = product?.name ? `${product.name} | Mokshya Foods` : 'Mokshya Foods Product';
-  const description = (product?.description || DEFAULT_DESCRIPTION).slice(0, 160);
+  const productName = product?.name ? String(product.name).trim() : 'Mokshya Foods Product';
+  const categoryName = typeof product?.category === 'string'
+    ? product.category
+    : product?.category?.name || 'food product';
+  const simpleCategory = String(categoryName).trim() || 'food product';
+  const title = product?.name ? `${productName} in Nepal | Mokshya Foods` : 'Mokshya Foods Product';
+  const description = product?.description
+    ? `${productName} from Mokshya Foods is a ${simpleCategory.toLowerCase()} product for everyday use in Nepal.`
+    : `Shop ${productName} from Mokshya Foods in Nepal. A ${simpleCategory.toLowerCase()} product selected for everyday use.`;
   const image = getSocialImageUrl(product?.thumbnail || product?.image || DEFAULT_IMAGE_PATH);
 
   return buildMetadata({
     title,
-    description,
+    description: description.slice(0, 160),
     keywords: [
       SITE_NAME,
-      product?.name || 'Mokshya Foods product',
-      'dried fruits Nepal',
-      'food powders Nepal',
-      product?.category?.name || 'Nepal food products',
+      productName,
+      `${productName.toLowerCase()} Nepal`,
+      `${simpleCategory.toLowerCase()} Nepal`,
+      'Mokshya Foods Nepal',
     ].filter(Boolean) as string[],
     alternates: {
       canonical: url,
@@ -158,18 +165,18 @@ export function buildProductMetadata(product: any, url: string): Metadata {
       url,
       siteName: SITE_NAME,
       title,
-      description,
+      description: description.slice(0, 160),
       images: [{
         url: image,
         width: 1200,
         height: 630,
-        alt: product?.name || 'Mokshya Foods product',
+        alt: productName,
       }],
     },
     twitter: {
       card: 'summary_large_image',
       title,
-      description,
+      description: description.slice(0, 160),
       images: [image],
     },
   });

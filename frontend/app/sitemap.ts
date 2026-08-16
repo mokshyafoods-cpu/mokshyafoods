@@ -8,7 +8,6 @@ const baseUrl = getSiteUrl();
 const staticRoutes = [
   '',
   '/about',
-  '/about-us',
   '/blog',
   '/contact',
   '/faq',

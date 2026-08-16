@@ -1,5 +1,5 @@
 import express, { Request, Response } from 'express';
-import { createOrder, getAllOrders, getUserOrders, getOrderById, updateOrderStatus } from '../controllers/orders';
+import { createOrder, getAllOrders, getUserOrders, getOrderById, updateOrderStatus, deleteOrder } from '../controllers/orders';
 import { authMiddleware } from '../middleware/auth';
 import { createOrderValidator, updateOrderValidator, validateRequest } from '../middleware/validation';
 
@@ -18,6 +18,7 @@ router.get('/', authMiddleware, (req: AuthenticatedRequest, res: Response) => {
   return getUserOrders(req, res);
 });
 router.get('/:id', authMiddleware, getOrderById);
+router.delete('/:id', authMiddleware, deleteOrder);
 router.put('/:id', authMiddleware, updateOrderValidator, validateRequest, updateOrderStatus);
 
 export default router;

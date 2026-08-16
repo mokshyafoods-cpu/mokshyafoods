@@ -101,8 +101,9 @@ export const createPOSOrder = async (req: AuthenticatedRequest, res: Response): 
     const notes = String(body.notes || '').trim();
     const normalizedPaymentMethod = transactionType === 'customer_sale' ? String(body.paymentMethod || 'cash').toLowerCase() : 'cash';
     const tenderedAmount = transactionType === 'customer_sale' && normalizedPaymentMethod === 'cash' ? Number(body.tenderedAmount || 0) : 0;
+    const isCompletedOnlinePayment = normalizedPaymentMethod === 'phonepay' || normalizedPaymentMethod === 'cash';
     const paymentStatus = transactionType === 'customer_sale'
-      ? normalizedPaymentMethod === 'cash'
+      ? isCompletedOnlinePayment || normalizedPaymentMethod === 'cash'
         ? 'paid'
         : 'pending'
       : transactionType === 'partner_sale'
