@@ -20,24 +20,12 @@ export default function DashboardHero({ title, subtitle, revenue, orders, custom
         </div>
       </div>
 
-      <div className="relative mt-6 grid gap-3 lg:grid-cols-[1.15fr_0.85fr]">
+      <div className="relative mt-6">
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <MetricPill label="Revenue" value={formatCurrency(revenue)} icon={CircleDollarSign} />
           <MetricPill label="Orders" value={orders ?? 0} icon={ShoppingBag} />
           <MetricPill label="Customers" value={customers ?? 0} icon={Users} />
           <MetricPill label="Products" value={products ?? 0} icon={Package} />
-        </div>
-        <div className="rounded-[1.5rem] border border-sky-400/20 bg-slate-950/40 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur">
-          <p className="text-sm font-medium uppercase tracking-[0.3em] text-slate-400">Watchlist</p>
-          <div className="mt-2 flex items-center justify-between gap-3">
-            <div>
-              <p className="text-2xl font-semibold text-white">{lowStock ?? 0}</p>
-              <p className="mt-1 text-sm text-slate-300">items need restock attention</p>
-            </div>
-            <div className="rounded-xl border border-sky-400/20 bg-sky-400/15 p-2.5">
-              <ArrowUpRight className="h-4 w-4 text-sky-200" />
-            </div>
-          </div>
         </div>
       </div>
     </section>
