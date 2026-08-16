@@ -98,6 +98,7 @@ export const createPOSOrder = async (req: AuthenticatedRequest, res: Response): 
     const submittedSubtotal = Number(body.subtotal || subtotalFromItems || 0);
     const submittedTotal = Number(body.total || 0);
     const providedDiscountAmount = Number(body.discountAmount || 0);
+    const deliveryCharge = Number(body.deliveryCharge ?? body.shippingCost ?? 0);
     const discountMode = String(body.discountMode || 'flat').trim();
     const discountValue = Number(body.discountValue || 0);
     const computedDiscountAmount = providedDiscountAmount > 0
@@ -118,7 +119,7 @@ export const createPOSOrder = async (req: AuthenticatedRequest, res: Response): 
       return res.status(400).json({ success: false, message: 'Discount amount cannot be greater than the order subtotal' });
     }
 
-    const total = submittedTotal > 0 ? submittedTotal : Math.max(0, subtotal - discountAmount);
+    const total = submittedTotal > 0 ? submittedTotal : Math.max(0, subtotal - discountAmount + deliveryCharge);
     const transactionType = String(body.transactionType || 'customer_sale').trim();
     const notes = String(body.notes || '').trim();
     const normalizedPaymentMethod = transactionType === 'customer_sale' ? String(body.paymentMethod || 'cash').toLowerCase() : 'cash';
@@ -159,6 +160,8 @@ export const createPOSOrder = async (req: AuthenticatedRequest, res: Response): 
       items: normalizedItems,
       subtotal,
       discountAmount,
+      deliveryCharge,
+      shippingCost: deliveryCharge,
       taxAmount: 0,
       total,
       transactionType,

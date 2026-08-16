@@ -106,6 +106,7 @@ export default function POSPage() {
   const [customerName, setCustomerName] = useState('');
   const [attachedCustomer, setAttachedCustomer] = useState<{ _id: string; name: string; phone: string } | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'cod' | 'phonepay'>('cash');
+  const [deliveryCharge, setDeliveryCharge] = useState(0);
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [discountValue, setDiscountValue] = useState(0);
   const [discountMode, setDiscountMode] = useState<'flat' | 'percent'>('flat');
@@ -191,7 +192,7 @@ export default function POSPage() {
 
   const taxAmount = useMemo(() => 0, []);
 
-  const total = useMemo(() => Math.max(0, subtotal - discountAmount + taxAmount), [subtotal, discountAmount, taxAmount]);
+  const total = useMemo(() => Math.max(0, subtotal - discountAmount + deliveryCharge + taxAmount), [subtotal, discountAmount, deliveryCharge, taxAmount]);
 
   const lowStockItems = cart.filter((item) => {
     const remainingStock = item.stock - item.quantity;
@@ -342,6 +343,7 @@ export default function POSPage() {
     setDiscountMode('flat');
     setDiscountReason('');
     setTenderedAmount(0);
+    setDeliveryCharge(0);
     setNote('');
     setTransactionType('customer_sale');
     setSoldBy('');
@@ -353,7 +355,10 @@ export default function POSPage() {
       setPaymentMethod('cash');
       setTenderedAmount(0);
     }
-  }, [transactionType]);
+    if (transactionType !== 'customer_sale' || paymentMethod !== 'cod') {
+      setDeliveryCharge(0);
+    }
+  }, [transactionType, paymentMethod]);
 
   const attachCustomer = async () => {
     if (!customerPhone.trim()) {
@@ -464,6 +469,8 @@ export default function POSPage() {
         discountMode,
         discountValue,
         discountReason,
+        deliveryCharge: paymentMethod === 'cod' ? deliveryCharge : 0,
+        shippingCost: paymentMethod === 'cod' ? deliveryCharge : 0,
         total,
         tenderedAmount: effectiveTenderedAmount,
         changeDue: paymentMethod === 'cash' ? Math.max(0, effectiveTenderedAmount - total) : 0,
@@ -657,7 +664,7 @@ export default function POSPage() {
                 <p className="text-xs uppercase tracking-[0.35em] text-slate-400">Current Order</p>
                 <h2 className="mt-2 text-2xl font-semibold text-white">Order summary</h2>
               </div>
-              <div className="rounded-full border border-slate-800 bg-slate-900 px-4 py-2 text-sm font-semibold text-slate-300">No Delivery</div>
+              <div className="rounded-full border border-slate-800 bg-slate-900 px-4 py-2 text-sm font-semibold text-slate-300">POS Sale</div>
             </div>
             
 
@@ -727,9 +734,9 @@ export default function POSPage() {
                   <input
                     type="number"
                     min={0}
-                    value={discountValue}
-                    onChange={(e) => setDiscountValue(Number(e.target.value))}
-                    placeholder={discountMode === 'percent' ? '% off' : 'Discount amount'}
+                    value={discountValue || ''}
+                    onChange={(e) => setDiscountValue(e.target.value === '' ? 0 : Number(e.target.value))}
+                    placeholder={discountMode === 'percent' ? 'Add % off' : 'Add discount'}
                     className="w-full rounded-[1.75rem] border border-slate-800 bg-slate-900 px-4 py-3 text-sm text-white placeholder:text-slate-500 outline-none"
                   />
                 </div>
@@ -752,6 +759,12 @@ export default function POSPage() {
                 <span>Discount</span>
                 <span>- RS {discountAmount}</span>
               </div>
+              {paymentMethod === 'cod' && deliveryCharge > 0 && (
+                <div className="mt-3 flex items-center justify-between text-sm text-slate-400">
+                  <span>Delivery</span>
+                  <span>RS {deliveryCharge}</span>
+                </div>
+              )}
               {taxAmount > 0 && (
                 <div className="mt-3 flex items-center justify-between text-sm text-slate-400">
                   <span>Tax</span>
@@ -804,14 +817,27 @@ export default function POSPage() {
                   </div>
                 )}
               </div>
+              {transactionType === 'customer_sale' && paymentMethod === 'cod' && (
+                <div className="mt-4 space-y-3">
+                  <label className="block text-sm font-medium text-slate-300">Delivery charge</label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={deliveryCharge || ''}
+                    onChange={(e) => setDeliveryCharge(e.target.value === '' ? 0 : Number(e.target.value))}
+                    placeholder="Add delivery charge"
+                    className="w-full rounded-[1.75rem] border border-slate-800 bg-slate-900 px-4 py-3 text-sm text-white placeholder:text-slate-500 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                  />
+                </div>
+              )}
               {transactionType === 'customer_sale' && paymentMethod === 'cash' && (
                 <div className="mt-4 space-y-3">
                   <input
                     type="number"
                     min={0}
-                    value={tenderedAmount || total}
-                    onChange={(e) => setTenderedAmount(Number(e.target.value || 0))}
-                    placeholder="0.00"
+                    value={tenderedAmount || ''}
+                    onChange={(e) => setTenderedAmount(e.target.value === '' ? 0 : Number(e.target.value))}
+                    placeholder="Enter cash received"
                     className="w-full rounded-[1.75rem] border border-slate-800 bg-slate-900 px-4 py-3 text-sm text-white placeholder:text-slate-500 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
                   />
                   <div className="flex items-center justify-between text-sm text-slate-400">
