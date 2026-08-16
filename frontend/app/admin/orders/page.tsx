@@ -37,6 +37,7 @@ export default function AdminOrdersPage() {
   const [ledgerForm, setLedgerForm] = useState<any>({});
   const [ledgerLoading, setLedgerLoading] = useState(false);
   const [ledgerEntries, setLedgerEntries] = useState<Record<string, any>>({});
+  const [ledgerOrderIds, setLedgerOrderIds] = useState<Record<string, boolean>>({});
   const [editingOrder, setEditingOrder] = useState<any | null>(null);
   const [orderEditForm, setOrderEditForm] = useState<any>({ status: 'pending', soldBy: '', paymentMethod: 'cash4', notes: '' });
   const PAGE_SIZE = 8;
@@ -46,7 +47,7 @@ export default function AdminOrdersPage() {
     soldBy: soldBy === 'all' ? undefined : soldBy,
     transactionType: transactionType === 'all' ? undefined : transactionType,
     search: search.trim() || undefined,
-    limit: 30,
+    limit: 200,
   }), [status, soldBy, transactionType, search]);
 
   const { data, error, isLoading, mutate } = useSWR(
@@ -55,6 +56,7 @@ export default function AdminOrdersPage() {
   );
 
   const orders = Array.isArray(data?.data) ? data.data : [];
+  const totalOrders = Number(data?.pagination?.total ?? orders.length ?? 0);
   const filteredOrders = useMemo(() => {
     const normalized = (search || '').trim().toLowerCase();
     const source = orders.filter((order: any) => {
@@ -68,7 +70,7 @@ export default function AdminOrdersPage() {
     return source.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   }, [orders, search, status, soldBy, page]);
 
-  const totalPages = Math.max(1, Math.ceil(orders.length / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(totalOrders / PAGE_SIZE));
 
   const errorInfo = (() => {
     const status = error?.response?.status;
@@ -116,10 +118,25 @@ export default function AdminOrdersPage() {
     }
   };
 
+  const syncLedgerStatusMap = async () => {
+    try {
+      const response = await paymentLedgerAPI.getAll({ page: 1, limit: 1000 });
+      const ledgerRows = Array.isArray(response?.data?.data) ? response.data.data : [];
+      const nextStatusMap: Record<string, boolean> = {};
+      ledgerRows.forEach((entry: any) => {
+        const rawOrderId = entry?.orderId || entry?.order?._id || entry?.orderIdString || '';
+        if (rawOrderId) nextStatusMap[String(rawOrderId)] = true;
+      });
+      setLedgerOrderIds(nextStatusMap);
+    } catch (error) {
+      setLedgerOrderIds({});
+    }
+  };
+
   const openLedger = async (order: any) => {
     const orderId = order?._id;
     if (!orderId) return;
-    const existing = ledgerEntries[orderId];
+    const existing = ledgerEntries[orderId] || (ledgerOrderIds[orderId] ? { _id: orderId } : null);
     const initialForm = {
       orderId,
       orderNumber: order.orderNumber || order._id,
@@ -215,6 +232,7 @@ export default function AdminOrdersPage() {
       const savedEntry = response?.data?.data;
       if (savedEntry) {
         setLedgerEntries((prev) => ({ ...prev, [savedEntry.orderId]: savedEntry }));
+        setLedgerOrderIds((prev) => ({ ...prev, [savedEntry.orderId]: true }));
       }
       toast.success('Payment ledger saved');
       setLedgerOpen(false);
@@ -226,6 +244,10 @@ export default function AdminOrdersPage() {
   useEffect(() => {
     setPage(1);
   }, [status, search, viewMode]);
+
+  useEffect(() => {
+    void syncLedgerStatusMap();
+  }, [orders]);
 
   return (
     <div className="space-y-8">
@@ -405,12 +427,12 @@ export default function AdminOrdersPage() {
                       <button
                         type="button"
                         onClick={() => openLedger(order)}
-                        disabled={Boolean(ledgerEntries[order._id]?._id)}
-                        className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm font-semibold transition ${ledgerEntries[order._id]?._id ? 'cursor-not-allowed border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'}`}
-                        title={ledgerEntries[order._id]?._id ? 'Ledger already created for this order' : 'Create payment ledger entry'}
+                        disabled={Boolean(ledgerEntries[order._id]?._id || ledgerOrderIds[order._id])}
+                        className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm font-semibold transition ${ledgerEntries[order._id]?._id || ledgerOrderIds[order._id] ? 'cursor-not-allowed border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'}`}
+                        title={ledgerEntries[order._id]?._id || ledgerOrderIds[order._id] ? 'Ledger already created for this order' : 'Create payment ledger entry'}
                       >
-                        {ledgerEntries[order._id]?._id ? <BookOpenCheck className="h-4 w-4 text-emerald-600" /> : <BookOpenCheck className="h-4 w-4 text-slate-700" />}
-                        <span>{ledgerEntries[order._id]?._id ? 'Done' : 'Ledger'}</span>
+                        {ledgerEntries[order._id]?._id || ledgerOrderIds[order._id] ? <BookOpenCheck className="h-4 w-4 text-emerald-600" /> : <BookOpenCheck className="h-4 w-4 text-slate-700" />}
+                        <span>{ledgerEntries[order._id]?._id || ledgerOrderIds[order._id] ? 'Done' : 'Ledger'}</span>
                       </button>
                       <button
                         type="button"
@@ -547,7 +569,7 @@ export default function AdminOrdersPage() {
       )}
 
       <div className="flex flex-wrap items-center justify-between gap-4 rounded-[2rem] border border-slate-200 bg-slate-50 px-6 py-5 text-sm text-slate-500">
-        <div>{orders.length} orders displayed.</div>
+        <div>{totalOrders} orders displayed.</div>
         <div className="flex flex-wrap items-center gap-2">
           <button type="button" onClick={() => setPage((current) => Math.max(1, current - 1))} disabled={page === 1} className="rounded-full border border-slate-300 bg-white px-4 py-2 font-semibold text-slate-700 disabled:opacity-50">Previous</button>
           <span className="text-sm font-semibold text-slate-700">Page {page} / {totalPages}</span>
