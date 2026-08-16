@@ -134,9 +134,9 @@ export const posOrderValidator: ValidationChain[] = [
   body('soldBy').trim().notEmpty().isIn(['Bishal', 'Krishna', 'Ukesh']).withMessage('Sold By must be one of Bishal, Krishna, or Ukesh'),
   body('discountAmount').optional().isFloat({ min: 0 }).withMessage('Discount amount must be a valid number'),
   body('tenderedAmount').optional().isFloat({ min: 0 }).withMessage('Tendered amount must be a valid number'),
-  body('customerName').optional().trim(),
-  body('customerId').optional().isMongoId().withMessage('Valid customer ID is required'),
-  body('notes').optional().trim(),
+  body('customerName').optional({ values: 'falsy' }).trim(),
+  body('customerId').optional({ values: 'falsy' }).isMongoId().withMessage('Valid customer ID is required'),
+  body('notes').optional({ values: 'falsy' }).trim(),
 ];
 
 export const holdSaleValidator: ValidationChain[] = [

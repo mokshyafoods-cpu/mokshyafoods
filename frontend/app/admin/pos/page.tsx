@@ -455,7 +455,7 @@ export default function POSPage() {
         customerName: customerName.trim() || attachedCustomer?.name || 'Walk-in Customer',
         customerPhone: customerPhone.trim() || attachedCustomer?.phone || '',
         customerEmail: '',
-        customerId: attachedCustomer?._id || '',
+        ...(attachedCustomer?._id ? { customerId: attachedCustomer._id } : {}),
         paymentMethod,
         soldBy,
         notes: note,
