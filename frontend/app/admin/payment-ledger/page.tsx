@@ -14,6 +14,7 @@ export default function PaymentLedgerPage() {
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalEntries, setTotalEntries] = useState(0);
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
   const [editingEntry, setEditingEntry] = useState<any | null>(null);
@@ -50,6 +51,7 @@ export default function PaymentLedgerPage() {
       const ledgerItems = Array.isArray(response?.data?.data) ? response.data.data : [];
       const total = Number(response?.data?.pagination?.total || ledgerItems.length || 0);
       setEntries(ledgerItems);
+      setTotalEntries(total);
       setTotalPages(Math.max(1, Math.ceil(total / PAGE_SIZE)));
     } catch (error: any) {
       toast.error(error?.response?.data?.message || 'Failed to load payment ledger');
@@ -274,10 +276,10 @@ export default function PaymentLedgerPage() {
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-2 text-sm font-semibold text-primary">
-              <BookOpenCheck className="h-4 w-4" /> {entries.length} saved entries
+              <BookOpenCheck className="h-4 w-4" /> {totalEntries} saved entries
             </div>
             <button type="button" onClick={exportLedgerExcel} className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-slate-100">
-              <Download className="h-4 w-4" /> Export Excel
+              <Download className="h-4 w-4" /> Export All Ledger
             </button>
           </div>
         </div>
