@@ -123,7 +123,6 @@ export default function POSPage() {
   const [printBillEnabled, setPrintBillEnabled] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [payButtonLoading, setPayButtonLoading] = useState(false);
-  const [productQuantities, setProductQuantities] = useState<Record<string, number>>({});
   const [isSearchLoading, setIsSearchLoading] = useState(false);
   const [saleNumber] = useState(() => `INV-${Date.now()}`);
   const [invoiceNumber, setInvoiceNumber] = useState('BILL-TBD');
@@ -173,6 +172,13 @@ export default function POSPage() {
       ? products
       : products.filter((product) => product.category?._id === activeCategory);
   }, [products, activeCategory]);
+
+  const productQuantities = useMemo(() => {
+    return cart.reduce((acc, item) => {
+      acc[item.productId] = item.quantity;
+      return acc;
+    }, {} as Record<string, number>);
+  }, [cart]);
 
   const subtotal = useMemo(() => {
     return cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -264,11 +270,6 @@ export default function POSPage() {
 
       const nextQuantity = existing ? allowedQuantity : Math.min(quantity, product.quantity);
 
-      setProductQuantities((prev) => ({
-        ...prev,
-        [product._id]: nextQuantity,
-      }));
-
       if (existing) {
         return current.map((item) =>
           item.productId === product._id
@@ -322,10 +323,6 @@ export default function POSPage() {
       current.map((item) => {
         if (item.productId !== productId) return item;
         const nextQuantity = Math.min(Math.max(1, quantity), item.stock);
-        setProductQuantities((prev) => ({
-          ...prev,
-          [productId]: nextQuantity,
-        }));
         return { ...item, quantity: nextQuantity, subtotal: nextQuantity * item.price };
       })
     );
@@ -333,16 +330,10 @@ export default function POSPage() {
 
   const removeCartItem = (productId: string) => {
     setCart((current) => current.filter((item) => item.productId !== productId));
-    setProductQuantities((prev) => {
-      const next = { ...prev };
-      delete next[productId];
-      return next;
-    });
   };
 
   const clearSale = () => {
     setCart([]);
-    setProductQuantities({});
     setShowReceipt(false);
     setAttachedCustomer(null);
     setCustomerPhone('');
@@ -460,7 +451,6 @@ export default function POSPage() {
         setShowReceipt(true);
       }
       setCart([]);
-      setProductQuantities({});
       setAttachedCustomer(null);
       setCustomerPhone('');
       setCustomerName('');
