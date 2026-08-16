@@ -229,18 +229,18 @@ export default function AdminOrdersPage() {
 
   return (
     <div className="space-y-8">
-      <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-xl sm:p-8">
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-          <div>
+      <div className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-xl sm:p-6">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-[480px]">
             <p className="text-sm uppercase tracking-[0.3em] text-slate-400">Orders</p>
-            <h1 className="mt-3 text-4xl font-semibold text-slate-900">Order overview</h1>
-            <p className="mt-4 text-sm text-slate-500">
+            <h1 className="mt-3 text-3xl font-semibold text-slate-900 sm:text-4xl">Order overview</h1>
+            <p className="mt-3 text-sm text-slate-500">
               Review the current order queue, update delivery status, and keep fulfillment moving smoothly.
             </p>
           </div>
 
-          <div className="grid gap-3 w-full sm:grid-cols-[220px_220px_auto]">
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+          <div className="grid w-full max-w-[820px] gap-3 sm:grid-cols-[minmax(0,180px)_minmax(0,180px)_minmax(0,180px)] lg:ml-auto">
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5">
               <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Filter status</label>
               <select
                 className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-primary"
@@ -253,10 +253,10 @@ export default function AdminOrdersPage() {
               </select>
             </div>
 
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5">
               <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Filter sold by</label>
               <select
-                className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-primary"
+                className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-primary"
                 value={soldBy}
                 onChange={(e) => setSoldBy(e.target.value)}
               >
@@ -266,10 +266,10 @@ export default function AdminOrdersPage() {
               </select>
             </div>
 
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5">
               <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Filter type</label>
               <select
-                className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-primary"
+                className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-primary"
                 value={transactionType}
                 onChange={(e) => setTransactionType(e.target.value)}
               >
@@ -279,7 +279,7 @@ export default function AdminOrdersPage() {
               </select>
             </div>
 
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5">
               <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Search orders</label>
               <div className="mt-2 flex items-center gap-2 rounded-2xl bg-white px-3 py-2">
                 <Search className="h-4 w-4 text-slate-400" />

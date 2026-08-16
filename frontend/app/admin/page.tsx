@@ -149,7 +149,7 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <DashboardHero
         title="Mokshya Business Hub"
         subtitle="Monitor sales velocity, order health, and stock movement in one polished overview built for fast-moving retail operations."
@@ -161,7 +161,7 @@ export default function AdminPage() {
       />
 
       <section className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-        <div className="rounded-[2rem] border border-slate-700/70 bg-[linear-gradient(135deg,_rgba(15,23,42,0.96),_rgba(17,24,39,0.95))] p-6 shadow-[0_24px_70px_rgba(2,6,23,0.4)] backdrop-blur sm:p-8">
+        <div className="rounded-[1.5rem] border border-slate-700/70 bg-[linear-gradient(135deg,_rgba(15,23,42,0.96),_rgba(17,24,39,0.95))] p-4 shadow-[0_24px_70px_rgba(2,6,23,0.4)] backdrop-blur sm:p-5">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-[11px] uppercase tracking-[0.35em] text-slate-400">Sales trend</p>
@@ -174,7 +174,7 @@ export default function AdminPage() {
           </div>
         </div>
 
-        <div className="rounded-[2rem] border border-slate-700/70 bg-[linear-gradient(135deg,_rgba(15,23,42,0.95),_rgba(17,24,39,0.95))] p-6 shadow-[0_24px_70px_rgba(2,6,23,0.35)] backdrop-blur sm:p-8">
+        <div className="rounded-[1.5rem] border border-slate-700/70 bg-[linear-gradient(135deg,_rgba(15,23,42,0.95),_rgba(17,24,39,0.95))] p-4 shadow-[0_24px_70px_rgba(2,6,23,0.35)] backdrop-blur sm:p-5">
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-sm uppercase tracking-[0.3em] text-slate-400">Payment mix</p>
@@ -218,7 +218,7 @@ export default function AdminPage() {
       </section>
 
       <section className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
-        <div className="rounded-[2rem] border border-slate-700/70 bg-[linear-gradient(135deg,_rgba(15,23,42,0.95),_rgba(17,24,39,0.95))] p-6 shadow-[0_24px_70px_rgba(2,6,23,0.35)] backdrop-blur sm:p-8">
+        <div className="rounded-[1.5rem] border border-slate-700/70 bg-[linear-gradient(135deg,_rgba(15,23,42,0.95),_rgba(17,24,39,0.95))] p-4 shadow-[0_24px_70px_rgba(2,6,23,0.35)] backdrop-blur sm:p-5">
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-sm uppercase tracking-[0.3em] text-slate-400">Orders</p>
@@ -247,7 +247,7 @@ export default function AdminPage() {
           </div>
         </div>
 
-        <div className="rounded-[2rem] border border-slate-700/70 bg-[linear-gradient(135deg,_rgba(15,23,42,0.95),_rgba(17,24,39,0.95))] p-6 shadow-[0_24px_70px_rgba(2,6,23,0.35)] backdrop-blur sm:p-8">
+        <div className="rounded-[1.5rem] border border-slate-700/70 bg-[linear-gradient(135deg,_rgba(15,23,42,0.95),_rgba(17,24,39,0.95))] p-4 shadow-[0_24px_70px_rgba(2,6,23,0.35)] backdrop-blur sm:p-5">
           <div>
             <p className="text-sm uppercase tracking-[0.3em] text-slate-400">Best sellers</p>
             <h2 className="mt-2 text-2xl font-semibold text-white">Top products</h2>

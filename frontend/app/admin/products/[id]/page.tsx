@@ -38,9 +38,19 @@ export default function EditProductPage() {
   const [otherCategory, setOtherCategory] = useState('');
   const [existingImages, setExistingImages] = useState<Array<{ url: string; _id?: string }>>([]);
   const [newImages, setNewImages] = useState<File[]>([]);
+  const [newImagePreviewUrls, setNewImagePreviewUrls] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    const urls = newImages.map((file) => URL.createObjectURL(file));
+    setNewImagePreviewUrls(urls);
+
+    return () => {
+      urls.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, [newImages]);
 
   useEffect(() => {
     if (!id) return;
@@ -392,7 +402,7 @@ export default function EditProductPage() {
                     {newImages.map((file, index) => (
                       <div key={index} className="relative group">
                         <img
-                          src={URL.createObjectURL(file)}
+                          src={newImagePreviewUrls[index] || ''}
                           alt={`New ${index + 1}`}
                           className="h-24 w-full rounded-xl object-cover shadow-sm border-2 border-green-300"
                         />
