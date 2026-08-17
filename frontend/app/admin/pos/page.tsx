@@ -417,79 +417,6 @@ export default function POSPage() {
     }
   };
 
-  const handlePrint = () => {
-    if (!receiptOrder) {
-      toast.error('No receipt to print. Complete an order first.');
-      return;
-    }
-    setShowReceipt(true);
-  };
-
-  const downloadBill = () => {
-    if (!receiptOrder) {
-      toast.error('No receipt to download. Complete an order first.');
-      return;
-    }
-
-    const billNumber = receiptOrder.invoiceNumber || 'BILL-TBD';
-    const billDate = new Date(receiptOrder.createdAt).toLocaleDateString('en-IN');
-    const discountAmount = Number(receiptOrder.discountAmount || 0);
-    const subtotal = Number(receiptOrder.subtotal || 0);
-    const total = Number(receiptOrder.total || 0);
-    const originalAmount = subtotal > 0 ? subtotal : total;
-
-    const billContent = `
-MOKSHYA FOODS
-Tilottama-01, Banbitika, Rupandehi • Lumbini Zone
-PAN: 624385631
-
-═════════════════════════════════════════
-BILL NO: ${billNumber}
-DATE: ${billDate}
-═════════════════════════════════════════
-
-CUSTOMER: ${receiptOrder.user?.name || 'Walk-in Customer'}
-CONTACT: ${receiptOrder.user?.phone || '—'}
-TRANSACTION TYPE: ${receiptOrder.transactionType === 'partner_product_taken' ? 'Partner Product Taken' : receiptOrder.transactionType === 'partner_sale' ? 'Partner Sale' : 'Customer Sale'}
-SOLD BY: ${receiptOrder.soldBy || 'Not Recorded'}
-
-═════════════════════════════════════════
-ITEMS
-═════════════════════════════════════════
-${receiptOrder.items
-  .map(
-    (item: any) =>
-      `${item.name || 'Product'}
-  ${item.quantity} × Rs ${formatCurrency(item.price)} = Rs ${formatCurrency(item.subtotal)}`
-  )
-  .join('\n\n')}
-
-═════════════════════════════════════════
-SUMMARY
-═════════════════════════════════════════
-Subtotal:              Rs ${formatCurrency(originalAmount)}
-${discountAmount > 0 ? `Discount:              - Rs ${formatCurrency(discountAmount)}\n` : ''}TOTAL:                 Rs ${formatCurrency(total)}
-
-PAYMENT METHOD: ${formatPaymentMethod(receiptOrder.paymentMethod)}
-${receiptOrder.paymentMethod === 'cash' ? `Tendered:              Rs ${formatCurrency(receiptOrder.tenderedAmount)}
-Change:                Rs ${formatCurrency(receiptOrder.changeDue)}\n` : ''}
-═════════════════════════════════════════
-Thank you for shopping with Mokshya Foods!
-═════════════════════════════════════════
-    `;
-
-    const blob = new Blob([billContent], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `Bill-${billNumber}-${billDate}.txt`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-    toast.success('Bill downloaded successfully');
-  };
-
   const confirmPayment = async () => {
     if (payButtonLoading) return;
     if (cart.length === 0) {
@@ -598,12 +525,6 @@ Thank you for shopping with Mokshya Foods!
                 <h1 className="mt-2 text-3xl font-semibold text-slate-900">Point of Sale</h1>
                 <p className="mt-2 text-sm text-slate-500">Create and manage in-store sales transactions.</p>
               </div>
-              <button onClick={handlePrint} className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-100">
-                <Printer className="h-4 w-4" /> Print Invoice
-              </button>
-              <button onClick={downloadBill} className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-100">
-                <Download className="h-4 w-4" /> Download Bill
-              </button>
             </div>
           </div>
 

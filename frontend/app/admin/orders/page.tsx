@@ -40,6 +40,8 @@ export default function AdminOrdersPage() {
   const [ledgerOrderIds, setLedgerOrderIds] = useState<Record<string, boolean>>({});
   const [editingOrder, setEditingOrder] = useState<any | null>(null);
   const [orderEditForm, setOrderEditForm] = useState<any>({ status: 'pending', soldBy: '', paymentMethod: 'cash4', notes: '' });
+  const [showPOSReceipt, setShowPOSReceipt] = useState(false);
+  const [posReceiptOrder, setPOSReceiptOrder] = useState<any>(null);
   const PAGE_SIZE = 8;
 
   const queryParams = useMemo(() => ({
@@ -195,6 +197,15 @@ export default function AdminOrdersPage() {
       paymentMethod: order.paymentMethod || 'cash4',
       notes: order.notes || '',
     });
+  };
+
+  const handlePrintPOSInvoice = (order: any) => {
+    if (!order) {
+      toast.error('Order not found');
+      return;
+    }
+    setPOSReceiptOrder(order);
+    setShowPOSReceipt(true);
   };
 
   const saveEditedOrder = async (event: React.FormEvent) => {
@@ -391,6 +402,15 @@ export default function AdminOrdersPage() {
                       <p>Payment: {formatPaymentMethod(order.paymentMethod || 'cash4')}</p>
                     </div>
                     <p className="mt-4 text-lg font-semibold text-slate-900">RS {order.total?.toFixed?.(0) ?? order.total ?? 0}</p>
+                    <div className="mt-4 flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handlePrintPOSInvoice(order)}
+                        className="flex-1 rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+                      >
+                        Print Invoice
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -606,6 +626,135 @@ export default function AdminOrdersPage() {
           </button>
         </div>
       </div>
+
+      {showPOSReceipt && posReceiptOrder && (
+        <div className="receipt-print">
+          <div className="receipt-content">
+            <div className="receipt-header">
+              <p className="brand-name">Mokshya Foods</p>
+              <p className="business-details">Tilottama-01, Banbitika, Rupandehi • Lumbini Zone</p>
+              <p className="business-details">PAN: 624385631</p>
+            </div>
+
+            <div className="receipt-section">
+              <div className="receipt-row">
+                <span className="receipt-key">Bill No.</span>
+                <span className="receipt-value">{posReceiptOrder.invoiceNumber || posReceiptOrder.orderNumber}</span>
+              </div>
+              <div className="receipt-row">
+                <span className="receipt-key">Date</span>
+                <span className="receipt-value">{new Date(posReceiptOrder.createdAt).toLocaleDateString('en-IN')}</span>
+              </div>
+              <div className="receipt-row">
+                <span className="receipt-key">Customer</span>
+                <span className="receipt-value">{posReceiptOrder.user?.name || posReceiptOrder.shippingAddress?.name || 'Walk-in Customer'}</span>
+              </div>
+              <div className="receipt-row">
+                <span className="receipt-key">Contact</span>
+                <span className="receipt-value">{posReceiptOrder.user?.phone || posReceiptOrder.shippingAddress?.phone || '—'}</span>
+              </div>
+              <div className="receipt-row">
+                <span className="receipt-key">Transaction Type</span>
+                <span className="receipt-value">{posReceiptOrder.transactionType === 'partner_product_taken' ? 'Partner Product Taken' : posReceiptOrder.transactionType === 'partner_sale' ? 'Partner Sale' : 'Customer Sale'}</span>
+              </div>
+              <div className="receipt-row">
+                <span className="receipt-key">Sold By</span>
+                <span className="receipt-value">{posReceiptOrder.soldBy || 'Not Recorded'}</span>
+              </div>
+            </div>
+
+            <div className="receipt-section receipt-items">
+              {Array.isArray(posReceiptOrder.items) && posReceiptOrder.items.map((item: any, index: number) => (
+                <div key={index} className="item">
+                  <div>
+                    <p className="item-name">{item.name || 'Product'}</p>
+                    <p className="item-meta">{item.quantity} × Rs {Number(item.price).toLocaleString('en-IN')}</p>
+                  </div>
+                  <p className="item-total">Rs {Number(item.subtotal).toLocaleString('en-IN')}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="receipt-section totals">
+              <div className="total-row">
+                <span className="total-label">Subtotal</span>
+                <span className="total-value">Rs {Number(posReceiptOrder.subtotal).toLocaleString('en-IN')}</span>
+              </div>
+              {Number(posReceiptOrder.discountAmount || 0) > 0 && (
+                <>
+                  <div className="total-row discount-row">
+                    <span className="total-label">Discount</span>
+                    <span className="total-value discount-value">- Rs {Number(posReceiptOrder.discountAmount).toLocaleString('en-IN')}</span>
+                  </div>
+                </>
+              )}
+              <div className="total-row grand-total">
+                <span className="total-label">TOTAL</span>
+                <span className="total-value">Rs {Number(posReceiptOrder.total).toLocaleString('en-IN')}</span>
+              </div>
+            </div>
+
+            <div className="receipt-section receipt-payment">
+              <div className="receipt-row">
+                <span className="receipt-key">Payment Method</span>
+                <span className="receipt-value">{formatPaymentMethod(posReceiptOrder.paymentMethod || 'cash')}</span>
+              </div>
+              {posReceiptOrder.paymentMethod === 'cash' && (
+                <>
+                  <div className="receipt-row">
+                    <span className="receipt-key">Tendered</span>
+                    <span className="receipt-value">Rs {Number(posReceiptOrder.tenderedAmount).toLocaleString('en-IN')}</span>
+                  </div>
+                  <div className="receipt-row">
+                    <span className="receipt-key">Change</span>
+                    <span className="receipt-value">Rs {Number(posReceiptOrder.changeDue).toLocaleString('en-IN')}</span>
+                  </div>
+                </>
+              )}
+            </div>
+
+            <p className="footer">Thank you for shopping with Mokshya Foods!</p>
+          </div>
+
+          <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/50 p-4 print:hidden">
+            <div className="w-full max-w-2xl rounded-[2rem] bg-white p-6 shadow-2xl">
+              <div className="flex items-center justify-between gap-4">
+                <h2 className="text-lg font-semibold text-slate-900">Invoice #{posReceiptOrder.invoiceNumber || posReceiptOrder.orderNumber}</h2>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowPOSReceipt(false);
+                    setPOSReceiptOrder(null);
+                  }}
+                  className="rounded-full border border-slate-200 p-3 text-slate-600 hover:bg-slate-100"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              <div className="mt-6 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="flex-1 rounded-full border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+                >
+                  Print
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowPOSReceipt(false);
+                    setPOSReceiptOrder(null);
+                  }}
+                  className="flex-1 rounded-full bg-primary px-4 py-3 text-sm font-semibold text-white hover:bg-primary/90"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
