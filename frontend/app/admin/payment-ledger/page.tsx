@@ -183,7 +183,7 @@ export default function PaymentLedgerPage() {
           fonepay || '',
           cash || '',
           cod || '',
-          entry.notes || entry.soldBy || '',
+          entry.soldBy || entry.notes || '',
         ];
 
         productNames.forEach((productName: string) => {
