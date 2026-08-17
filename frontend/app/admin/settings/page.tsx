@@ -64,12 +64,12 @@ export default function AdminSettingsPage() {
 
   return (
     <div className="space-y-8">
-      <div className="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-xl">
-        <p className="text-sm uppercase tracking-[0.3em] text-slate-400">Settings</p>
-        <h1 className="mt-3 text-4xl font-semibold text-slate-900">Store configuration</h1>
-        <p className="mt-4 text-sm text-slate-500">
-          Update the admin profile details and review the core store configuration areas from one place.
-        </p>
+      <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-xl">
+        <div>
+          <p className="text-sm uppercase tracking-[0.3em] text-slate-400">Settings</p>
+          <h1 className="mt-2 text-3xl font-semibold text-slate-900">Store Configuration</h1>
+          <p className="mt-2 text-sm text-slate-500">Update admin profile details and review core store configuration areas.</p>
+        </div>
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">

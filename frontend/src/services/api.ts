@@ -1,18 +1,60 @@
 import axios from 'axios';
 import { toast } from 'sonner';
 
-const DEFAULT_API_BASE_URL = 'https://mokshyafoods.onrender.com/api';
-const REQUEST_TIMEOUT_MS = 12_000;
+const LOCAL_API_BASE_URL = 'http://localhost:5000/api';
+const REMOTE_API_BASE_URL = 'https://mokshyafoods.onrender.com/api';
+const REQUEST_TIMEOUT_MS = 8_000;
+const MAX_RETRIES = 1;
+const AUTH_REDIRECT_KEY = 'auth-redirect-triggered';
 
-const normalizeApiBaseUrl = (value?: string) => {
-  const raw = (value || DEFAULT_API_BASE_URL).trim();
-  if (!raw) return DEFAULT_API_BASE_URL;
-
-  const withoutTrailingSlash = raw.replace(/\/$/, '');
-  return withoutTrailingSlash.replace(/\/api$/, '');
+export const clearAuthRedirectLock = () => {
+  if (typeof window === 'undefined') return;
+  sessionStorage.removeItem(AUTH_REDIRECT_KEY);
 };
 
-const API_BASE_URL = normalizeApiBaseUrl(process.env.NEXT_PUBLIC_API_URL);
+const isAuthPage = () => {
+  if (typeof window === 'undefined') return true;
+  return window.location.pathname.startsWith('/auth');
+};
+
+const triggerAuthRedirect = () => {
+  if (typeof window === 'undefined') return;
+
+  const path = window.location.pathname + window.location.search;
+  if (isAuthPage() || sessionStorage.getItem(AUTH_REDIRECT_KEY) === '1') return;
+
+  sessionStorage.setItem(AUTH_REDIRECT_KEY, '1');
+  localStorage.removeItem('token');
+  localStorage.removeItem('user');
+
+  const nextUrl = encodeURIComponent(path || '/account/dashboard');
+  window.location.assign(`/auth/login?redirect=${nextUrl}`);
+};
+
+const getDefaultApiBaseUrl = () => {
+  const envValue = (process.env.NEXT_PUBLIC_API_URL || '').trim();
+  if (envValue) return envValue;
+
+  if (process.env.NODE_ENV === 'production') {
+    return REMOTE_API_BASE_URL;
+  }
+
+  return LOCAL_API_BASE_URL;
+};
+
+export const normalizeApiBaseUrl = (value?: string) => {
+  const raw = (value || getDefaultApiBaseUrl()).trim();
+  if (!raw) return getDefaultApiBaseUrl();
+
+  const withoutTrailingSlash = raw.replace(/\/+$/, '');
+  const withoutApiSuffix = withoutTrailingSlash.endsWith('/api')
+    ? withoutTrailingSlash.slice(0, -4)
+    : withoutTrailingSlash;
+
+  return withoutApiSuffix || getDefaultApiBaseUrl();
+};
+
+const API_BASE_URL = normalizeApiBaseUrl(process.env.NEXT_PUBLIC_API_URL || getDefaultApiBaseUrl());
 const apiClient = axios.create({
   baseURL: `${API_BASE_URL}/api`,
   timeout: REQUEST_TIMEOUT_MS,
@@ -37,12 +79,14 @@ apiClient.interceptors.response.use(
     const shouldRetry = Boolean(
       config &&
       !config._retry &&
-      (error.code === 'ECONNABORTED' || error.message?.includes('timeout') || !error.response)
+      (error.code === 'ECONNABORTED' || error.message?.includes('timeout') || !error.response) &&
+      (config.__retryCount ?? 0) < MAX_RETRIES
     );
 
     if (shouldRetry) {
+      config.__retryCount = (config.__retryCount ?? 0) + 1;
       config._retry = true;
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      await new Promise((resolve) => setTimeout(resolve, 400));
       return apiClient.request(config);
     }
 
@@ -60,7 +104,11 @@ apiClient.interceptors.response.use(
     if (error.response.status === 401) {
       if (typeof window !== 'undefined') {
         localStorage.removeItem('token');
-        window.location.href = '/auth/login';
+        localStorage.removeItem('user');
+
+        if (!isAuthPage()) {
+          triggerAuthRedirect();
+        }
       }
     }
 

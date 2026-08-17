@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { authAPI, userAPI, wishlistAPI } from '@/services/api';
+import { authAPI, userAPI, wishlistAPI, clearAuthRedirectLock } from '@/services/api';
 import { toast } from 'sonner';
 import { clearGuestWishlist, readGuestWishlist } from '@/lib/wishlist';
 
@@ -155,6 +155,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(userPayload as any);
         localStorage.setItem('user', JSON.stringify(userPayload));
       }
+      clearAuthRedirectLock();
       await mergeGuestWishlistIntoAccount();
       toast.success('Login successful');
       return userPayload as any;
@@ -182,6 +183,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(userPayload as any);
         localStorage.setItem('user', JSON.stringify(userPayload));
       }
+      clearAuthRedirectLock();
       await mergeGuestWishlistIntoAccount();
       toast.success('Registration successful');
       return userPayload as any;
@@ -257,7 +259,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(null);
     setToken(null);
 
-    try {
+try {
+      clearAuthRedirectLock();
       // remove known localStorage keys
       localStorage.removeItem('token');
       localStorage.removeItem('user');

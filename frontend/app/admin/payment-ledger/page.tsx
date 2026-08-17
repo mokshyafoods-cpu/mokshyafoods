@@ -19,6 +19,7 @@ export default function PaymentLedgerPage() {
   const [toDate, setToDate] = useState('');
   const [editingEntry, setEditingEntry] = useState<any | null>(null);
   const [entryForm, setEntryForm] = useState({ orderNumber: '', customerName: '', customerContact: '', products: '', amount: 0, paymentMethod: 'cash4', paymentDate: '', notes: '' });
+  const [showQuickFilters, setShowQuickFilters] = useState(false);
 
   const paymentMethodLabels: Record<string, string> = {
     cash4: 'Cash',
@@ -57,6 +58,19 @@ export default function PaymentLedgerPage() {
       toast.error(error?.response?.data?.message || 'Failed to load payment ledger');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const applyDateQuickFilter = (days: number | null) => {
+    if (days === null) {
+      setFromDate('');
+      setToDate('');
+    } else {
+      const to = new Date();
+      const from = new Date();
+      from.setDate(from.getDate() - days);
+      setFromDate(from.toISOString().slice(0, 10));
+      setToDate(to.toISOString().slice(0, 10));
     }
   };
 
@@ -148,18 +162,24 @@ export default function PaymentLedgerPage() {
         ])
       ).sort((a: string, b: string) => a.localeCompare(b));
 
-      const headerRow = ['S.N', 'DATE', 'CUSTOMER NAME', 'ADDRESS', 'FONEPAY', 'CASH', 'COD', 'REMARKS', ...productNames, 'TOTAL PRODUCT'];
+      const headerRow = ['S.N', 'DATE', 'CUSTOMER NAME', 'ADDRESS', 'ORIGINAL AMOUNT', 'DISCOUNT', 'FINAL AMOUNT', 'FONEPAY', 'CASH', 'COD', 'REMARKS', ...productNames, 'TOTAL PRODUCT'];
       const dataRows = ledgerRows.map((entry: any, index: number) => {
         const quantityMap = getProductQuantityMap(entry);
         const method = String(entry.paymentMethod || 'cash').toLowerCase();
         const fonepay = method === 'fonepay' || method === 'phonepay' ? Number(entry.amount || 0) : 0;
         const cash = method === 'cash' ? Number(entry.amount || 0) : 0;
         const cod = method === 'cod' ? Number(entry.amount || 0) : 0;
+        const originalAmount = Number(entry.originalAmount || entry.subtotal || entry.amount || 0);
+        const discountAmount = Number(entry.discountAmount || 0);
+        const finalAmount = Number(entry.amount || 0);
         const row: Array<string | number> = [
           index + 1,
           entry.paymentDate || (entry.createdAt ? new Date(entry.createdAt).toISOString().slice(0, 10) : ''),
           entry.customerName || 'Walk-in Customer',
           entry.address || '',
+          originalAmount || '',
+          discountAmount || '',
+          finalAmount || '',
           fonepay || '',
           cash || '',
           cod || '',
@@ -306,15 +326,16 @@ export default function PaymentLedgerPage() {
       </div>
 
       <div className="overflow-x-auto rounded-[2rem] border border-slate-200 bg-white shadow-xl">
-        <div className="min-w-[1200px]">
-          <div className="grid gap-0 border-b border-slate-200 bg-slate-100 px-6 py-4 text-sm font-semibold uppercase tracking-[0.2em] text-slate-500 md:grid-cols-[1.1fr_1fr_1.1fr_0.8fr_0.7fr_0.7fr_1fr_0.7fr]">
+        <div className="min-w-[1400px]">
+          <div className="grid gap-0 border-b border-slate-200 bg-slate-100 px-6 py-4 text-sm font-semibold uppercase tracking-[0.2em] text-slate-500 md:grid-cols-[1fr_1fr_1.1fr_0.75fr_0.75fr_0.75fr_0.7fr_0.7fr_0.8fr]">
             <span>Order #</span>
             <span>Customer</span>
             <span>Products</span>
-            <span>Amount</span>
+            <span>Original</span>
+            <span>Discount</span>
+            <span>Final</span>
             <span>Method</span>
             <span>Date</span>
-            <span>Notes</span>
             <span>Actions</span>
           </div>
           {loading ? (
@@ -323,25 +344,31 @@ export default function PaymentLedgerPage() {
             <div className="p-10 text-center text-slate-500">No ledger entries yet.</div>
           ) : (
             <div className="divide-y divide-slate-200">
-              {entries.map((entry: any) => (
-                <div key={entry._id} className="grid gap-4 px-6 py-5 md:grid-cols-[1.1fr_1fr_1.1fr_0.8fr_0.7fr_0.7fr_1fr_0.7fr]">
-                  <div className="font-semibold text-slate-900">{entry.orderNumber || entry.orderId || '—'}</div>
-                  <div className="text-slate-800">{entry.customerName || '—'}</div>
-                  <div className="text-sm text-slate-700">{entry.products || '—'}</div>
-                  <div className="font-semibold text-slate-900">RS {Number(entry.amount || 0).toLocaleString()}</div>
-                  <div className="text-slate-700">{entry.paymentMethod ? formatPaymentMethod(entry.paymentMethod) : '—'}</div>
-                  <div className="text-slate-700">{entry.paymentDate || (entry.createdAt ? new Date(entry.createdAt).toLocaleDateString() : '—')}</div>
-                  <div className="text-sm text-slate-600">{entry.notes || '—'}</div>
-                  <div className="flex items-center justify-start gap-2">
-                    <button type="button" onClick={() => handleEditEntry(entry)} className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100">
-                      <Pencil className="h-4 w-4" /> Edit
-                    </button>
-                    <button type="button" onClick={() => void handleDeleteEntry(entry._id)} className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-100">
-                      <Trash2 className="h-4 w-4" /> Delete
-                    </button>
+              {entries.map((entry: any) => {
+                const originalAmount = Number(entry.originalAmount || entry.subtotal || entry.amount || 0);
+                const discountAmount = Number(entry.discountAmount || 0);
+                const finalAmount = Number(entry.amount || 0);
+                return (
+                  <div key={entry._id} className="grid gap-4 px-6 py-5 md:grid-cols-[1fr_1fr_1.1fr_0.75fr_0.75fr_0.75fr_0.7fr_0.7fr_0.8fr]">
+                    <div className="font-semibold text-slate-900">{entry.orderNumber || entry.orderId || '—'}</div>
+                    <div className="text-slate-800">{entry.customerName || '—'}</div>
+                    <div className="text-sm text-slate-700">{entry.products || '—'}</div>
+                    <div className="text-sm text-slate-700">RS {originalAmount.toLocaleString()}</div>
+                    <div className="text-sm font-medium text-rose-600">{discountAmount > 0 ? `- RS ${discountAmount.toLocaleString()}` : '—'}</div>
+                    <div className="font-semibold text-slate-900">RS {finalAmount.toLocaleString()}</div>
+                    <div className="text-slate-700">{entry.paymentMethod ? formatPaymentMethod(entry.paymentMethod) : '—'}</div>
+                    <div className="text-slate-700">{entry.paymentDate || (entry.createdAt ? new Date(entry.createdAt).toLocaleDateString() : '—')}</div>
+                    <div className="flex items-center justify-start gap-2">
+                      <button type="button" onClick={() => handleEditEntry(entry)} className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100">
+                        <Pencil className="h-4 w-4" /> Edit
+                      </button>
+                      <button type="button" onClick={() => void handleDeleteEntry(entry._id)} className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-100">
+                        <Trash2 className="h-4 w-4" /> Delete
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

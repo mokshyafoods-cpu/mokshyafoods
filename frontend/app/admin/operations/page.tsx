@@ -35,6 +35,8 @@ export default function AdminOperationsPage() {
   const [batchForm, setBatchForm] = useState({ batchNumber: '', productName: '', quantityProduced: '0', unit: 'pcs', notes: '' });
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const PAGE_SIZE_RAW = 8;
+  const PAGE_SIZE_BATCH = 6;
 
   const loadData = async () => {
     setIsLoading(true);

@@ -29,12 +29,12 @@ export default function AdminMessagesPage() {
 
   return (
     <div className="space-y-8">
-      <div className="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-xl">
-        <p className="text-sm uppercase tracking-[0.3em] text-slate-400">Contact</p>
-        <h1 className="mt-3 text-4xl font-semibold text-slate-900">Customer contact inbox</h1>
-        <p className="mt-4 text-sm text-slate-500">
-          This panel is kept lightweight with a few example conversations so the contact area feels complete while the store is being finalized.
-        </p>
+      <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-xl">
+        <div>
+          <p className="text-sm uppercase tracking-[0.3em] text-slate-400">Contact</p>
+          <h1 className="mt-2 text-3xl font-semibold text-slate-900">Customer Messages</h1>
+          <p className="mt-2 text-sm text-slate-500">Review and manage customer inquiries and bulk order requests.</p>
+        </div>
       </div>
 
       <div className="overflow-x-auto rounded-[2rem] border border-slate-200 bg-white shadow-xl">

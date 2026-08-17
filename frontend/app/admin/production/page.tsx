@@ -120,74 +120,157 @@ export default function AdminProductionPage() {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-[2rem] border border-slate-800/70 bg-slate-950/70 p-6 text-white shadow-xl">
-        <p className="text-sm uppercase tracking-[0.3em] text-slate-400">Production</p>
-        <h1 className="mt-2 text-3xl font-semibold">Batch production</h1>
-      </div>
-
-      <div className="grid gap-4 xl:grid-cols-[1fr_auto]">
-        <div className="grid gap-4 md:grid-cols-3">
-          <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
-            <p className="text-sm uppercase tracking-[0.3em] text-slate-400">Total produced</p>
-            <p className="mt-3 text-3xl font-semibold text-slate-900">{totalProduced}</p>
+      <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-xl">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+          <div>
+            <p className="text-sm uppercase tracking-[0.3em] text-slate-400">Production</p>
+            <h1 className="mt-2 text-3xl font-semibold text-slate-900">Batch Production</h1>
+            <p className="mt-2 text-sm text-slate-500">Create and manage production batches of your products.</p>
           </div>
-          <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
-            <p className="text-sm uppercase tracking-[0.3em] text-slate-400">Total batches</p>
-            <p className="mt-3 text-3xl font-semibold text-slate-900">{total}</p>
-          </div>
-          <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
-            <p className="text-sm uppercase tracking-[0.3em] text-slate-400">Search</p>
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Product name" className="mt-3 w-full rounded-2xl border border-slate-300 px-3 py-2 text-sm" />
+          <div className="flex flex-wrap gap-2">
+            <button type="button" className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-100">POS Dashboard</button>
+            <button type="button" className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary/90">
+              <span className="text-lg leading-none">+</span> Add Batch
+            </button>
+            <button type="button" className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-100">Logout</button>
           </div>
         </div>
+      </div>
 
-        <div className="flex items-center justify-end">
-          <button type="button" onClick={exportProductionExcel} className="inline-flex items-center gap-2 rounded-2xl border border-slate-300 bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+          <p className="text-[11px] uppercase tracking-[0.28em] text-slate-400">Total Produced</p>
+          <p className="mt-4 text-3xl font-semibold text-slate-900">{totalProduced}</p>
+          <p className="mt-2 text-xs text-slate-500">Total quantity</p>
+        </div>
+        <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+          <p className="text-[11px] uppercase tracking-[0.28em] text-slate-400">Total Batches</p>
+          <p className="mt-4 text-3xl font-semibold text-slate-900">{total}</p>
+          <p className="mt-2 text-xs text-slate-500">Total batches</p>
+        </div>
+        <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+          <p className="text-[11px] uppercase tracking-[0.28em] text-slate-400">This Month</p>
+          <p className="mt-4 text-3xl font-semibold text-slate-900">{rows.filter((item) => new Date(item.productionDate).getMonth() === new Date().getMonth()).length}</p>
+          <p className="mt-2 text-xs text-slate-500">Batches produced</p>
+        </div>
+        <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+          <p className="text-[11px] uppercase tracking-[0.28em] text-slate-400">Search</p>
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search product or batch..." className="mt-4 w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-500 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200" />
+          <button type="button" onClick={exportProductionExcel} className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-100">
             <Download className="h-4 w-4" /> Export Excel
           </button>
         </div>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[1fr_0.95fr]">
-        <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-xl font-semibold text-slate-900">Add batch</h2>
-          <form className="mt-4 space-y-3" onSubmit={handleSubmit}>
-            <input value={form.batchNumber} onChange={(e) => setForm({ ...form, batchNumber: e.target.value })} placeholder="Batch number" className="w-full rounded-2xl border border-slate-300 px-4 py-3" />
-            <input value={form.productName} onChange={(e) => setForm({ ...form, productName: e.target.value })} placeholder="Product name" className="w-full rounded-2xl border border-slate-300 px-4 py-3" required />
-            <input type="number" value={form.quantityProduced} onChange={(e) => setForm({ ...form, quantityProduced: e.target.value })} placeholder="Quantity produced" className="w-full rounded-2xl border border-slate-300 px-4 py-3" />
-            <input value={form.staffInCharge} onChange={(e) => setForm({ ...form, staffInCharge: e.target.value })} placeholder="Staff in charge" className="w-full rounded-2xl border border-slate-300 px-4 py-3" />
-            <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Notes" className="min-h-[90px] w-full rounded-2xl border border-slate-300 px-4 py-3" />
-            <button type="submit" className="rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-white">Save batch</button>
+      <div className="grid gap-6 xl:grid-cols-[1fr_1.2fr]">
+        <div className="rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-sm">
+          <h2 className="text-xl font-semibold text-slate-900">Add New Batch</h2>
+          <form className="mt-5 space-y-4" onSubmit={handleSubmit}>
+            <label className="block">
+              <span className="mb-2 block text-sm font-medium text-slate-700">Batch number <span className="text-rose-500">*</span></span>
+              <input value={form.batchNumber} onChange={(e) => setForm({ ...form, batchNumber: e.target.value })} placeholder="e.g. BATCH-0001" className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-500 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200" required />
+            </label>
+            <label className="block">
+              <span className="mb-2 block text-sm font-medium text-slate-700">Product <span className="text-rose-500">*</span></span>
+              <select value={form.productName} onChange={(e) => setForm({ ...form, productName: e.target.value })} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200" required>
+                <option value="">Select product</option>
+                <option value="Dried Mango">Dried Mango</option>
+                <option value="Dried Pineapple">Dried Pineapple</option>
+                <option value="Beetroot Powder">Beetroot Powder</option>
+                <option value="Orange Powder">Orange Powder</option>
+              </select>
+            </label>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="block">
+                <span className="mb-2 block text-sm font-medium text-slate-700">Quantity produced <span className="text-rose-500">*</span></span>
+                <input type="number" value={form.quantityProduced} onChange={(e) => setForm({ ...form, quantityProduced: e.target.value })} placeholder="0" className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-500 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200" required />
+              </label>
+              <label className="block">
+                <span className="mb-2 block text-sm font-medium text-slate-700">Unit</span>
+                <select className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200">
+                  <option value="kg">kg</option>
+                  <option value="pcs">pcs</option>
+                  <option value="pack">pack</option>
+                </select>
+              </label>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="block">
+                <span className="mb-2 block text-sm font-medium text-slate-700">Production date <span className="text-rose-500">*</span></span>
+                <input type="date" value={form.productionDate || new Date().toISOString().slice(0, 10)} onChange={(e) => setForm({ ...form, productionDate: e.target.value })} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200" required />
+              </label>
+              <label className="block">
+                <span className="mb-2 block text-sm font-medium text-slate-700">Start time</span>
+                <input type="time" className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200" />
+              </label>
+            </div>
+            <label className="block">
+              <span className="mb-2 block text-sm font-medium text-slate-700">Produced by</span>
+              <input value={form.staffInCharge} onChange={(e) => setForm({ ...form, staffInCharge: e.target.value })} placeholder="Staff member name" className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-500 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200" />
+            </label>
+            <label className="block">
+              <span className="mb-2 block text-sm font-medium text-slate-700">Notes</span>
+              <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Notes" className="min-h-[96px] w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-500 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200" />
+            </label>
+            <button type="submit" className="w-full rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-primary/90">Save batch</button>
           </form>
         </div>
 
-        <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-xl font-semibold text-slate-900">Batches</h2>
-          <div className="mt-4 space-y-3">
-            {rows.length === 0 ? <p className="text-sm text-slate-500">No batches found.</p> : rows.map((item) => (
-              <div key={item._id} className="rounded-2xl border border-slate-200 p-4">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                  <button type="button" onClick={() => setSelectedBatch(item)} className="w-full text-left sm:max-w-[85%]">
-                    <div className="flex items-center justify-between gap-3">
-                      <div>
-                        <p className="font-semibold text-slate-900">{item.productName}</p>
-                        <p className="text-sm text-slate-500">{item.batchNumber}</p>
-                      </div>
-                      <div className="text-right text-sm text-slate-600">
-                        <p>{item.quantityProduced}</p>
-                        <p>{new Date(item.productionDate).toLocaleDateString('en-IN')}</p>
-                      </div>
-                    </div>
-                  </button>
-                  <button type="button" onClick={() => handleEditBatch(item)} className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100">
-                    <Pencil className="h-4 w-4" /> Edit
-                  </button>
-                </div>
-              </div>            ))}
-          </div>          <div className="mt-4 flex items-center justify-between">
-            <button disabled={page <= 1} onClick={() => loadData(page - 1)} className="rounded-2xl border border-slate-300 px-4 py-2 text-sm disabled:opacity-50">Previous</button>
-            <span className="text-sm text-slate-500">Page {page}</span>
-            <button disabled={rows.length < limit} onClick={() => loadData(page + 1)} className="rounded-2xl border border-slate-300 px-4 py-2 text-sm disabled:opacity-50">Next</button>
+        <div className="rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-xl font-semibold text-slate-900">Batches</h2>
+            <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">{total} total</span>
+          </div>
+
+          {rows.length === 0 ? (
+            <div className="mt-6 flex min-h-[260px] flex-col items-center justify-center rounded-[1.5rem] border border-dashed border-slate-200 bg-slate-50 px-6 text-center">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">📦</div>
+              <h3 className="mt-5 text-2xl font-semibold text-slate-900">No batches found</h3>
+              <p className="mt-2 max-w-sm text-sm text-slate-500">Create your first production batch to get started.</p>
+              <button type="button" className="mt-5 rounded-full bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary/90">Add Batch</button>
+            </div>
+          ) : (
+            <div className="mt-5 overflow-x-auto">
+              <table className="min-w-full text-left text-sm">
+                <thead>
+                  <tr className="border-b border-slate-200 bg-slate-50 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">
+                    <th className="px-3 py-3">Batch #</th>
+                    <th className="px-3 py-3">Product</th>
+                    <th className="px-3 py-3">Qty</th>
+                    <th className="px-3 py-3">Unit</th>
+                    <th className="px-3 py-3">Date</th>
+                    <th className="px-3 py-3">Produced By</th>
+                    <th className="px-3 py-3">Status</th>
+                    <th className="px-3 py-3">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((item) => (
+                    <tr key={item._id} className="border-b border-slate-200 last:border-b-0 hover:bg-slate-50/70">
+                      <td className="px-3 py-3 font-medium text-slate-800">{item.batchNumber}</td>
+                      <td className="px-3 py-3 text-slate-700">{item.productName}</td>
+                      <td className="px-3 py-3 text-slate-700">{item.quantityProduced}</td>
+                      <td className="px-3 py-3 text-slate-700">kg</td>
+                      <td className="px-3 py-3 text-slate-700">{new Date(item.productionDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
+                      <td className="px-3 py-3 text-slate-700">{item.staffInCharge || '—'}</td>
+                      <td className="px-3 py-3"><span className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">Completed</span></td>
+                      <td className="px-3 py-3">
+                        <div className="flex items-center gap-2">
+                          <button type="button" onClick={() => setSelectedBatch(item)} className="rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1.5 text-xs font-semibold text-sky-700 hover:bg-sky-100">View</button>
+                          <button type="button" onClick={() => handleEditBatch(item)} className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100">Edit</button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          <div className="mt-5 flex items-center justify-between gap-3">
+            <button disabled={page <= 1} onClick={() => loadData(page - 1)} className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 disabled:cursor-not-allowed disabled:opacity-50">Previous</button>
+            <span className="text-sm font-medium text-slate-600">Page {page}</span>
+            <button disabled={rows.length < limit} onClick={() => loadData(page + 1)} className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 disabled:cursor-not-allowed disabled:opacity-50">Next</button>
           </div>
         </div>
       </div>

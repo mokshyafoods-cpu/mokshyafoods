@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { AlertTriangle, ArrowLeft, BarChart3, Package, ShoppingBag, Users, Settings, LogOut, Menu, X, PlusCircle, BookOpenCheck, Factory, FileBarChart, Boxes } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, BarChart3, Package, ShoppingBag, Users, Settings, LogOut, Menu, X, PlusCircle, BookOpenCheck, Factory, FileBarChart, Boxes, ChevronDown, Store } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
 type SectionKey = 'overview' | 'orders' | 'products' | 'low-stock' | 'customers' | 'reviews' | 'payment-ledger' | 'raw-materials' | 'production' | 'reports' | 'operations' | 'settings';
@@ -153,8 +153,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               </div>
               <div>
                 <div className="mb-10 space-y-2">
-                  <p className="text-[11px] uppercase tracking-[0.38em] text-slate-400">Mokshya Admin</p>
-                  <h2 className="text-2xl font-semibold text-white">Control Panel</h2>
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-500/15 text-sky-200 ring-1 ring-sky-400/20">
+                      <Store className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase tracking-[0.32em] text-slate-400">Mokshya Foods</p>
+                      <h2 className="text-lg font-semibold text-white">Operations Hub</h2>
+                    </div>
+                  </div>
                 </div>
 
                 <nav className="space-y-0.5">
@@ -166,7 +173,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                         href={item.href}
                         onClick={() => setNavOpen(false)}
                         className={`relative z-30 flex w-full cursor-pointer items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium transition select-none pointer-events-auto focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-300 ${
-                          active ? 'bg-sky-400/15 text-white shadow-[inset_0_0_0_1px_rgba(125,211,252,0.25)]' : 'text-slate-300 hover:bg-white/10 hover:text-white'
+                          active ? 'bg-sky-500/12 text-white shadow-[inset_0_0_0_1px_rgba(96,165,250,0.3)] ring-1 ring-sky-400/15' : 'text-slate-300 hover:bg-white/10 hover:text-white'
                         }`}
                         aria-current={active ? 'page' : undefined}
                         aria-label={`Open ${item.label}`}
@@ -180,10 +187,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               </div>
 
               <div className="space-y-4 border-t border-white/10 pt-5">
-                <div className="rounded-2xl border border-slate-700/70 bg-slate-950/50 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur">
-                  <p className="text-[11px] uppercase tracking-[0.3em] text-slate-400">Logged in as</p>
-                  <p className="mt-2 font-medium text-white">{user.name}</p>
-                  <p className="text-sm text-slate-400">{user.email}</p>
+                <div className="flex items-center justify-between rounded-2xl border border-slate-700/70 bg-slate-950/50 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-sky-500/15 text-sm font-semibold text-sky-100 ring-1 ring-sky-400/25">B</div>
+                    <div>
+                      <p className="font-medium text-white">Bishal Banjade</p>
+                      <p className="text-xs text-slate-400">Admin</p>
+                    </div>
+                  </div>
+                  <ChevronDown className="h-4 w-4 text-slate-400" />
                 </div>
                 <button
                   type="button"

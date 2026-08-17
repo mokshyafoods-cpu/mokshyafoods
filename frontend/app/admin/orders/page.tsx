@@ -268,67 +268,73 @@ export default function AdminOrdersPage() {
 
   return (
     <div className="space-y-8">
-      <div className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-xl sm:p-6">
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-          <div className="max-w-[480px]">
+      <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-xl">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+          <div>
             <p className="text-sm uppercase tracking-[0.3em] text-slate-400">Orders</p>
-            <h1 className="mt-3 text-3xl font-semibold text-slate-900 sm:text-4xl">Order overview</h1>
-            <p className="mt-3 text-sm text-slate-500">
-              Review the current order queue, update delivery status, and keep fulfillment moving smoothly.
-            </p>
+            <h1 className="mt-2 text-3xl font-semibold text-slate-900">Order Management</h1>
+            <p className="mt-2 text-sm text-slate-500">Review, search, and manage all orders with payment and fulfillment status.</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <span className="rounded-full bg-sky-50 px-3 py-2 text-sm font-semibold text-sky-700 border border-sky-200">{totalOrders} total orders</span>
+            <button type="button" onClick={exportOrdersExcel} className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-100">
+              <Download className="h-4 w-4" /> Export
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-xl">
+        <div className="grid w-full gap-3 sm:grid-cols-[minmax(0,180px)_minmax(0,180px)_minmax(0,180px)_1fr] lg:grid-cols-[minmax(0,140px)_minmax(0,140px)_minmax(0,140px)_1fr]">
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5">
+            <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Filter status</label>
+            <select
+              className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-primary"
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+            >
+              {statusOptions.map((option) => (
+                <option key={option} value={option}>{option === 'all' ? 'All statuses' : option}</option>
+              ))}
+            </select>
           </div>
 
-          <div className="grid w-full max-w-[820px] gap-3 sm:grid-cols-[minmax(0,180px)_minmax(0,180px)_minmax(0,180px)] lg:ml-auto">
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5">
-              <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Filter status</label>
-              <select
-                className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-primary"
-                value={status}
-                onChange={(e) => setStatus(e.target.value)}
-              >
-                {statusOptions.map((option) => (
-                  <option key={option} value={option}>{option === 'all' ? 'All statuses' : option}</option>
-                ))}
-              </select>
-            </div>
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5">
+            <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Filter sold by</label>
+            <select
+              className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-primary"
+              value={soldBy}
+              onChange={(e) => setSoldBy(e.target.value)}
+            >
+              {soldByOptions.map((option) => (
+                <option key={option} value={option}>{option === 'all' ? 'All partners' : option}</option>
+              ))}
+            </select>
+          </div>
 
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5">
-              <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Filter sold by</label>
-              <select
-                className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-primary"
-                value={soldBy}
-                onChange={(e) => setSoldBy(e.target.value)}
-              >
-                {soldByOptions.map((option) => (
-                  <option key={option} value={option}>{option === 'all' ? 'All partners' : option}</option>
-                ))}
-              </select>
-            </div>
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5">
+            <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Filter type</label>
+            <select
+              className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-primary"
+              value={transactionType}
+              onChange={(e) => setTransactionType(e.target.value)}
+            >
+              {transactionTypeOptions.map((option) => (
+                <option key={option} value={option}>{option === 'all' ? 'All types' : option.replace(/_/g, ' ')}</option>
+              ))}
+            </select>
+          </div>
 
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5">
-              <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Filter type</label>
-              <select
-                className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-primary"
-                value={transactionType}
-                onChange={(e) => setTransactionType(e.target.value)}
-              >
-                {transactionTypeOptions.map((option) => (
-                  <option key={option} value={option}>{option === 'all' ? 'All types' : option.replace(/_/g, ' ')}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5">
-              <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Search orders</label>
-              <div className="mt-2 flex items-center gap-2 rounded-2xl bg-white px-3 py-2">
-                <Search className="h-4 w-4 text-slate-400" />
-                <input
-                  className="w-full border-none bg-transparent text-sm text-slate-900 outline-none"
-                  placeholder="Order #, name, phone"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
-              </div>
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5">
+            <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Search orders</label>
+            <div className="mt-2 flex items-center gap-2 rounded-2xl bg-white px-3 py-2">
+              <Search className="h-4 w-4 text-slate-400" />
+              <input
+                className="w-full border-none bg-transparent text-sm text-slate-900 outline-none"
+                placeholder="Order #, name, phone"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
             </div>
           </div>
         </div>

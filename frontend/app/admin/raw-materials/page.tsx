@@ -139,132 +139,174 @@ export default function AdminRawMaterialsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-[2rem] border border-slate-800/70 bg-slate-950/70 p-6 text-white shadow-xl">
-        <p className="text-sm uppercase tracking-[0.3em] text-slate-400">Raw Materials</p>
-        <h1 className="mt-2 text-3xl font-semibold">Material purchases</h1>
+      <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-xl">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+          <div>
+            <p className="text-sm uppercase tracking-[0.3em] text-slate-400">Raw Materials</p>
+            <h1 className="mt-2 text-3xl font-semibold text-slate-900">Raw Materials</h1>
+            <p className="mt-2 text-sm text-slate-500">Manage raw material purchases and track your inventory costs.</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button type="button" className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-primary/90">
+              <span className="text-lg leading-none">+</span> Add Purchase
+            </button>
+            <button type="button" onClick={exportRawMaterialsExcel} className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-100">
+              <Download className="h-4 w-4" /> Export Excel
+            </button>
+          </div>
+        </div>
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-[1fr_auto]">
-        <div className="grid gap-4 md:grid-cols-3">
-          <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
-            <p className="text-sm uppercase tracking-[0.3em] text-slate-400">This month</p>
-            <p className="mt-3 text-3xl font-semibold text-slate-900">RS {totalSpend}</p>
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+          <p className="text-[11px] uppercase tracking-[0.28em] text-slate-400">This Month&apos;s Purchases</p>
+          <p className="mt-4 text-3xl font-semibold text-slate-900">Rs {Number(totalSpend || 0).toLocaleString('en-IN')}</p>
+        </div>
+        <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+          <p className="text-[11px] uppercase tracking-[0.28em] text-slate-400">Total Purchases</p>
+          <p className="mt-4 text-3xl font-semibold text-slate-900">{total}</p>
+        </div>
+        <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+          <p className="text-[11px] uppercase tracking-[0.28em] text-slate-400">Total Amount Spent</p>
+          <p className="mt-4 text-3xl font-semibold text-slate-900">Rs {Number(totalSpend || 0).toLocaleString('en-IN')}</p>
+        </div>
+        <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+          <p className="text-[11px] uppercase tracking-[0.28em] text-slate-400">Raw Materials in Stock</p>
+          <p className="mt-4 text-3xl font-semibold text-slate-900">{rows.reduce((sum, item) => sum + Number(item.quantityPurchased || 0), 0)} kg</p>
+        </div>
+      </div>
+
+      <div className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="grid gap-3 lg:grid-cols-[1.3fr_0.9fr_0.9fr_0.6fr]">
+          <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+            Search material
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by material name" className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-500 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200" />
+          </label>
+          <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+            Start date
+            <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200" />
+          </label>
+          <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+            End date
+            <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200" />
+          </label>
+          <div className="flex items-end">
+            <button type="button" onClick={() => { setSearch(''); setStartDate(''); setEndDate(''); }} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-100">Clear filters</button>
           </div>
-          <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
-            <p className="text-sm uppercase tracking-[0.3em] text-slate-400">Total records</p>
-            <p className="mt-3 text-3xl font-semibold text-slate-900">{total}</p>
-          </div>
-          <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
-            <p className="text-sm uppercase tracking-[0.3em] text-slate-400">Filter</p>
-            <div className="mt-3 space-y-2">
+        </div>
+      </div>
+
+      <div className="grid gap-6 xl:grid-cols-[1fr_1.2fr]">
+        <div className="rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-sm">
+          <h2 className="text-xl font-semibold text-slate-900">Add Purchase</h2>
+          <form className="mt-5 space-y-4" onSubmit={handleSubmit}>
+            <label className="block">
+              <span className="mb-2 block text-sm font-medium text-slate-700">Material name <span className="text-rose-500">*</span></span>
+              <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Search or enter material name" className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-500 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200" required />
+            </label>
+            <div className="grid gap-4 sm:grid-cols-2">
               <label className="block">
-                <span className="mb-1 block text-sm font-medium text-slate-700">Search material</span>
-                <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Material name" className="w-full rounded-2xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200" />
+                <span className="mb-2 block text-sm font-medium text-slate-700">Unit <span className="text-rose-500">*</span></span>
+                <input value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })} placeholder="kg" className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-500 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200" required />
               </label>
-              <div className="grid gap-2 sm:grid-cols-2">
-                <label className="block">
-                  <span className="mb-1 block text-sm font-medium text-slate-700">Start date</span>
-                  <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="w-full rounded-2xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200" />
-                </label>
-                <label className="block">
-                  <span className="mb-1 block text-sm font-medium text-slate-700">End date</span>
-                  <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="w-full rounded-2xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200" />
-                </label>
+              <label className="block">
+                <span className="mb-2 block text-sm font-medium text-slate-700">Supplier <span className="text-rose-500">*</span></span>
+                <input value={form.supplier} onChange={(e) => setForm({ ...form, supplier: e.target.value })} placeholder="Supplier name" className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-500 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200" required />
+              </label>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="block">
+                <span className="mb-2 block text-sm font-medium text-slate-700">Quantity <span className="text-rose-500">*</span></span>
+                <input type="number" value={form.quantityPurchased} onChange={(e) => setForm({ ...form, quantityPurchased: e.target.value })} placeholder="0" className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-500 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200" required />
+              </label>
+              <label className="block">
+                <span className="mb-2 block text-sm font-medium text-slate-700">Cost per unit (Rs) <span className="text-rose-500">*</span></span>
+                <input type="number" value={form.costPerUnit} onChange={(e) => setForm({ ...form, costPerUnit: e.target.value })} placeholder="0" className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-500 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200" required />
+              </label>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="block">
+                <span className="mb-2 block text-sm font-medium text-slate-700">Travel cost (Rs)</span>
+                <input type="number" value={form.travelCost} onChange={(e) => setForm({ ...form, travelCost: e.target.value })} placeholder="0" className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-500 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200" />
+              </label>
+              <label className="block">
+                <span className="mb-2 block text-sm font-medium text-slate-700">Purchase date <span className="text-rose-500">*</span></span>
+                <input type="date" value={form.purchaseDate} onChange={(e) => setForm({ ...form, purchaseDate: e.target.value })} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200" required />
+              </label>
+            </div>
+            <label className="block">
+              <span className="mb-2 block text-sm font-medium text-slate-700">Notes</span>
+              <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Additional notes" className="min-h-[96px] w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-500 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200" />
+            </label>
+
+            <div className="rounded-2xl border border-sky-200 bg-sky-50 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.25em] text-sky-700">Total Cost</p>
+                  <p className="mt-2 text-3xl font-semibold text-slate-900">Rs {Number(computeTotalCost() || 0).toLocaleString('en-IN')}</p>
+                </div>
               </div>
+              <p className="mt-2 text-xs text-slate-500">Quantity × Cost per unit + Travel cost</p>
             </div>
-          </div>
-        </div>
 
-        <div className="flex items-center justify-end">
-          <button type="button" onClick={exportRawMaterialsExcel} className="inline-flex items-center gap-2 rounded-2xl border border-slate-300 bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800">
-            <Download className="h-4 w-4" /> Export Excel
-          </button>
-        </div>
-      </div>
-
-      <div className="grid gap-6 xl:grid-cols-[1fr_0.95fr]">
-        <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-xl font-semibold text-slate-900">Add purchase</h2>
-          <form className="mt-4 space-y-4" onSubmit={handleSubmit}>
-            <label className="block">
-              <span className="mb-1 block text-sm font-medium text-slate-700">Material name</span>
-              <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Material name" className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-500 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200" required />
-            </label>
-            <div className="grid gap-3 sm:grid-cols-3">
-              <label className="block">
-                <span className="mb-1 block text-sm font-medium text-slate-700">Unit</span>
-                <input value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })} placeholder="Unit" className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-500 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200" />
-              </label>
-              <label className="block">
-                <span className="mb-1 block text-sm font-medium text-slate-700">Supplier</span>
-                <input value={form.supplier} onChange={(e) => setForm({ ...form, supplier: e.target.value })} placeholder="Supplier" className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-500 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200" />
-              </label>
-              <label className="block">
-                <span className="mb-1 block text-sm font-medium text-slate-700">Qty purchased</span>
-                <input type="number" value={form.quantityPurchased} onChange={(e) => setForm({ ...form, quantityPurchased: e.target.value })} placeholder="Qty purchased" className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-500 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200" />
-              </label>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-3">
-              <label className="block">
-                <span className="mb-1 block text-sm font-medium text-slate-700">Cost per unit</span>
-                <input type="number" value={form.costPerUnit} onChange={(e) => setForm({ ...form, costPerUnit: e.target.value })} placeholder="Cost per unit" className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-500 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200" />
-              </label>
-              <label className="block">
-                <span className="mb-1 block text-sm font-medium text-slate-700">Travel cost (optional)</span>
-                <input type="number" value={form.travelCost} onChange={(e) => setForm({ ...form, travelCost: e.target.value })} placeholder="Travel cost" className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-500 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200" />
-              </label>
-              <label className="block">
-                <span className="mb-1 block text-sm font-medium text-slate-700">Purchase date</span>
-                <input type="date" value={form.purchaseDate} onChange={(e) => setForm({ ...form, purchaseDate: e.target.value })} className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200" />
-              </label>
-            </div>
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900">
-              <p className="font-medium text-slate-700">Total cost</p>
-              <p className="mt-1 text-xl font-semibold text-slate-900">RS {computeTotalCost()}</p>
-              <p className="text-xs text-slate-500">Quantity × cost per unit + travel cost.</p>
-            </div>
-            <label className="block">
-              <span className="mb-1 block text-sm font-medium text-slate-700">Notes</span>
-              <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Notes" className="min-h-[90px] w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-500 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200" />
-            </label>
-            <button type="submit" className="rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-white">Save purchase</button>
+            <button type="submit" className="w-full rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-primary/90">Save Purchase</button>
           </form>
         </div>
 
-        <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-xl font-semibold text-slate-900">Purchases</h2>
-          <div className="mt-4 space-y-3">
-            {rows.length === 0 ? <p className="text-sm text-slate-500">No purchases found.</p> : rows.map((item) => (
-              <div key={item._id} className="rounded-2xl border border-slate-200 p-4">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <p className="font-semibold text-slate-900">{item.name}</p>
-                    <p className="text-sm text-slate-500">{item.supplier || 'No supplier'} • {item.quantityPurchased} {item.unit}</p>
-                    <p className="text-sm text-slate-500">Travel cost: RS {Number(item.travelCost || 0)}</p>
-                  </div>
-                  <div className="flex items-center justify-between gap-4 sm:justify-end">
-                    <div className="text-right text-sm text-slate-600">
-                      <p>Total: RS {item.totalCost}</p>
-                      <p>{new Date(item.purchaseDate).toLocaleDateString('en-IN')}</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button type="button" onClick={() => handleEditRawMaterial(item)} className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100">
-                        <Pencil className="h-4 w-4" /> Edit
-                      </button>
-                      <button type="button" onClick={() => void handleDeleteRawMaterial(item._id)} className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-100">
-                        <Trash2 className="h-4 w-4" /> Delete
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
+        <div className="rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-xl font-semibold text-slate-900">Purchase History</h2>
+            <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">{total} records</span>
           </div>
 
-          <div className="mt-4 flex items-center justify-between">
-            <button disabled={page <= 1} onClick={() => loadData(page - 1)} className="rounded-2xl border border-slate-300 px-4 py-2 text-sm disabled:opacity-50">Previous</button>
-            <span className="text-sm text-slate-500">Page {page}</span>
-            <button disabled={rows.length < limit} onClick={() => loadData(page + 1)} className="rounded-2xl border border-slate-300 px-4 py-2 text-sm disabled:opacity-50">Next</button>
+          <div className="mt-5 overflow-x-auto">
+            <table className="min-w-full text-left text-sm">
+              <thead>
+                <tr className="border-b border-slate-200 bg-slate-50 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">
+                  <th className="px-3 py-3">Material</th>
+                  <th className="px-3 py-3">Supplier</th>
+                  <th className="px-3 py-3">Qty</th>
+                  <th className="px-3 py-3">Unit</th>
+                  <th className="px-3 py-3">Cost / Unit</th>
+                  <th className="px-3 py-3">Material Cost</th>
+                  <th className="px-3 py-3">Travel</th>
+                  <th className="px-3 py-3">Total</th>
+                  <th className="px-3 py-3">Date</th>
+                  <th className="px-3 py-3">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.length === 0 ? (
+                  <tr>
+                    <td colSpan={10} className="px-3 py-12 text-center text-slate-500">No purchases found for the selected filter.</td>
+                  </tr>
+                ) : rows.map((item) => (
+                  <tr key={item._id} className="border-b border-slate-200 last:border-b-0 hover:bg-slate-50/70">
+                    <td className="px-3 py-3 font-medium text-slate-800">{item.name}</td>
+                    <td className="px-3 py-3 text-slate-600">{item.supplier || '—'}</td>
+                    <td className="px-3 py-3 text-slate-600">{item.quantityPurchased}</td>
+                    <td className="px-3 py-3 text-slate-600">{item.unit}</td>
+                    <td className="px-3 py-3 text-slate-600">Rs {Number(item.costPerUnit || 0).toLocaleString('en-IN')}</td>
+                    <td className="px-3 py-3 text-slate-600">Rs {Number((item.quantityPurchased || 0) * (item.costPerUnit || 0)).toLocaleString('en-IN')}</td>
+                    <td className="px-3 py-3 text-slate-600">Rs {Number(item.travelCost || 0).toLocaleString('en-IN')}</td>
+                    <td className="px-3 py-3 font-medium text-slate-800">Rs {Number(item.totalCost || 0).toLocaleString('en-IN')}</td>
+                    <td className="px-3 py-3 text-slate-600">{new Date(item.purchaseDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
+                    <td className="px-3 py-3">
+                      <div className="flex items-center gap-2">
+                        <button type="button" onClick={() => handleEditRawMaterial(item)} className="rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1.5 text-xs font-semibold text-sky-700 hover:bg-sky-100">Edit</button>
+                        <button type="button" onClick={() => void handleDeleteRawMaterial(item._id)} className="rounded-full border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-100">Delete</button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="mt-5 flex items-center justify-between gap-3">
+            <button disabled={page <= 1} onClick={() => loadData(page - 1)} className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 disabled:cursor-not-allowed disabled:opacity-50">Previous</button>
+            <span className="text-sm font-medium text-slate-600">Page {page}</span>
+            <button disabled={rows.length < limit} onClick={() => loadData(page + 1)} className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 disabled:cursor-not-allowed disabled:opacity-50">Next</button>
           </div>
         </div>
       </div>

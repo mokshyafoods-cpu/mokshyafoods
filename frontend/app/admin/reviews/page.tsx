@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { reviewAPI } from '@/services/api';
 import { toast } from 'sonner';
-import { Star } from 'lucide-react';
+import { Star, Search, RefreshCcw } from 'lucide-react';
 
 export default function AdminReviewsPage() {
   const [reviews, setReviews] = useState<any[]>([]);
@@ -56,10 +56,29 @@ export default function AdminReviewsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-[2rem] border border-slate-800/70 bg-slate-950/70 p-6 text-white shadow-xl">
-        <p className="text-sm uppercase tracking-[0.3em] text-slate-400">Reviews</p>
-        <h1 className="mt-2 text-3xl font-semibold">Customer reviews</h1>
-        <p className="mt-2 text-sm text-slate-400">View all customer reviews with user and product details.</p>
+      <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-xl">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+          <div>
+            <p className="text-sm uppercase tracking-[0.3em] text-slate-400">Reviews</p>
+            <h1 className="mt-2 text-3xl font-semibold text-slate-900">Customer Reviews</h1>
+            <p className="mt-2 text-sm text-slate-500">Moderate and manage all product reviews from customers.</p>
+          </div>
+          <span className="rounded-full bg-sky-50 px-4 py-2.5 text-sm font-semibold text-sky-700 border border-sky-200">{reviews.length} total reviews</span>
+        </div>
+      </div>
+
+      <div className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-xl">
+        <div className="flex items-center gap-3">
+          <div className="flex-1">
+            <div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5">
+              <Search className="h-4 w-4 text-slate-400" />
+              <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by product, customer, or review content" className="w-full border-none bg-transparent text-sm text-slate-900 outline-none" />
+            </div>
+          </div>
+          <button type="button" onClick={loadReviews} className="rounded-full border border-slate-200 bg-slate-50 p-2.5 text-slate-700 hover:bg-slate-100">
+            <RefreshCcw className="h-4 w-4" />
+          </button>
+        </div>
       </div>
 
       <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">

@@ -165,30 +165,7 @@ function ProductsPageContent() {
           : Array.isArray(payload)
             ? payload
             : [];
-
-        const normalizedQuery = searchQuery.trim().toLowerCase();
-        const prioritizedProducts = [...nextProducts].sort((a: any, b: any) => {
-          const leftName = String(a?.name || '').toLowerCase();
-          const rightName = String(b?.name || '').toLowerCase();
-
-          if (!normalizedQuery) return 0;
-
-          const leftStarts = leftName.startsWith(normalizedQuery) ? 0 : 1;
-          const rightStarts = rightName.startsWith(normalizedQuery) ? 0 : 1;
-
-          if (leftStarts !== rightStarts) return leftStarts - rightStarts;
-
-          const leftIndex = leftName.indexOf(normalizedQuery);
-          const rightIndex = rightName.indexOf(normalizedQuery);
-          const leftRank = leftIndex === -1 ? Number.MAX_SAFE_INTEGER : leftIndex;
-          const rightRank = rightIndex === -1 ? Number.MAX_SAFE_INTEGER : rightIndex;
-
-          if (leftRank !== rightRank) return leftRank - rightRank;
-
-          return leftName.localeCompare(rightName);
-        });
-
-        setProducts(prioritizedProducts);
+        setProducts(nextProducts);
       } catch (error) {
         console.error('Error loading products:', error);
         setLoadError('We could not load the products right now. Please refresh the page or try again in a moment.');

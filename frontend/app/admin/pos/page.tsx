@@ -417,6 +417,79 @@ export default function POSPage() {
     }
   };
 
+  const handlePrint = () => {
+    if (!receiptOrder) {
+      toast.error('No receipt to print. Complete an order first.');
+      return;
+    }
+    setShowReceipt(true);
+  };
+
+  const downloadBill = () => {
+    if (!receiptOrder) {
+      toast.error('No receipt to download. Complete an order first.');
+      return;
+    }
+
+    const billNumber = receiptOrder.invoiceNumber || 'BILL-TBD';
+    const billDate = new Date(receiptOrder.createdAt).toLocaleDateString('en-IN');
+    const discountAmount = Number(receiptOrder.discountAmount || 0);
+    const subtotal = Number(receiptOrder.subtotal || 0);
+    const total = Number(receiptOrder.total || 0);
+    const originalAmount = subtotal > 0 ? subtotal : total;
+
+    const billContent = `
+MOKSHYA FOODS
+Tilottama-01, Banbitika, Rupandehi • Lumbini Zone
+PAN: 624385631
+
+═════════════════════════════════════════
+BILL NO: ${billNumber}
+DATE: ${billDate}
+═════════════════════════════════════════
+
+CUSTOMER: ${receiptOrder.user?.name || 'Walk-in Customer'}
+CONTACT: ${receiptOrder.user?.phone || '—'}
+TRANSACTION TYPE: ${receiptOrder.transactionType === 'partner_product_taken' ? 'Partner Product Taken' : receiptOrder.transactionType === 'partner_sale' ? 'Partner Sale' : 'Customer Sale'}
+SOLD BY: ${receiptOrder.soldBy || 'Not Recorded'}
+
+═════════════════════════════════════════
+ITEMS
+═════════════════════════════════════════
+${receiptOrder.items
+  .map(
+    (item: any) =>
+      `${item.name || 'Product'}
+  ${item.quantity} × Rs ${formatCurrency(item.price)} = Rs ${formatCurrency(item.subtotal)}`
+  )
+  .join('\n\n')}
+
+═════════════════════════════════════════
+SUMMARY
+═════════════════════════════════════════
+Subtotal:              Rs ${formatCurrency(originalAmount)}
+${discountAmount > 0 ? `Discount:              - Rs ${formatCurrency(discountAmount)}\n` : ''}TOTAL:                 Rs ${formatCurrency(total)}
+
+PAYMENT METHOD: ${formatPaymentMethod(receiptOrder.paymentMethod)}
+${receiptOrder.paymentMethod === 'cash' ? `Tendered:              Rs ${formatCurrency(receiptOrder.tenderedAmount)}
+Change:                Rs ${formatCurrency(receiptOrder.changeDue)}\n` : ''}
+═════════════════════════════════════════
+Thank you for shopping with Mokshya Foods!
+═════════════════════════════════════════
+    `;
+
+    const blob = new Blob([billContent], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `Bill-${billNumber}-${billDate}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast.success('Bill downloaded successfully');
+  };
+
   const confirmPayment = async () => {
     if (payButtonLoading) return;
     if (cart.length === 0) {
@@ -517,9 +590,25 @@ export default function POSPage() {
   return (
     <>
       <div className="min-h-screen overflow-x-hidden bg-slate-50 p-3 sm:p-4 lg:p-6">
-        <div className="mx-auto max-w-7xl screen-only print:hidden">
+        <div className="mx-auto max-w-7xl screen-only print:hidden space-y-8">
+          <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-xl">
+            <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+              <div>
+                <p className="text-sm uppercase tracking-[0.3em] text-slate-400">POS System</p>
+                <h1 className="mt-2 text-3xl font-semibold text-slate-900">Point of Sale</h1>
+                <p className="mt-2 text-sm text-slate-500">Create and manage in-store sales transactions.</p>
+              </div>
+              <button onClick={handlePrint} className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-100">
+                <Printer className="h-4 w-4" /> Print Invoice
+              </button>
+              <button onClick={downloadBill} className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-100">
+                <Download className="h-4 w-4" /> Download Bill
+              </button>
+            </div>
+          </div>
+
           <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 
               <div className="inline-flex items-center gap-3 rounded-full bg-slate-100 px-4 py-3 text-sm text-slate-700">
                 <span>{cart.length} items</span>
@@ -1121,12 +1210,20 @@ export default function POSPage() {
                 <span className="total-label">Subtotal</span>
                 <span className="total-value">Rs {formatCurrency(receiptOrder.subtotal)}</span>
               </div>
-              <div className="total-row">
-                <span className="total-label">Discount</span>
-                <span className="total-value">
-                  {Number(receiptOrder.discountAmount || 0) > 0 ? `- Rs ${formatCurrency(receiptOrder.discountAmount)}` : 'Rs 0'}
-                </span>
-              </div>
+              {Number(receiptOrder.discountAmount || 0) > 0 && (
+                <>
+                  <div className="total-row discount-row">
+                    <span className="total-label">Discount</span>
+                    <span className="total-value discount-value">- Rs {formatCurrency(receiptOrder.discountAmount)}</span>
+                  </div>
+                  {receiptOrder.discountReason && (
+                    <div className="total-row">
+                      <span className="total-label">Reason</span>
+                      <span className="total-value">{receiptOrder.discountReason}</span>
+                    </div>
+                  )}
+                </>
+              )}
               {Number(receiptOrder.deliveryCharge ?? receiptOrder.shippingCost ?? 0) > 0 && (
                 <div className="total-row">
                   <span className="total-label">Delivery</span>

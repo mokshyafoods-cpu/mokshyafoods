@@ -3,6 +3,7 @@ import { productAPI, blogAPI } from '@/services/api';
 import { getProductUrl } from '@/lib/productRoutes';
 import { getSiteUrl } from '@/lib/seo';
 
+const skipRemoteDataFetch = Boolean(process.env.NEXT_PUBLIC_API_URL?.includes('localhost'));
 const baseUrl = getSiteUrl();
 
 const staticRoutes = [
@@ -28,6 +29,8 @@ type SitemapEntry = {
 };
 
 async function getProductSitemapEntries(): Promise<SitemapEntry[]> {
+  if (skipRemoteDataFetch) return [];
+
   try {
     const response = await productAPI.getAll({ limit: 100 });
     const products = Array.isArray(response?.data?.data) ? response.data.data : [];
@@ -52,6 +55,8 @@ async function getProductSitemapEntries(): Promise<SitemapEntry[]> {
 }
 
 async function getBlogSitemapEntries(): Promise<SitemapEntry[]> {
+  if (skipRemoteDataFetch) return [];
+
   try {
     const response = await blogAPI.getAll();
     const posts = Array.isArray(response?.data?.data) ? response.data.data : [];

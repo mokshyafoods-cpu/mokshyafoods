@@ -43,6 +43,10 @@ const buildOrderLedgerEntry = (order: any) => {
     return `${itemName} x${qty}`;
   });
 
+  const subtotal = Number(order.subtotal || order.amount || 0);
+  const discountAmount = Number(order.discountAmount || 0);
+  const finalAmount = Number(order.total || order.amount || 0);
+
   return {
     _id: order._id,
     orderId: String(order._id || order.orderId || ''),
@@ -51,7 +55,10 @@ const buildOrderLedgerEntry = (order: any) => {
     customerContact: customerPhone,
     address,
     products: productSummary.join(', '),
-    amount: Number(order.total || order.amount || 0),
+    subtotal,
+    discountAmount,
+    amount: finalAmount,
+    originalAmount: subtotal > 0 ? subtotal : finalAmount,
     paymentMethod: normalizeLedgerPaymentMethod(order.paymentMethod || order.paymentStatus || 'cash'),
     paymentDate: normalizeString(order.createdAt ? new Date(order.createdAt).toISOString().slice(0, 10) : order.paymentDate || ''),
     notes: remarks,

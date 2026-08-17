@@ -1,6 +1,6 @@
  'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import DashboardHero from '@/components/admin/DashboardHero';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
@@ -37,9 +37,13 @@ export default function AdminPage() {
   const [lowStockItems, setLowStockItems] = useState<LowStockItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const loadInFlightRef = useRef(false);
 
   useEffect(() => {
     const loadAdminData = async () => {
+      if (loadInFlightRef.current) return;
+      loadInFlightRef.current = true;
+
       try {
         const [dashboardResponse, analyticsResponse, lowStockResponse] = await Promise.all([
           api.get('/admin/dashboard'),
@@ -55,18 +59,23 @@ export default function AdminPage() {
       } catch (err: any) {
         setError(err.response?.data?.message || 'Failed to load admin data');
       } finally {
+        loadInFlightRef.current = false;
         setLoading(false);
       }
     };
 
-    loadAdminData();
+    void loadAdminData();
 
     const refreshTimer = window.setInterval(() => {
-      loadAdminData();
-    }, 15000);
+      if (document.visibilityState === 'visible' && !loadInFlightRef.current) {
+        void loadAdminData();
+      }
+    }, 300000);
 
     const handleFocus = () => {
-      loadAdminData();
+      if (!loadInFlightRef.current) {
+        void loadAdminData();
+      }
     };
 
     window.addEventListener('focus', handleFocus);
