@@ -358,6 +358,31 @@ export default function ProductDetailPage() {
   const productImage = galleryImages[0] || product.thumbnail || product.image || '/placeholder.jpg';
   const slug = getProductSlug(product, id);
   const productJsonLd = buildProductJsonLd(product, `${process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://www.mokshyafoods.com.np'}/products/${slug}`);
+  const stockStatus = (() => {
+    const stock = Number(product.quantity ?? 0);
+
+    if (stock <= 0) {
+      return {
+        label: 'No Stock',
+        className: 'border-red-200 bg-red-50 text-red-700',
+        dotClassName: 'bg-red-500',
+      };
+    }
+
+    if (stock <= 5) {
+      return {
+        label: 'Low Stock',
+        className: 'border-amber-200 bg-amber-50 text-amber-700',
+        dotClassName: 'bg-amber-500',
+      };
+    }
+
+    return {
+      label: 'Stock Available',
+      className: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+      dotClassName: 'bg-emerald-500',
+    };
+  })();
 
   return (
     <div className="min-h-screen flex flex-col bg-[#f8f9fa]">
@@ -446,7 +471,10 @@ export default function ProductDetailPage() {
                   </div>
                   <div className="rounded-3xl bg-slate-50 p-5">
                     <p className="text-sm uppercase tracking-[0.24em] text-slate-500">Stock</p>
-                    <p className="mt-2 text-xl font-semibold text-slate-900">{product.quantity ?? 'N/A'}</p>
+                    <div className={`mt-3 inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-semibold ${stockStatus.className}`}>
+                      <span className={`h-2.5 w-2.5 rounded-full ${stockStatus.dotClassName}`} />
+                      {stockStatus.label}
+                    </div>
                   </div>
                 </div>
               </div>

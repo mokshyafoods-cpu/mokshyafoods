@@ -21,6 +21,32 @@ const sortOptions = [
   { value: 'rating', label: 'Best Rated' },
 ];
 
+const getStockStatus = (quantity: number | string | null | undefined) => {
+  const stock = Number(quantity ?? 0);
+
+  if (stock <= 0) {
+    return {
+      label: 'No Stock',
+      className: 'border-red-200 bg-red-50 text-red-700',
+      dotClassName: 'bg-red-500',
+    };
+  }
+
+  if (stock <= 5) {
+    return {
+      label: 'Low Stock',
+      className: 'border-amber-200 bg-amber-50 text-amber-700',
+      dotClassName: 'bg-amber-500',
+    };
+  }
+
+  return {
+    label: 'Stock Available',
+    className: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+    dotClassName: 'bg-emerald-500',
+  };
+};
+
 function ProductsPageContent() {
   const [products, setProducts] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
@@ -725,6 +751,7 @@ function ProductsPageContent() {
                 <div className={viewMode === 'grid' ? 'grid gap-6 sm:grid-cols-2 xl:grid-cols-3' : 'space-y-6'}>
                   {displayedProducts.map((product) => {
                   const productHref = getProductUrl(product, product._id);
+                  const stockStatus = getStockStatus(product.quantity);
                   return (
                     <article
                       key={product._id}
@@ -789,6 +816,10 @@ function ProductsPageContent() {
                               <p className="text-xs text-slate-500 line-through">RS {product.price}</p>
                             )}
                           </div>
+                        </div>
+                        <div className={`mt-4 inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold ${stockStatus.className}`}>
+                          <span className={`h-2 w-2 rounded-full ${stockStatus.dotClassName}`} />
+                          {stockStatus.label}
                         </div>
                       </div>
                     </article>

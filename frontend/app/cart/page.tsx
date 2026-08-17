@@ -95,6 +95,31 @@ export default function CartPage() {
                   const detailCategory = item.category || 'Uncategorized';
                   const detailWeight = item.weight || '';
                   const detailStock = typeof item.stock === 'number' ? item.stock : null;
+                  const detailStockStatus = (() => {
+                    const stock = Number(detailStock ?? 0);
+
+                    if (stock <= 0) {
+                      return {
+                        label: 'No Stock',
+                        className: 'border-red-200 bg-red-50 text-red-700',
+                        dotClassName: 'bg-red-500',
+                      };
+                    }
+
+                    if (stock <= 5) {
+                      return {
+                        label: 'Low Stock',
+                        className: 'border-amber-200 bg-amber-50 text-amber-700',
+                        dotClassName: 'bg-amber-500',
+                      };
+                    }
+
+                    return {
+                      label: 'Stock Available',
+                      className: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+                      dotClassName: 'bg-emerald-500',
+                    };
+                  })();
                   const detailDescription = item.description || '';
                   const detailPrice = Number(item.price || 0);
                   const detailCompareAtPrice = Number(item.compareAtPrice || 0);
@@ -123,7 +148,10 @@ export default function CartPage() {
                         <div className="mt-2 flex flex-wrap gap-3 text-sm text-slate-600">
                           <span className="rounded-full bg-amber-50 px-3 py-1">{detailCategory}</span>
                           {detailWeight ? <span className="rounded-full bg-slate-100 px-3 py-1">Weight: {detailWeight}</span> : null}
-                          {detailStock !== null ? <span className="rounded-full bg-emerald-50 px-3 py-1 text-emerald-700">In stock: {detailStock}</span> : null}
+                          <span className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 ${detailStockStatus.className}`}>
+                            <span className={`h-2 w-2 rounded-full ${detailStockStatus.dotClassName}`} />
+                            {detailStockStatus.label}
+                          </span>
                         </div>
                         {detailDescription ? <p className="mt-3 text-sm leading-6 text-slate-600 line-clamp-3">{detailDescription}</p> : null}
                         <div className="mt-3 flex flex-wrap items-center gap-3 text-sm">
