@@ -197,33 +197,44 @@ export default function PaymentLedgerPage() {
       });
 
       const paymentTotals = ledgerRows.reduce(
-        (totals: { phonepay: number; cash: number; cod: number }, entry: any) => {
+        (totals: { phonepay: number; cash: number; cod: number; originalAmount: number; discountAmount: number; finalAmount: number }, entry: any) => {
           const method = String(entry.paymentMethod || 'cash').toLowerCase();
-          const amount = Number(entry.amount || 0);
-          if (method === 'fonepay' || method === 'phonepay') totals.phonepay += amount;
-          if (method === 'cash') totals.cash += amount;
-          if (method === 'cod') totals.cod += amount;
+          const finalAmount = Number(entry.amount || 0);
+          const originalAmount = Number(entry.originalAmount || entry.subtotal || entry.amount || 0);
+          const discountAmount = Number(entry.discountAmount || 0);
+          
+          if (method === 'fonepay' || method === 'phonepay') totals.phonepay += finalAmount;
+          if (method === 'cash') totals.cash += finalAmount;
+          if (method === 'cod') totals.cod += finalAmount;
+          
+          totals.originalAmount += originalAmount;
+          totals.discountAmount += discountAmount;
+          totals.finalAmount += finalAmount;
+          
           return totals;
         },
-        { phonepay: 0, cash: 0, cod: 0 }
+        { phonepay: 0, cash: 0, cod: 0, originalAmount: 0, discountAmount: 0, finalAmount: 0 }
       );
 
       const productTotals = productNames.map((productName: string) =>
         ledgerRows.reduce((sum: number, entry: any) => sum + (getProductQuantityMap(entry).get(productName) || 0), 0)
       );
 
-    const totalRow = [
-      'TOTAL',
-      '',
-      '',
-      '',
-      paymentTotals.phonepay,
-      paymentTotals.cash,
-      paymentTotals.cod,
-      '',
-      ...productTotals,
-      productTotals.reduce((sum, value) => sum + value, 0),
-    ];
+      const totalRow = [
+        'TOTAL',
+        '',
+        '',
+        '',
+        paymentTotals.originalAmount,
+        paymentTotals.discountAmount,
+        paymentTotals.finalAmount,
+        paymentTotals.phonepay,
+        paymentTotals.cash,
+        paymentTotals.cod,
+        '',
+        ...productTotals,
+        productTotals.reduce((sum, value) => sum + value, 0),
+      ];
 
       const styles: Record<string, any> = {};
       const greenFill = { fgColor: { rgb: 'D9EAD3' } };
