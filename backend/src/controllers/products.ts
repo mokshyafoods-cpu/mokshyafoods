@@ -121,13 +121,18 @@ export const getAllProducts = async (req: Request, res: Response): Promise<Respo
     };
 
     const page = typeof req.query.page === 'string' ? Math.max(1, Number(req.query.page) || 1) : 1;
-    const limit = typeof req.query.limit === 'string' ? Math.min(100, Math.max(1, Number(req.query.limit) || 100)) : 100;
+    const requestedLimit = typeof req.query.limit === 'string' ? Number(req.query.limit) : undefined;
+    const limit = requestedLimit && Number.isFinite(requestedLimit)
+      ? Math.min(24, Math.max(1, Number(requestedLimit)))
+      : 12;
     const skip = (page - 1) * limit;
 
     const products = await Product.find(query)
+      .select('name slug sku price discountPrice onSale saleStart saleEnd thumbnail images rating reviewCount category featured isActive createdAt updatedAt description tags packaging')
       .sort(sortMap[sortOption] || sortMap.latest)
       .skip(skip)
       .limit(limit)
+      .maxTimeMS(5000)
       .lean()
       .exec();
 
