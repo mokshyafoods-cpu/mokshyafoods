@@ -36,6 +36,8 @@ const corsOptions: CorsOptions = {
         ...envFrontendUrls,
         'https://mokshyafoods.com.np',
         'https://www.mokshyafoods.com.np',
+        'https://mokshyafoods.onrender.com',
+        'https://www.mokshyafoods.onrender.com',
         'https://mokshyafoods.vercel.app',
         'https://www.mokshyafoods.vercel.app',
         'http://localhost:3000',
@@ -50,6 +52,7 @@ const corsOptions: CorsOptions = {
     const allowsWildcardHost = (value: string, suffix: string) => value.endsWith(suffix);
     const isAllowedWildcardOrigin = Boolean(
       origin && (
+        allowsWildcardHost(origin, '.onrender.com') ||
         allowsWildcardHost(origin, '.vercel.app') ||
         allowsWildcardHost(origin, '.netlify.app') ||
         allowsWildcardHost(origin, '.github.dev')
