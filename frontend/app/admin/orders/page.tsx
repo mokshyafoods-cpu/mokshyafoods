@@ -52,8 +52,10 @@ export default function AdminOrdersPage() {
     limit: 200,
   }), [status, soldBy, transactionType, search]);
 
+  const hasValidSession = typeof window !== 'undefined' && Boolean(localStorage.getItem('token'));
+
   const { data, error, isLoading, mutate } = useSWR(
-    ['admin-orders', queryParams],
+    hasValidSession ? ['admin-orders', queryParams] : null,
     () => orderAPI.getAll(queryParams).then((response) => response.data)
   );
 
@@ -93,6 +95,13 @@ export default function AdminOrdersPage() {
 
   const errorInfo = (() => {
     const status = error?.response?.status;
+
+    if (!hasValidSession) {
+      return {
+        title: 'Please sign in',
+        description: 'Admin order access requires a valid signed-in session.',
+      };
+    }
 
     if (status === 401) {
       return {

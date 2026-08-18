@@ -34,6 +34,8 @@ const corsOptions: CorsOptions = {
       new Set([
         process.env.FRONTEND_URL,
         ...envFrontendUrls,
+        'https://mokshyafoods.com.np',
+        'https://www.mokshyafoods.com.np',
         'https://mokshyafoods.vercel.app',
         'https://www.mokshyafoods.vercel.app',
         'http://localhost:3000',
@@ -45,10 +47,19 @@ const corsOptions: CorsOptions = {
       ].filter(Boolean) as string[]),
     );
 
+    const allowsWildcardHost = (value: string, suffix: string) => value.endsWith(suffix);
+    const isAllowedWildcardOrigin = Boolean(
+      origin && (
+        allowsWildcardHost(origin, '.vercel.app') ||
+        allowsWildcardHost(origin, '.netlify.app') ||
+        allowsWildcardHost(origin, '.github.dev')
+      ),
+    );
+
     const isLocalOrigin = origin?.startsWith('http://localhost') || origin?.startsWith('http://127.0.0.1');
     const allowLocalOrigins = process.env.NODE_ENV !== 'production';
 
-    if (!origin || allowedOrigins.includes(origin) || (allowLocalOrigins && isLocalOrigin)) {
+    if (!origin || allowedOrigins.includes(origin) || isAllowedWildcardOrigin || (allowLocalOrigins && isLocalOrigin)) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));
