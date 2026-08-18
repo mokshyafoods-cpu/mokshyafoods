@@ -4,8 +4,9 @@ import bcrypt from 'bcryptjs';
 export interface IUser extends Document {
   name: string;
   email: string;
-  phone: string;
-  password: string;
+  phone?: string;
+  password?: string;
+  googleId?: string;
   address?: {
     street?: string;
     city?: string;
@@ -57,13 +58,17 @@ const userSchema = new Schema<IUser, UserModel, IUserMethods>({
   },
   phone: {
     type: String,
-    required: [true, 'Please provide a phone number'],
   },
   password: {
     type: String,
-    required: [true, 'Please provide a password'],
     minlength: 6,
     select: false,
+  },
+  googleId: {
+    type: String,
+    unique: true,
+    sparse: true,
+    index: true,
   },
   address: {
     street: String,
@@ -128,7 +133,7 @@ const userSchema = new Schema<IUser, UserModel, IUserMethods>({
 }, { timestamps: true });
 
 userSchema.pre<IUser>('save', async function (next) {
-  if (!this.isModified('password')) return next();
+  if (!this.isModified('password') || !this.password) return next();
 
   try {
     const salt = await bcrypt.genSalt(10);
@@ -139,7 +144,10 @@ userSchema.pre<IUser>('save', async function (next) {
   }
 });
 
-userSchema.methods.comparePassword = async function (this: IUser, enteredPassword: string) {
+userSchema.methods.comparePassword = async function (this: IUser, enteredPassword: string): Promise<boolean> {
+  if (!this.password) {
+    return false;
+  }
   return bcrypt.compare(enteredPassword, this.password);
 };
 

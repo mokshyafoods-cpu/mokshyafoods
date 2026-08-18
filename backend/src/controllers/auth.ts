@@ -380,6 +380,123 @@ export const resetPassword = async (req: Request, res: Response): Promise<Respon
   }
 };
 
+export const googleLogin = async (req: Request, res: Response): Promise<Response> => {
+  try {
+    const { credential } = req.body as { credential?: string };
+
+    if (!credential) {
+      return res.status(400).json({
+        success: false,
+        message: 'Google credential is required',
+      });
+    }
+
+    // Verify Google credential using official library
+    const { OAuth2Client } = require('google-auth-library');
+    const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+    let ticket;
+
+    try {
+      ticket = await client.verifyIdToken({
+        idToken: credential,
+        audience: process.env.GOOGLE_CLIENT_ID,
+      });
+    } catch (error) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid or expired Google credential',
+      });
+    }
+
+    const payload = ticket.getPayload();
+
+    if (!payload?.email || !payload['sub']) {
+      return res.status(400).json({
+        success: false,
+        message: 'Incomplete Google credential',
+      });
+    }
+
+    const googleId = payload['sub'];
+    const email = payload['email'];
+    const name = payload['name'] || 'User';
+    const avatar = payload['picture'] || undefined;
+
+    // Query by googleId first
+    let user = await User.findOne({ googleId });
+
+    if (user) {
+      // User already has this Google account linked
+      const token = generateToken(user._id.toString(), user.role);
+      const userResponse = user.toObject() as unknown as Record<string, unknown>;
+      const { password: _pwd, otpHash: _otp, otpAttempts: _otpAttempts, otpSentAt: _otpSentAt, otpExpiresAt: _otpExpiresAt, resetPasswordToken: _resetToken, resetPasswordExpires: _resetExpires, ...safe } = userResponse;
+
+      return res.json({
+        success: true,
+        message: 'Login successful',
+        token,
+        user: safe,
+      });
+    }
+
+    // Query by email
+    user = await User.findOne({ email });
+
+    if (user) {
+      // Email exists - check auth method
+      if (user.password) {
+        // Email + password auth conflict
+        return res.status(409).json({
+          success: false,
+          message: 'This email is already registered with a password. Please sign in with your password or use the password reset option.',
+        });
+      }
+
+      // User exists but different Google ID (shouldn't happen normally)
+      if (user.googleId && user.googleId !== googleId) {
+        return res.status(409).json({
+          success: false,
+          message: 'This email is registered with a different Google account.',
+        });
+      }
+    }
+
+    // Create new user
+    if (!user) {
+      user = new User({
+        name,
+        email,
+        googleId,
+        avatar,
+        phone: undefined,
+        isVerified: true,
+        role: 'user',
+      });
+
+      await user.save();
+    }
+
+    // Generate token
+    const token = generateToken(user._id.toString(), user.role);
+    const userResponse = user.toObject() as unknown as Record<string, unknown>;
+    const { password: _pwd, otpHash: _otp, otpAttempts: _otpAttempts, otpSentAt: _otpSentAt, otpExpiresAt: _otpExpiresAt, resetPasswordToken: _resetToken, resetPasswordExpires: _resetExpires, ...safe } = userResponse;
+
+    return res.json({
+      success: true,
+      message: 'Google login successful',
+      token,
+      user: safe,
+    });
+  } catch (error: unknown) {
+    console.error('Google login error:', error);
+    const message = error instanceof Error ? error.message : 'Google login failed';
+    return res.status(500).json({
+      success: false,
+      message,
+    });
+  }
+};
+
 export const logout = (_req: Request, res: Response): Response => {
   // Clear common auth cookies if present
   try {

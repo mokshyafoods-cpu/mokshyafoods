@@ -16,10 +16,16 @@ const statusSteps = [
 
 const getOrderItemImage = (item: any): string => {
   const product = item?.product || {};
+  const productData = item?.productData || {};
   const imageCandidates = [
     item?.image,
     item?.thumbnail,
     item?.productImage,
+    productData?.thumbnail,
+    productData?.image,
+    productData?.images?.[0]?.url,
+    productData?.images?.[0]?.secure_url,
+    productData?.images?.[0]?.path,
     product?.image,
     product?.thumbnail,
     product?.images?.[0]?.url,
@@ -31,7 +37,7 @@ const getOrderItemImage = (item: any): string => {
   ];
 
   const safeImage = imageCandidates.find((value) => typeof value === 'string' && value.trim().length > 0);
-  return safeImage || '/logo.jpeg';
+  return safeImage || '/placeholder.jpg';
 };
 
 export default function OrderDetailPage() {
@@ -205,8 +211,8 @@ export default function OrderDetailPage() {
                       className="h-20 w-20 rounded-2xl object-cover"
                       onError={(event) => {
                         const target = event.currentTarget as HTMLImageElement;
-                        if (target.src !== `${window.location.origin}/logo.jpeg`) {
-                          target.src = '/logo.jpeg';
+                        if (target.src !== `${window.location.origin}/placeholder.jpg`) {
+                          target.src = '/placeholder.jpg';
                         }
                       }}
                     />

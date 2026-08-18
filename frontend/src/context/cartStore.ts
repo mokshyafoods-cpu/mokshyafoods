@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
 
 export interface CartItem {
   productId: string;
@@ -23,6 +23,15 @@ export interface CartItem {
   origin?: string;
 }
 
+// Minimal data stored in localStorage to reduce quota usage
+interface PersistedCartItem {
+  productId: string;
+  name: string;
+  price: number;
+  quantity: number;
+  image: string;
+}
+
 interface CartState {
   items: CartItem[];
   addItem: (item: CartItem) => void;
@@ -33,6 +42,14 @@ interface CartState {
   getTotalPrice: () => number;
   getTotalItems: () => number;
 }
+
+const getSafeLocalStorage = () => {
+  if (typeof window === 'undefined' || !('localStorage' in window)) {
+    return null;
+  }
+
+  return window.localStorage;
+};
 
 export const useCartStore = create<CartState>()(
   persist(
@@ -87,6 +104,73 @@ export const useCartStore = create<CartState>()(
     }),
     {
       name: 'cart-storage',
+      storage: createJSONStorage(() => ({
+        getItem: (key: string) => {
+          const storage = getSafeLocalStorage();
+          if (!storage) return null;
+
+          try {
+            const stored = storage.getItem(key);
+            if (!stored) return null;
+            const data = JSON.parse(stored);
+            return data;
+          } catch (error) {
+            console.error('Failed to parse cart storage:', error);
+            return null;
+          }
+        },
+        setItem: (key: string, value: string) => {
+          const storage = getSafeLocalStorage();
+          if (!storage) return;
+
+          try {
+            const data = JSON.parse(value);
+            if (data.state && data.state.items) {
+              const slimmedItems = data.state.items.map((item: CartItem) => ({
+                productId: item.productId,
+                name: item.name,
+                price: item.price,
+                quantity: item.quantity,
+                image: item.image,
+              }));
+              const slimmedData = {
+                ...data,
+                state: {
+                  ...data.state,
+                  items: slimmedItems,
+                },
+              };
+              storage.setItem(key, JSON.stringify(slimmedData));
+            } else {
+              storage.setItem(key, value);
+            }
+          } catch (error) {
+            if (
+              error instanceof Error &&
+              error.message.includes('QuotaExceededError')
+            ) {
+              console.warn('Cart storage quota exceeded, clearing cart');
+              storage.removeItem(key);
+              try {
+                const minimalData = {
+                  state: { items: [] },
+                  version: 0,
+                };
+                storage.setItem(key, JSON.stringify(minimalData));
+              } catch (retryError) {
+                console.error('Failed to save minimal cart:', retryError);
+              }
+            } else {
+              console.error('Failed to save cart storage:', error);
+            }
+          }
+        },
+        removeItem: (key: string) => {
+          const storage = getSafeLocalStorage();
+          if (!storage) return;
+          storage.removeItem(key);
+        },
+      })),
     }
   )
 );

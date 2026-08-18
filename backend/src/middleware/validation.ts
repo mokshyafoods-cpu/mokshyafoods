@@ -26,6 +26,10 @@ export const authLoginValidator: ValidationChain[] = [
   body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
 ];
 
+export const googleLoginValidator: ValidationChain[] = [
+  body('credential').trim().notEmpty().withMessage('Google credential is required'),
+];
+
 export const authVerifyOtpValidator: ValidationChain[] = [
   body('otp').trim().notEmpty().withMessage('OTP is required').isLength({ min: 6, max: 6 }).withMessage('OTP must be 6 digits'),
 ];
@@ -78,9 +82,15 @@ export const updateCouponValidator: ValidationChain[] = [
 
 export const createOrderValidator: ValidationChain[] = [
   body('items').isArray({ min: 1 }).withMessage('Items are required'),
-  body('items.*.product').isMongoId().withMessage('Valid product ID is required'),
+  body('items.*.product').optional({ values: 'null' }).isMongoId().withMessage('Valid product ID is required'),
   body('items.*.quantity').isInt({ min: 1 }).withMessage('Quantity must be at least 1'),
   body('shippingAddress').notEmpty().withMessage('Shipping address is required'),
+  body('shippingAddress.name').trim().notEmpty().withMessage('Full name is required'),
+  body('shippingAddress.phone').trim().notEmpty().matches(/^(?:\+977|977)?9\d{9}$/).withMessage('Valid Nepali phone number is required'),
+  body('shippingAddress.street').optional({ values: 'falsy' }).trim().notEmpty().withMessage('Delivery address is required'),
+  body('shippingAddress.address').optional({ values: 'falsy' }).trim().notEmpty().withMessage('Delivery address is required'),
+  body('shippingAddress.email').optional({ values: 'falsy' }).isEmail().withMessage('Valid email is required'),
+  body('deliveryZone').optional().isIn(['inside-butwal', 'outside-butwal']).withMessage('Please select a valid delivery zone'),
   body('paymentMethod').trim().notEmpty().isIn(['cash', 'cod', 'fonepay']).withMessage('Payment method must be cash, cod, or fonepay'),
   body('couponCode').optional().trim(),
   body('channel').optional().trim(),

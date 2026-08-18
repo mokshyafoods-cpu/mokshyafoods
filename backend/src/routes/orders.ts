@@ -1,6 +1,6 @@
 import express, { Request, Response } from 'express';
 import { createOrder, getAllOrders, getUserOrders, getOrderById, updateOrderStatus, deleteOrder } from '../controllers/orders';
-import { authMiddleware } from '../middleware/auth';
+import { authMiddleware, optionalAuthMiddleware } from '../middleware/auth';
 import { createOrderValidator, updateOrderValidator, validateRequest } from '../middleware/validation';
 
 interface AuthenticatedRequest extends Request {
@@ -9,7 +9,7 @@ interface AuthenticatedRequest extends Request {
 
 const router = express.Router();
 
-router.post('/', authMiddleware, createOrderValidator, validateRequest, createOrder);
+router.post('/', createOrderValidator, validateRequest, createOrder);
 router.get('/', authMiddleware, (req: AuthenticatedRequest, res: Response) => {
   if (req.userRole === 'admin') {
     return getAllOrders(req, res);
@@ -17,7 +17,7 @@ router.get('/', authMiddleware, (req: AuthenticatedRequest, res: Response) => {
 
   return getUserOrders(req, res);
 });
-router.get('/:id', authMiddleware, getOrderById);
+router.get('/:id', optionalAuthMiddleware, getOrderById);
 router.delete('/:id', authMiddleware, deleteOrder);
 router.put('/:id', authMiddleware, updateOrderValidator, validateRequest, updateOrderStatus);
 

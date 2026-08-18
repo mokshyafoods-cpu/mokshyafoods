@@ -242,10 +242,10 @@ export default function CartPage() {
 
                 <div className="space-y-3">
                   <Link
-                    href={isAuthenticated ? '/checkout' : '/auth/login?redirect=/checkout'}
+                    href="/checkout"
                     className="block w-full px-4 py-3 bg-primary text-white rounded-lg hover:bg-opacity-90 transition font-semibold text-center"
                   >
-                    {isAuthenticated ? 'Proceed to Checkout' : 'Sign in to Checkout'}
+                    Proceed to Checkout
                   </Link>
                   {!isAuthenticated && (
                     <Link

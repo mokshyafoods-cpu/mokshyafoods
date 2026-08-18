@@ -5,69 +5,115 @@ import Footer from '@/components/Footer';
 import { useCartStore } from '@/context/cartStore';
 import { useAuth } from '@/context/AuthContext';
 import { orderAPI } from '@/services/api';
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import Link from 'next/link';
 
+const DELIVERY_ZONE_OPTIONS = [
+  { value: 'inside-butwal', label: 'Inside Butwal', charge: 0 },
+  { value: 'outside-butwal', label: 'Outside Butwal', charge: 100 },
+] as const;
+
+const nepaliPhoneRegex = /^(?:\+977|977)?9\d{9}$/;
+
+const normalizePhone = (value: string) => {
+  const plain = value.replace(/[^\d+]/g, '').replace(/^\+?977/, '').trim();
+  return plain ? `+977${plain}` : value.trim();
+};
+
 export default function CheckoutPage() {
-  const { items, getTotalPrice, clearCart } = useCartStore();
+  const { items, getTotalPrice, clearCart, removeItem } = useCartStore();
   const { user, isAuthenticated } = useAuth();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [cartOpen, setCartOpen] = useState(true);
   const [formData, setFormData] = useState({
     name: user?.name || '',
     email: user?.email || '',
     phone: user?.phone || '',
-    street: user?.address?.street || '',
-    city: user?.address?.city || '',
-    state: user?.address?.state || '',
-    postalCode: user?.address?.postalCode || '',
-    country: user?.address?.country || 'Nepal',
+    location: '',
+    deliveryAddress: '',
     paymentMethod: 'cod',
   });
+  const [errors, setErrors] = useState<{
+    name?: string;
+    email?: string;
+    phone?: string;
+    location?: string;
+    deliveryAddress?: string;
+  }>({});
 
   useEffect(() => {
     if (!user) return;
 
     setFormData((current) => ({
       ...current,
-      name: user.name || '',
-      email: user.email || '',
-      phone: user.phone || '',
-      street: user.address?.street || '',
-      city: user.address?.city || '',
-      state: user.address?.state || '',
-      postalCode: user.address?.postalCode || '',
-      country: user.address?.country || 'Nepal',
+      name: user.name || current.name || '',
+      email: user.email || current.email || '',
+      phone: user.phone || current.phone || '',
     }));
   }, [user]);
 
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen flex flex-col bg-background">
-        <Navigation />
-        <main className="flex-grow flex items-center justify-center py-12 px-4">
-          <div className="w-full max-w-xl rounded-[2rem] border border-border bg-white p-8 text-center shadow-lg">
-            <h1 className="text-3xl font-bold text-primary">Continue to checkout</h1>
-            <p className="mt-3 text-slate-600">
-              Please sign in or create an account to place your order. Your cart will stay intact when you return.
-            </p>
-            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
-              <Link href="/auth/login?redirect=/checkout" className="rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white transition hover:bg-primary/90">
-                Login
-              </Link>
-              <Link href="/auth/register?redirect=/checkout" className="rounded-full border border-primary px-6 py-3 text-sm font-semibold text-primary transition hover:bg-primary/5">
-                Create Account
-              </Link>
-            </div>
-          </div>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
+  const subtotal = useMemo(() => getTotalPrice(), [items, getTotalPrice]);
+  const selectedZone = DELIVERY_ZONE_OPTIONS.find((zone) => zone.value === formData.location) ?? DELIVERY_ZONE_OPTIONS[0];
+  const shippingCharge = selectedZone.charge;
+  const total = subtotal + shippingCharge;
+
+  const getZoneLabel = (zone: string) => {
+    if (zone === 'inside-butwal') return 'Inside Butwal';
+    if (zone === 'outside-butwal') return 'Outside Butwal';
+    return zone;
+  };
+
+  const validateField = (field: keyof typeof formData, value: string) => {
+    switch (field) {
+      case 'name':
+        return value.trim() ? '' : 'Full name is required';
+      case 'email':
+        if (!value.trim()) return '';
+        return /\S+@\S+\.\S+/.test(value) ? '' : 'Enter a valid email address';
+      case 'phone':
+        if (!value.trim()) return 'Phone number is required';
+        return nepaliPhoneRegex.test(value.replace(/\s+/g, '').replace(/[-()]/g, '')) ? '' : 'Enter a valid Nepali phone number';
+      case 'location':
+        return value ? '' : 'Please select your delivery zone';
+      case 'deliveryAddress':
+        return value.trim() ? '' : 'Delivery address is required';
+      default:
+        return '';
+    }
+  };
+
+  const validateForm = () => {
+    const nextErrors: typeof errors = {};
+    const fields: Array<[keyof typeof formData, string]> = [
+      ['name', formData.name],
+      ['email', formData.email],
+      ['phone', formData.phone],
+      ['location', formData.location],
+      ['deliveryAddress', formData.deliveryAddress],
+    ];
+
+    fields.forEach(([field, value]) => {
+      const message = validateField(field, value);
+      if (message) {
+        nextErrors[field] = message;
+      }
+    });
+
+    setErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
+  };
+
+  const isFormValid =
+    formData.name.trim() &&
+    formData.phone.trim() &&
+    nepaliPhoneRegex.test(formData.phone.replace(/\s+/g, '').replace(/[-()]/g, '')) &&
+    formData.location &&
+    formData.deliveryAddress.trim() &&
+    (!formData.email.trim() || /\S+@\S+\.\S+/.test(formData.email));
 
   if (items.length === 0) {
     return (
@@ -88,33 +134,40 @@ export default function CheckoutPage() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    setSubmitError(null);
 
-    if (!isAuthenticated) {
-      router.push('/auth/login?redirect=/checkout');
+    const isValid = validateForm();
+    if (!isValid) {
+      toast.error('Please fix the highlighted fields before checkout.');
       return;
     }
 
     setLoading(true);
-    setSubmitError(null);
 
     try {
-      const savedAddress = user?.address;
       const shippingAddress = {
-        name: formData.name || user?.name || '',
-        email: formData.email || user?.email || '',
-        phone: formData.phone || user?.phone || '',
-        street: formData.street || savedAddress?.street || '',
-        city: formData.city || savedAddress?.city || '',
-        state: formData.state || savedAddress?.state || '',
-        postalCode: formData.postalCode || savedAddress?.postalCode || '',
-        country: formData.country || savedAddress?.country || 'Nepal',
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        phone: normalizePhone(formData.phone),
+        street: formData.deliveryAddress.trim(),
+        address: formData.deliveryAddress.trim(),
+        city: getZoneLabel(formData.location),
+        state: getZoneLabel(formData.location),
+        country: 'Nepal',
+        location: formData.location,
+        deliveryZone: formData.location,
       };
 
       const orderData = {
+        customer: isAuthenticated ? user?._id || user?.id || null : null,
+        deliveryZone: formData.location,
+        deliveryCharge: shippingCharge,
+        shippingCost: shippingCharge,
         items: items.map((item) => ({
           product: item.productId,
           quantity: item.quantity,
           price: item.price,
+          name: item.name,
         })),
         shippingAddress,
         paymentMethod: formData.paymentMethod,
@@ -123,6 +176,11 @@ export default function CheckoutPage() {
       const response = await orderAPI.create(orderData);
       const orderPayload = response?.data?.data ?? response?.data ?? response;
       const orderId = orderPayload?._id || orderPayload?.data?._id || orderPayload?.id;
+
+      if (orderId && orderPayload) {
+        sessionStorage.setItem('last-order-confirmation', JSON.stringify(orderPayload));
+      }
+
       clearCart();
       toast.success('Order placed successfully!');
       if (orderId) {
@@ -147,129 +205,109 @@ export default function CheckoutPage() {
         <div className="max-w-6xl mx-auto">
           <h1 className="text-4xl font-bold text-primary mb-8">Checkout</h1>
 
-          {user && !user.isVerified && (
-            <div className="mb-6 rounded-[1.5rem] border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-              Your email is not verified yet, but you can still continue checkout now. You can verify it later from your account.
-            </div>
-          )}
-
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Checkout Form */}
             <div className="lg:col-span-2">
-              <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Personal Information */}
+              <form onSubmit={handleSubmit} className="space-y-6" noValidate>
                 <div className="rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-sm space-y-4">
                   <h2 className="text-xl font-bold text-primary">Personal Information</h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-semibold text-slate-900 mb-2">Full Name</label>
+                      <label className="mb-2 block text-sm font-semibold text-slate-900">Full Name</label>
                       <input
                         type="text"
-                        required
                         value={formData.name}
-                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-slate-900 shadow-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/30"
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          setFormData((current) => ({ ...current, name: value }));
+                          setErrors((current) => ({ ...current, name: validateField('name', value) }));
+                        }}
+                        className={`w-full rounded-2xl border bg-slate-50 px-4 py-3 text-slate-900 shadow-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 ${errors.name ? 'border-red-300' : 'border-slate-300'}`}
                       />
+                      {errors.name && <p className="mt-2 text-sm text-red-600">{errors.name}</p>}
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-slate-900 mb-2">Email</label>
+                      <label className="mb-2 block text-sm font-semibold text-slate-900">Email Address</label>
                       <input
                         type="email"
-                        required
                         value={formData.email}
-                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                        className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-slate-900 shadow-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/30"
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          setFormData((current) => ({ ...current, email: value }));
+                          setErrors((current) => ({ ...current, email: validateField('email', value) }));
+                        }}
+                        className={`w-full rounded-2xl border bg-slate-50 px-4 py-3 text-slate-900 shadow-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 ${errors.email ? 'border-red-300' : 'border-slate-300'}`}
+                        placeholder="Optional"
                       />
+                      {errors.email && <p className="mt-2 text-sm text-red-600">{errors.email}</p>}
                     </div>
                   </div>
+
                   <div>
-                    <label className="block text-sm font-semibold text-slate-900 mb-2">Phone Number</label>
+                    <label className="mb-2 block text-sm font-semibold text-slate-900">Phone Number</label>
                     <input
                       type="tel"
-                      required
                       value={formData.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                      className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-slate-900 shadow-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/30"
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        setFormData((current) => ({ ...current, phone: value }));
+                        setErrors((current) => ({ ...current, phone: validateField('phone', value) }));
+                      }}
+                      className={`w-full rounded-2xl border bg-slate-50 px-4 py-3 text-slate-900 shadow-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 ${errors.phone ? 'border-red-300' : 'border-slate-300'}`}
                       placeholder="+977 9841234567"
                     />
+                    {errors.phone && <p className="mt-2 text-sm text-red-600">{errors.phone}</p>}
                   </div>
                 </div>
 
-                {/* Shipping Address */}
-                <div className="bg-white border border-border rounded-lg p-6 space-y-4">
-                  <h2 className="text-xl font-bold text-primary">Shipping Address</h2>
+                <div className="rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-sm space-y-4">
+                  <h2 className="text-xl font-bold text-primary">Delivery Details</h2>
+
                   <div>
-                    <label className="block text-sm font-semibold text-slate-900 mb-2">Street Address</label>
-                    <input
-                      type="text"
-                      required
-                      value={formData.street}
-                      onChange={(e) => setFormData({ ...formData, street: e.target.value })}
-                      className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-slate-900 shadow-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/30"
+                    <label className="mb-2 block text-sm font-semibold text-slate-900">Location</label>
+                    <select
+                      value={formData.location}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        setFormData((current) => ({ ...current, location: value }));
+                        setErrors((current) => ({ ...current, location: validateField('location', value) }));
+                      }}
+                      className={`w-full rounded-2xl border bg-slate-50 px-4 py-3 text-slate-900 shadow-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 ${errors.location ? 'border-red-300' : 'border-slate-300'}`}
+                    >
+                      <option value="">Select delivery zone</option>
+                      {DELIVERY_ZONE_OPTIONS.map((zone) => (
+                        <option key={zone.value} value={zone.value}>{zone.label}</option>
+                      ))}
+                    </select>
+                    {errors.location && <p className="mt-2 text-sm text-red-600">{errors.location}</p>}
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold text-slate-900">Delivery Address</label>
+                    <textarea
+                      value={formData.deliveryAddress}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        setFormData((current) => ({ ...current, deliveryAddress: value }));
+                        setErrors((current) => ({ ...current, deliveryAddress: validateField('deliveryAddress', value) }));
+                      }}
+                      rows={4}
+                      className={`w-full rounded-2xl border bg-slate-50 px-4 py-3 text-slate-900 shadow-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 ${errors.deliveryAddress ? 'border-red-300' : 'border-slate-300'}`}
+                      placeholder="House number, street, landmark, area"
                     />
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-semibold text-slate-900 mb-2">City</label>
-                      <input
-                        type="text"
-                        required
-                        value={formData.city}
-                        onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                        className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-slate-900 shadow-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/30"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-slate-900 mb-2">State</label>
-                      <input
-                        type="text"
-                        value={formData.state}
-                        onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-                        className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-slate-900 shadow-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/30"
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-semibold text-slate-900 mb-2">Postal Code</label>
-                      <input
-                        type="text"
-                        value={formData.postalCode}
-                        onChange={(e) => setFormData({ ...formData, postalCode: e.target.value })}
-                        className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-slate-900 shadow-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/30"
-                        placeholder="Postal code"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-slate-900 mb-2">Country</label>
-                      <input
-                        type="text"
-                        required
-                        value={formData.country}
-                        onChange={(e) => setFormData({ ...formData, country: e.target.value })}
-                        className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-slate-900 shadow-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/30"
-                      />
-                    </div>
+                    {errors.deliveryAddress && <p className="mt-2 text-sm text-red-600">{errors.deliveryAddress}</p>}
                   </div>
                 </div>
 
-                {/* Payment Method */}
                 <div className="rounded-[1.75rem] border border-slate-300 bg-white p-6 shadow-sm space-y-4">
                   <h2 className="text-xl font-bold text-slate-950">Payment Method</h2>
                   <div className="space-y-3">
-                    <label
-                      className={`flex items-center gap-3 rounded-2xl border px-4 py-4 text-slate-900 transition ${
-                        formData.paymentMethod === 'cod'
-                          ? 'border-primary bg-primary/10 shadow-sm'
-                          : 'border-slate-200 bg-slate-50 hover:bg-slate-100'
-                      }`}
-                    >
+                    <label className="flex items-center gap-3 rounded-2xl border border-primary bg-primary/10 px-4 py-4 text-slate-900 shadow-sm">
                       <input
                         type="radio"
                         name="paymentMethod"
                         value="cod"
                         checked={formData.paymentMethod === 'cod'}
-                        onChange={(e) => setFormData({ ...formData, paymentMethod: e.target.value })}
+                        onChange={(e) => setFormData((current) => ({ ...current, paymentMethod: e.target.value }))}
                         className="h-4 w-4 text-primary accent-primary"
                       />
                       <div>
@@ -288,48 +326,73 @@ export default function CheckoutPage() {
 
                 <button
                   type="submit"
-                  disabled={loading}
-                  className="w-full px-6 py-3 bg-primary text-white rounded-lg hover:bg-opacity-90 transition font-semibold disabled:opacity-50"
+                  disabled={loading || !isFormValid}
+                  className="w-full rounded-2xl bg-primary px-6 py-3 text-base font-semibold text-white transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  {loading ? 'Placing Order...' : 'Place Order'}
+                  {loading ? 'Processing...' : 'Complete Checkout'}
                 </button>
               </form>
             </div>
 
-            {/* Order Summary */}
             <div className="w-full min-w-0">
-              <div className="bg-slate-100 border border-slate-300 rounded-3xl p-4 sm:p-6 lg:sticky lg:top-20 shadow-sm space-y-4 max-w-full overflow-x-hidden">
-                <h2 className="text-xl font-bold text-slate-950">Order Summary</h2>
-
-                <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
-                  {items.map((item) => (
-                    <div key={item.productId} className="flex flex-wrap items-start justify-between gap-2 text-sm text-slate-800">
-                      <div className="min-w-0 flex-1">
-                        <p className="font-medium text-slate-950 break-words">{item.name}</p>
-                        <p className="text-slate-600">Qty: {item.quantity}</p>
-                      </div>
-                      <p className="font-semibold text-slate-950 whitespace-nowrap">RS {item.price * item.quantity}</p>
-                    </div>
-                  ))}
+              <div className="rounded-[2rem] border border-slate-200 bg-white p-4 shadow-sm lg:sticky lg:top-20 sm:p-6">
+                <div className="mb-4 flex items-center justify-between gap-2">
+                  <h2 className="text-xl font-bold text-slate-950">Order Summary</h2>
                 </div>
 
-                <div className="border-t border-slate-300 pt-4 space-y-2">
-                  <div className="flex justify-between text-slate-700">
+                <div className="rounded-2xl border border-slate-200 bg-slate-50">
+                  <button
+                    type="button"
+                    onClick={() => setCartOpen((current) => !current)}
+                    className="flex w-full items-center justify-between px-4 py-3 text-left text-sm font-semibold text-slate-900"
+                  >
+                    <span>Cart Items</span>
+                    <span className="text-slate-500">{cartOpen ? 'Hide' : 'Show'}</span>
+                  </button>
+                  {cartOpen && (
+                    <div className="space-y-3 border-t border-slate-200 p-3">
+                      {items.map((item) => (
+                        <div key={item.productId} className="flex items-start gap-3 rounded-2xl bg-white p-2 shadow-sm">
+                          <div className="relative h-14 w-14 overflow-hidden rounded-xl bg-slate-100">
+                            <img src={item.image || '/placeholder.jpg'} alt={item.name} className="h-full w-full object-cover" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="min-w-0 flex-1">
+                                <p className="truncate text-sm font-semibold text-slate-900">{item.name}</p>
+                                <p className="text-xs text-slate-600">Rs {item.price} × {item.quantity}</p>
+                              </div>
+                              <button type="button" onClick={() => removeItem(item.productId)} className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-red-500" aria-label={`Remove ${item.name}`}>
+                                <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current"><path d="M9 3h6l1 2h4v2H4V5h4l1-2zm-1 7h2v8H8v-8zm6 0h2v8h-2v-8z" /></svg>
+                              </button>
+                            </div>
+                            <div className="mt-2 text-right text-sm font-semibold text-slate-900">Rs {item.price * item.quantity}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="mt-6 space-y-3 border-t border-slate-200 pt-4 text-sm text-slate-600">
+                  <div className="flex justify-between">
                     <span>Subtotal</span>
-                    <span className="font-semibold text-slate-950">RS {getTotalPrice()}</span>
+                    <span className="font-semibold text-slate-900">Rs {subtotal.toFixed(0)}</span>
                   </div>
-                  <div className="flex justify-between text-slate-700">
+                  <div className="flex justify-between">
                     <span>Shipping</span>
-                    <span className="font-semibold text-slate-950">RS 0</span>
+                    <span className="font-semibold text-slate-900">Rs {shippingCharge}</span>
                   </div>
-                  <div className="flex justify-between text-slate-700">
-                    <span>Tax</span>
-                    <span className="font-semibold text-slate-950">RS 0</span>
-                  </div>
-                  <div className="border-t border-slate-300 pt-2 flex justify-between text-lg font-bold text-slate-950">
+                  <div className="flex justify-between border-t border-slate-200 pt-3 text-base font-bold text-slate-950">
                     <span>Total</span>
-                    <span>RS {getTotalPrice()}</span>
+                    <span>Rs {total.toFixed(0)}</span>
                   </div>
+                </div>
+
+                <div className="mt-6 flex flex-col gap-3">
+                  <Link href="/products" className="inline-flex items-center justify-center rounded-2xl border border-primary px-4 py-3 text-sm font-semibold text-primary transition hover:bg-primary/5">
+                    Back to Shopping
+                  </Link>
                 </div>
               </div>
             </div>

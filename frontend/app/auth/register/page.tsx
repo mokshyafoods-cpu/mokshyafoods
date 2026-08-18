@@ -6,8 +6,14 @@ import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
+declare global {
+  interface Window {
+    google?: any;
+  }
+}
+
 function RegisterPageContent() {
-  const { register, isAuthenticated, user } = useAuth();
+  const { register, googleLogin, isAuthenticated, user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams?.get('redirect') || '/account/dashboard';
@@ -21,6 +27,7 @@ function RegisterPageContent() {
   });
   const [errors, setErrors] = useState<{ name?: string; email?: string; phone?: string; password?: string; confirmPassword?: string }>({});
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -33,6 +40,30 @@ function RegisterPageContent() {
       router.push(redirectTo || '/account/dashboard');
     }
   }, [isAuthenticated, user, router]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.google) return;
+
+    try {
+      window.google.accounts.id.initialize({
+        client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
+        callback: handleGoogleSignUp,
+        auto_select: false,
+      });
+
+      window.google.accounts.id.renderButton(
+        document.getElementById('google-signup-button'),
+        {
+          theme: 'outline',
+          size: 'large',
+          width: '100%',
+          text: 'signup_with',
+        }
+      );
+    } catch (error) {
+      console.error('Failed to initialize Google Sign-Up:', error);
+    }
+  }, []);
 
   const validateForm = () => {
     const newErrors: { name?: string; email?: string; phone?: string; password?: string; confirmPassword?: string } = {};
@@ -63,6 +94,24 @@ function RegisterPageContent() {
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  const handleGoogleSignUp = async (response: any) => {
+    try {
+      setGoogleLoading(true);
+      const newUser = await googleLogin(response.credential);
+      if (newUser?.role === 'admin') {
+        router.push('/admin');
+      } else if (!newUser?.isVerified && shouldRequireVerification(redirectTo)) {
+        router.push('/auth/verify?redirect=' + encodeURIComponent(redirectTo));
+      } else {
+        router.push(redirectTo || '/account/dashboard');
+      }
+    } catch (error: any) {
+      console.error('Google sign-up failed', error);
+    } finally {
+      setGoogleLoading(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -212,11 +261,22 @@ function RegisterPageContent() {
 
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || googleLoading}
                 className="w-full rounded-full bg-[#1b3a2b] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#162e21] disabled:opacity-50"
               >
                 {loading ? 'Creating account...' : 'Create Account'}
               </button>
+
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-[#ece1ca]"></div>
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="bg-white px-2 text-[#6d7a6d]">or</span>
+                </div>
+              </div>
+
+              <div id="google-signup-button" className="w-full"></div>
             </form>
 
             <div className="mt-6 border-t border-[#ece1ca] pt-5 text-center">

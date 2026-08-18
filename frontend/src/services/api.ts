@@ -17,11 +17,32 @@ const isAuthPage = () => {
   return window.location.pathname.startsWith('/auth');
 };
 
+const isPublicGuestRoute = () => {
+  if (typeof window === 'undefined') return false;
+
+  const pathname = window.location.pathname;
+  return (
+    pathname.startsWith('/checkout') ||
+    pathname.startsWith('/orders') ||
+    pathname.startsWith('/products') ||
+    pathname.startsWith('/cart') ||
+    pathname.startsWith('/wishlist') ||
+    pathname.startsWith('/blog') ||
+    pathname.startsWith('/contact') ||
+    pathname.startsWith('/about') ||
+    pathname.startsWith('/faq') ||
+    pathname.startsWith('/privacy') ||
+    pathname.startsWith('/terms') ||
+    pathname.startsWith('/refund') ||
+    pathname === '/'
+  );
+};
+
 const triggerAuthRedirect = () => {
   if (typeof window === 'undefined') return;
 
   const path = window.location.pathname + window.location.search;
-  if (isAuthPage() || sessionStorage.getItem(AUTH_REDIRECT_KEY) === '1') return;
+  if (isAuthPage() || isPublicGuestRoute() || sessionStorage.getItem(AUTH_REDIRECT_KEY) === '1') return;
 
   sessionStorage.setItem(AUTH_REDIRECT_KEY, '1');
   localStorage.removeItem('token');
@@ -102,11 +123,15 @@ apiClient.interceptors.response.use(
     }
 
     if (error.response.status === 401) {
+      const requestUrl = String(error?.config?.url || '');
+      const publicOrderLookup = /\/orders\//.test(requestUrl) && requestUrl.split('/orders/').length > 1;
+      const isPublicPage = isPublicGuestRoute();
+
       if (typeof window !== 'undefined') {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
 
-        if (!isAuthPage()) {
+        if (!publicOrderLookup && !isPublicPage && !isAuthPage()) {
           triggerAuthRedirect();
         }
       }
@@ -131,6 +156,7 @@ export const authAPI = {
   resendOtp: () => apiClient.post('/auth/resend-otp'),
   forgotPassword: (data: any) => apiClient.post('/auth/forgot-password', data),
   resetPassword: (token: string, data: any) => apiClient.post(`/auth/reset-password/${token}`, data),
+  googleLogin: (data: any) => apiClient.post('/auth/google-login', data),
 };
 
 export const productAPI = {

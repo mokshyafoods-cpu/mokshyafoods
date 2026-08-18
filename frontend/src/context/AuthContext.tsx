@@ -34,6 +34,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<User>;
   register: (name: string, email: string, password: string, phone: string) => Promise<User>;
+  googleLogin: (credential: string) => Promise<User>;
   verifyEmail: (otp: string) => Promise<void>;
   resendOtp: () => Promise<void>;
   updateProfile: (data: any) => Promise<User>;
@@ -116,7 +117,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         localStorage.setItem('user', JSON.stringify(profile));
       } catch (error: any) {
         if (!active) return;
-        console.error('Failed to refresh user profile:', error);
 
         const status = error.response?.status;
         if (!error.response || status === 401 || status === 403) {
@@ -124,7 +124,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setToken(null);
           localStorage.removeItem('token');
           localStorage.removeItem('user');
+          return;
         }
+
+        console.error('Failed to refresh user profile:', error);
       } finally {
         if (active) {
           setIsLoading(false);
@@ -189,6 +192,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return userPayload as any;
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Registration failed');
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const googleLogin = async (credential: string) => {
+    try {
+      setIsLoading(true);
+      const response = await authAPI.googleLogin({ credential });
+      const body = response?.data ?? response;
+      const payload = body?.data ?? body;
+      const token = body?.token || payload?.token;
+      const userPayload = body?.user || payload?.user || payload?.data || payload;
+      if (token) {
+        setToken(token as string);
+        localStorage.setItem('token', token as string);
+      }
+      if (userPayload) {
+        setUser(userPayload as any);
+        localStorage.setItem('user', JSON.stringify(userPayload));
+      }
+      clearAuthRedirectLock();
+      await mergeGuestWishlistIntoAccount();
+      toast.success('Google login successful');
+      return userPayload as any;
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Google login failed');
       throw error;
     } finally {
       setIsLoading(false);
@@ -315,6 +346,7 @@ try {
         isAuthenticated: !!(token || user),
         login,
         register,
+        googleLogin,
         verifyEmail,
         resendOtp,
         updateProfile,

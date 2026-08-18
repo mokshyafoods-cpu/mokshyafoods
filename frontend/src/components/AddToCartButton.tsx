@@ -51,26 +51,13 @@ export default function AddToCartButton({
     const normalizedPrice = Number(price ?? product?.computedPrice ?? product?.discountPrice ?? product?.price ?? 0);
     const normalizedImage = image || product?.thumbnail || product?.image || product?.images?.[0]?.url || '/placeholder.jpg';
 
+    // Only store minimal data to avoid localStorage quota exceeded errors
     addItem({
       productId: product._id || product.id,
       name: product.name,
       price: normalizedPrice,
       quantity: 1,
       image: normalizedImage,
-      description: product.description,
-      category: typeof product.category === 'string' ? product.category : product.category?.name || 'Uncategorized',
-      sku: product.sku,
-      weight: product.weight,
-      stock: product.quantity,
-      thumbnail: normalizedImage,
-      images: (product.images || []).map((img: any) => img?.url || img?.secure_url || img?.path).filter(Boolean),
-      discountPrice: product.discountPrice,
-      compareAtPrice: product.price,
-      onSale: product.onSale,
-      rating: product.rating,
-      reviewCount: product.reviewCount,
-      packaging: product.packaging,
-      origin: product.origin,
     });
 
     toast.success('Added to cart', {

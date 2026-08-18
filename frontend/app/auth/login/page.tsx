@@ -8,8 +8,14 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 
+declare global {
+  interface Window {
+    google?: any;
+  }
+}
+
 function LoginPageContent() {
-  const { login, isAuthenticated, user } = useAuth();
+  const { login, googleLogin, isAuthenticated, user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams?.get('redirect') || '/account/dashboard';
@@ -20,6 +26,7 @@ function LoginPageContent() {
   });
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -32,6 +39,30 @@ function LoginPageContent() {
       router.replace(redirectTo || '/account/dashboard');
     }
   }, [isAuthenticated, user, router]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.google) return;
+
+    try {
+      window.google.accounts.id.initialize({
+        client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
+        callback: handleGoogleSignIn,
+        auto_select: false,
+      });
+
+      window.google.accounts.id.renderButton(
+        document.getElementById('google-signin-button'),
+        {
+          theme: 'outline',
+          size: 'large',
+          width: '100%',
+          text: 'continue_with',
+        }
+      );
+    } catch (error) {
+      console.error('Failed to initialize Google Sign-In:', error);
+    }
+  }, []);
 
   const validateForm = () => {
     const newErrors: { email?: string; password?: string } = {};
@@ -50,6 +81,24 @@ function LoginPageContent() {
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  const handleGoogleSignIn = async (response: any) => {
+    try {
+      setGoogleLoading(true);
+      const loggedInUser = await googleLogin(response.credential);
+      if (loggedInUser?.role === 'admin') {
+        router.replace('/admin');
+      } else if (!loggedInUser?.isVerified && shouldRequireVerification(redirectTo)) {
+        router.replace('/auth/verify?redirect=' + encodeURIComponent(redirectTo));
+      } else {
+        router.replace(redirectTo || '/account/dashboard');
+      }
+    } catch (error: any) {
+      console.error('Google login failed', error);
+    } finally {
+      setGoogleLoading(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -169,12 +218,23 @@ function LoginPageContent() {
 
               <Button
                 type="submit"
-                disabled={loading}
+                disabled={loading || googleLoading}
                 loading={loading}
                 className="w-full rounded-full bg-[#1b3a2b] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#162e21]"
               >
                 Sign In
               </Button>
+
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-[#ece1ca]"></div>
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="bg-white px-2 text-[#6d7a6d]">or</span>
+                </div>
+              </div>
+
+              <div id="google-signin-button" className="w-full"></div>
             </form>
 
             <div className="mt-6 border-t border-[#ece1ca] pt-5 text-center">

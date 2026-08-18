@@ -184,7 +184,7 @@ const buildOrderEmailContent = (order: any, variant: 'customer' | 'admin' = 'cus
 const sendOrderNotifications = async (order: any): Promise<void> => {
   const adminRecipients = Array.from(
     new Set(
-      [process.env.ADMIN_EMAIL, process.env.EMAIL_USER, process.env.EMAIL_FROM].filter((value): value is string => Boolean(value))
+      [process.env.ADMIN_EMAIL, process.env.EMAIL_USER, process.env.EMAIL_FROM, 'mokshyafoods@gmail.com'].filter((value): value is string => Boolean(value))
     )
   );
   const customerRecipients = Array.from(
@@ -265,13 +265,11 @@ const sendOrderStatusNotification = async (order: any, previousStatus: string, n
 export const createOrder = async (req: AuthenticatedRequest, res: Response): Promise<Response> => {
   try {
     const userId = req.userId;
-    if (!userId) {
-      return res.status(401).json({ success: false, message: 'Authentication required' });
-    }
-
     const body = req.body || {};
     const items = Array.isArray(body.items) ? body.items : [];
-    const shippingAddress = body.shippingAddress;
+    const shippingAddress = body.shippingAddress || {};
+    const deliveryZone = String(body.deliveryZone || shippingAddress.deliveryZone || shippingAddress.location || 'inside-butwal').trim().toLowerCase();
+    const shippingCharge = Number(body.deliveryCharge ?? body.shippingCost ?? (deliveryZone === 'outside-butwal' ? 100 : 0));
 
     if (!items.length) {
       return res.status(400).json({ success: false, message: 'Items are required' });
@@ -281,7 +279,7 @@ export const createOrder = async (req: AuthenticatedRequest, res: Response): Pro
       return res.status(400).json({ success: false, message: 'Shipping address is required' });
     }
 
-    if (!shippingAddress.name || !shippingAddress.phone || !shippingAddress.street || !shippingAddress.city || !shippingAddress.country) {
+    if (!shippingAddress.name || !shippingAddress.phone || !(shippingAddress.street || shippingAddress.address)) {
       return res.status(400).json({ success: false, message: 'Please provide your full name, phone number, and delivery address' });
     }
 
@@ -354,23 +352,38 @@ export const createOrder = async (req: AuthenticatedRequest, res: Response): Pro
     }
 
     const subtotal = trustedItems.reduce((sum, item) => sum + (Number(item.subtotal) || 0), 0);
-    const deliveryCharge = 0;
+    const deliveryCharge = Number.isFinite(shippingCharge) ? shippingCharge : (deliveryZone === 'outside-butwal' ? 100 : 0);
     const total = subtotal + deliveryCharge;
     const orderNumber = buildOrderNumber();
+    const getZoneName = (zone: string) => (zone === 'outside-butwal' ? 'Outside Butwal' : 'Inside Butwal');
+    const guestShippingAddress = {
+      ...shippingAddress,
+      name: shippingAddress.name || '',
+      email: shippingAddress.email || '',
+      phone: shippingAddress.phone || '',
+      street: shippingAddress.street || shippingAddress.address || '',
+      address: shippingAddress.address || shippingAddress.street || '',
+      city: shippingAddress.city || getZoneName(deliveryZone),
+      state: shippingAddress.state || getZoneName(deliveryZone),
+      country: shippingAddress.country || 'Nepal',
+      location: deliveryZone,
+      deliveryZone,
+    };
 
     const orderDoc = {
       orderNumber,
-      userId,
+      customer: userId || null,
+      userId: userId || null,
       user: {
-        _id: userId,
-        id: userId,
+        _id: userId || null,
+        id: userId || null,
         name: shippingAddress.name || '',
         email: shippingAddress.email || '',
         phone: shippingAddress.phone || '',
       },
       items: trustedItems,
-      shippingAddress,
-      paymentMethod: 'cod',
+      shippingAddress: guestShippingAddress,
+      paymentMethod: normalizedPaymentMethod,
       paymentStatus: 'pending',
       couponCode: body.couponCode || '',
       notes: body.notes || '',
@@ -378,6 +391,7 @@ export const createOrder = async (req: AuthenticatedRequest, res: Response): Pro
       subtotal,
       deliveryCharge,
       shippingCost: deliveryCharge,
+      deliveryZone,
       total,
       status: 'pending',
       orderStatus: 'pending',
@@ -510,7 +524,7 @@ export const getOrderById = async (req: AuthenticatedRequest, res: Response): Pr
     const orderOwnerId = order.userId || order.user?.id || order.user?._id || '';
     const isOwner = Boolean(userId && (orderOwnerId === userId || order.user?._id === userId || order.user?.id === userId));
 
-    if (!isAdmin && !isOwner) {
+    if (!isAdmin && !isOwner && userId) {
       return res.status(403).json({ success: false, message: 'You do not have access to this order' });
     }
 

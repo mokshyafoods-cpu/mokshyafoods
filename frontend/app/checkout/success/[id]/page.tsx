@@ -15,15 +15,41 @@ export default function CheckoutSuccessPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (!orderId) return;
+    if (!orderId) {
+      setIsLoading(false);
+      return;
+    }
+
+    const fallbackOrder = (() => {
+      if (typeof window === 'undefined') return null;
+      try {
+        const saved = sessionStorage.getItem('last-order-confirmation');
+        if (!saved) return null;
+        const parsed = JSON.parse(saved);
+        return parsed?._id === orderId || parsed?.id === orderId ? parsed : null;
+      } catch {
+        return null;
+      }
+    })();
+
+    if (fallbackOrder) {
+      setOrder(fallbackOrder);
+      setIsLoading(false);
+      return;
+    }
 
     const loadOrder = async () => {
       try {
         const response = await orderAPI.getById(orderId);
         const payload = response?.data?.data ?? response?.data ?? response;
         setOrder(payload ?? null);
-      } catch (error) {
-        console.error('Failed to load order confirmation', error);
+      } catch (error: any) {
+        if (error?.response?.status === 401 || error?.response?.status === 403) {
+          setOrder(null);
+        } else {
+          console.error('Failed to load order confirmation', error);
+          setOrder(null);
+        }
       } finally {
         setIsLoading(false);
       }
@@ -121,14 +147,18 @@ export default function CheckoutSuccessPage() {
               </div>
             </div>
           ) : (
-            <div className="mt-8 rounded-[1.5rem] border border-rose-200 bg-rose-50 p-8 text-center text-rose-700">
-              We could not load your order confirmation details. Please check your order history for updates.
+            <div className="mt-8 rounded-[1.5rem] border border-amber-200 bg-amber-50 p-8 text-center text-amber-800">
+              Your order was placed successfully. You can track it using the order number below or continue shopping.
+              <div className="mt-4 text-left rounded-[1rem] border border-amber-200 bg-white px-4 py-3 text-sm text-slate-700">
+                <p className="font-semibold text-slate-900">Order reference</p>
+                <p className="mt-1 font-mono">{orderId}</p>
+              </div>
             </div>
           )}
 
           <div className="mt-8 flex flex-wrap gap-3">
-            <Link href="/orders" className="rounded-full bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-primary/90">View my orders</Link>
-            <Link href="/products" className="rounded-full border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">Continue shopping</Link>
+            <Link href={`/orders/${orderId}`} className="rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white transition hover:bg-primary/90">Track my order</Link>
+            <Link href="/products" className="rounded-full border border-slate-300 px-6 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">Continue shopping</Link>
           </div>
         </div>
       </main>
