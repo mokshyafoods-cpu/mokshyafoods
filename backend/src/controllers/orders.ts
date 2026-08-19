@@ -473,7 +473,7 @@ export const getAllOrders = async (req: AuthenticatedRequest, res: Response): Pr
     }
 
     const total = await ordersColl.countDocuments(filter);
-    const orders = await ordersColl.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).toArray();
+    const orders = await ordersColl.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).allowDiskUse(true).toArray();
 
     return res.json({ success: true, message: 'Orders loaded', data: orders, pagination: { page, limit, total } });
   } catch (error: any) {
@@ -497,6 +497,7 @@ export const getUserOrders = async (req: AuthenticatedRequest, res: Response): P
         $or: [{ 'user._id': userId }, { 'user.id': userId }, { userId }, { user: userId }],
       })
       .sort({ createdAt: -1 })
+      .allowDiskUse(true)
       .toArray();
 
     return res.json({ success: true, message: 'User orders loaded', data: orders });

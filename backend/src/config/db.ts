@@ -4,6 +4,7 @@ const ensureOrdersIndexes = async (): Promise<void> => {
   try {
     const ordersColl = mongoose.connection.collection('orders');
 
+    await ordersColl.createIndex({ createdAt: -1 }, { name: 'orders_createdAt_idx' });
     await ordersColl.createIndex({ isDeleted: 1, createdAt: -1 }, { name: 'orders_isDeleted_createdAt_idx' });
     await ordersColl.createIndex({ status: 1, createdAt: -1 }, { name: 'orders_status_createdAt_idx' });
     await ordersColl.createIndex({ orderStatus: 1, createdAt: -1 }, { name: 'orders_orderStatus_createdAt_idx' });
