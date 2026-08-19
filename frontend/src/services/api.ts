@@ -2,7 +2,7 @@ import axios from 'axios';
 import { toast } from 'sonner';
 
 const DEFAULT_API_BASE_URL = 'https://mokshyafoods.onrender.com/api';
-const REQUEST_TIMEOUT_MS = 12_000;
+const REQUEST_TIMEOUT_MS = 60_000;
 
 const normalizeApiBaseUrl = (value?: string) => {
   const raw = (value || DEFAULT_API_BASE_URL).trim();
