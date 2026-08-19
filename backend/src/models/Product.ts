@@ -33,7 +33,14 @@ export interface IProduct extends Document {
 }
 
 const imageSchema = new Schema<IImage>({
-  url: { type: String, required: true },
+  url: {
+    type: String,
+    required: true,
+    validate: {
+      validator: (value: string) => /^https?:\/\//i.test(value),
+      message: 'Image URL must use http or https',
+    },
+  },
   cloudinaryId: { type: String },
 });
 

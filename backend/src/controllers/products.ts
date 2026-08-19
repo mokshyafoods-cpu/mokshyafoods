@@ -14,6 +14,27 @@ const createSlug = (value?: string | null) => {
     .replace(/(^-|-$)/g, '');
 };
 
+const isHttpImageUrl = (value: unknown): value is string => {
+  if (typeof value !== 'string' || !value.trim()) return false;
+  try {
+    const url = new URL(value.trim());
+    return (url.protocol === 'http:' || url.protocol === 'https:') && !value.trim().startsWith('data:');
+  } catch {
+    return false;
+  }
+};
+
+const normalizeHttpImages = (value: unknown): { url: string; cloudinaryId?: string }[] => {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((image: any) => {
+      const url = typeof image === 'string' ? image : image?.url;
+      if (!isHttpImageUrl(url)) return null;
+      return { url: url.trim(), ...(typeof image === 'object' && image.cloudinaryId ? { cloudinaryId: image.cloudinaryId } : {}) };
+    })
+    .filter((image): image is { url: string; cloudinaryId?: string } => Boolean(image));
+};
+
 export const getAllProducts = async (req: Request, res: Response): Promise<Response> => {
   try {
     const search = typeof req.query.search === 'string' ? req.query.search.trim() : '';
@@ -129,7 +150,7 @@ export const getAllProducts = async (req: Request, res: Response): Promise<Respo
     const skip = (page - 1) * limit;
 
     const products = await Product.find(query)
-      .select('name slug sku price discountPrice onSale saleStart saleEnd thumbnail images rating reviewCount category featured isActive createdAt updatedAt description tags packaging')
+      .select('name slug sku price discountPrice onSale saleStart saleEnd thumbnail rating reviewCount category featured isActive createdAt updatedAt description tags packaging')
       .sort(sortMap[sortOption] || sortMap.latest)
       .skip(skip)
       .limit(limit)
@@ -256,9 +277,15 @@ export const createProduct = async (req: Request, res: Response): Promise<Respon
     if (normalizedImages.length > 0) {
       body.images = normalizedImages;
     } else if (body.images !== undefined && typeof body.images === 'string') {
-      try { body.images = JSON.parse(body.images); } catch { body.images = []; }
+      try { body.images = normalizeHttpImages(JSON.parse(body.images)); } catch { body.images = []; }
+    } else if (body.images !== undefined) {
+      body.images = normalizeHttpImages(body.images);
     } else {
       body.images = [];
+    }
+
+    if (body.thumbnail !== undefined && body.thumbnail !== '' && !isHttpImageUrl(body.thumbnail)) {
+      delete body.thumbnail;
     }
 
     const created = await Product.create(body);
@@ -334,7 +361,7 @@ export const updateProduct = async (req: Request, res: Response): Promise<Respon
       try {
         const keepImages = typeof update.keepImages === 'string' ? JSON.parse(update.keepImages) : update.keepImages;
         if (Array.isArray(keepImages)) {
-          finalImages = keepImages.map((url: string) => ({ url, cloudinaryId: undefined }));
+          finalImages = normalizeHttpImages(keepImages);
         }
       } catch (e) {
         console.log('Failed to parse keepImages');
@@ -349,6 +376,9 @@ export const updateProduct = async (req: Request, res: Response): Promise<Respon
 
     // Set the images in the update
     update.images = finalImages;
+    if (update.thumbnail !== undefined && update.thumbnail !== '' && !isHttpImageUrl(update.thumbnail)) {
+      delete update.thumbnail;
+    }
     
     const filter = mongoose.Types.ObjectId.isValid(id) ? { _id: new mongoose.Types.ObjectId(id) } : { id };
     const updated = await Product.findOneAndUpdate(filter, update, { new: true }).lean().exec();
