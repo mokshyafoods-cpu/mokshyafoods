@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import mongoose from 'mongoose';
 import Product from '../models/Product';
+import { cloudinaryConfigured, uploadBuffer } from '../config/cloudinary';
 
 const createSlug = (value?: string | null) => {
   if (!value) return '';
@@ -201,22 +202,19 @@ export const createProduct = async (req: Request, res: Response): Promise<Respon
     const raw = req.body || {};
     const body: any = { ...raw };
     const uploadedFiles = Array.isArray((req as any).files) ? (req as any).files : [];
-    const normalizedImages = uploadedFiles
-      .map((file: any) => {
+    if (uploadedFiles.length > 0 && !cloudinaryConfigured) {
+      return res.status(503).json({ success: false, message: 'Image uploads are temporarily unavailable. Configure Cloudinary first.' });
+    }
+    const normalizedImages = (await Promise.all(uploadedFiles.map(async (file: any) => {
         if (file?.buffer && Buffer.isBuffer(file.buffer)) {
-          const mimeType = file.mimetype || 'image/png';
-          const base64 = file.buffer.toString('base64');
-          return {
-            url: `data:${mimeType};base64,${base64}`,
-            cloudinaryId: undefined,
-          };
+          return uploadBuffer(file.buffer, 'mokshya-foods/products');
         }
 
         return {
           url: file?.path || file?.secure_url || file?.url || '',
           cloudinaryId: file?.filename || file?.public_id || undefined,
         };
-      })
+      })))
       .filter((image: any) => image.url);
     const normalizeCategory = (value: any) => {
       if (value === undefined || value === null || value === '') return undefined;
@@ -277,22 +275,19 @@ export const updateProduct = async (req: Request, res: Response): Promise<Respon
     const raw = req.body || {};
     const update: any = { ...raw };
     const uploadedFiles = Array.isArray((req as any).files) ? (req as any).files : [];
-    const normalizedImages = uploadedFiles
-      .map((file: any) => {
+    if (uploadedFiles.length > 0 && !cloudinaryConfigured) {
+      return res.status(503).json({ success: false, message: 'Image uploads are temporarily unavailable. Configure Cloudinary first.' });
+    }
+    const normalizedImages = (await Promise.all(uploadedFiles.map(async (file: any) => {
         if (file?.buffer && Buffer.isBuffer(file.buffer)) {
-          const mimeType = file.mimetype || 'image/png';
-          const base64 = file.buffer.toString('base64');
-          return {
-            url: `data:${mimeType};base64,${base64}`,
-            cloudinaryId: undefined,
-          };
+          return uploadBuffer(file.buffer, 'mokshya-foods/products');
         }
 
         return {
           url: file?.path || file?.secure_url || file?.url || '',
           cloudinaryId: file?.filename || file?.public_id || undefined,
         };
-      })
+      })))
       .filter((image: any) => image.url);
     const normalizeCategory = (value: any) => {
       if (value === undefined || value === null || value === '') return undefined;

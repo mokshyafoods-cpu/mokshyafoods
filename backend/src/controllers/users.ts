@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import User from '../models/User';
+import { cloudinaryConfigured, uploadBuffer } from '../config/cloudinary';
 
 type AuthenticatedRequest = Request & { userId?: string; userRole?: string };
 
@@ -60,8 +61,11 @@ export const updateProfile = async (req: AuthenticatedRequest, res: Response): P
     }
 
     if ((req as any).file?.buffer) {
-      const mimeType = (req as any).file.mimetype || 'image/png';
-      update.avatar = `data:${mimeType};base64,${(req as any).file.buffer.toString('base64')}`;
+      if (!cloudinaryConfigured) {
+        return res.status(503).json({ success: false, message: 'Avatar uploads are temporarily unavailable. Configure Cloudinary first.' });
+      }
+      const uploadedAvatar = await uploadBuffer((req as any).file.buffer, 'mokshya-foods/avatars');
+      update.avatar = uploadedAvatar.url;
     } else if ((req as any).file?.path) {
       update.avatar = (req as any).file.path;
     }

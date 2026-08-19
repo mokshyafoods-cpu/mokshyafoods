@@ -17,7 +17,7 @@ if (hasCloudinaryConfig) {
     api_secret: apiSecret,
   });
 } else {
-  console.warn('Cloudinary credentials missing; images will be stored as in-memory data URLs so product creation can complete without hanging.');
+  console.warn('Cloudinary credentials missing; image uploads will be rejected until Cloudinary is configured.');
 }
 
 const storage = multer.memoryStorage();
@@ -39,4 +39,15 @@ const uploadMiddleware = multer({
 });
 
 export const upload = uploadMiddleware;
+export const cloudinaryConfigured = hasCloudinaryConfig;
+export const uploadBuffer = (buffer: Buffer, folder: string): Promise<{ url: string; cloudinaryId: string }> => new Promise((resolve, reject) => {
+  const stream = cloudinary.uploader.upload_stream({ folder, resource_type: 'image' }, (error, result) => {
+    if (error || !result) {
+      reject(error || new Error('Cloudinary upload failed'));
+      return;
+    }
+    resolve({ url: result.secure_url, cloudinaryId: result.public_id });
+  });
+  stream.end(buffer);
+});
 export default cloudinary;

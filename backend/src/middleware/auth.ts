@@ -39,10 +39,11 @@ export const authMiddleware = (req: AuthenticatedRequest, res: Response, next: N
 
     const normalizedRole = [decoded.role, decoded.userRole, Array.isArray(decoded.roles) ? decoded.roles[0] : undefined]
       .find((value): value is string => Boolean(value)) || '';
+    const trimmedRole = String(normalizedRole).trim().toLowerCase();
     const normalizedUserId = decoded.id || decoded.userId || decoded._id || '';
 
     req.userId = normalizedUserId;
-    req.userRole = normalizedRole;
+    req.userRole = trimmedRole;
     next();
   } catch (error) {
     res.status(401).json({
@@ -81,10 +82,11 @@ export const optionalAuthMiddleware = (req: AuthenticatedRequest, _res: Response
 
     const normalizedRole = [decoded.role, decoded.userRole, Array.isArray(decoded.roles) ? decoded.roles[0] : undefined]
       .find((value): value is string => Boolean(value)) || '';
+    const trimmedRole = String(normalizedRole).trim().toLowerCase();
     const normalizedUserId = decoded.id || decoded.userId || decoded._id || '';
 
     req.userId = normalizedUserId;
-    req.userRole = normalizedRole;
+    req.userRole = trimmedRole;
     next();
   } catch (error) {
     req.userId = undefined;

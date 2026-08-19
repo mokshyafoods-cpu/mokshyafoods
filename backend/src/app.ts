@@ -24,15 +24,31 @@ const app = express();
 app.use(helmet());
 app.disable('x-powered-by');
 
+const normalizeOrigin = (value?: string): string => {
+  if (!value) return '';
+
+  const trimmed = value.trim().replace(/\/+$/, '');
+  if (!trimmed) return '';
+
+  try {
+    const url = new URL(trimmed.includes('://') ? trimmed : `https://${trimmed}`);
+    const normalizedHost = `${url.hostname}${url.port ? `:${url.port}` : ''}`;
+    return `${url.protocol}//${normalizedHost}`.toLowerCase();
+  } catch {
+    return trimmed.toLowerCase();
+  }
+};
+
 const corsOptions: CorsOptions = {
   origin: (origin, callback) => {
+    const normalizedOrigin = normalizeOrigin(origin);
     const envFrontendUrls = process.env.FRONTEND_URLS
-      ? process.env.FRONTEND_URLS.split(',').map((url) => url.trim()).filter(Boolean)
+      ? process.env.FRONTEND_URLS.split(',').map((url) => normalizeOrigin(url)).filter(Boolean)
       : [];
 
     const allowedOrigins = Array.from(
       new Set([
-        process.env.FRONTEND_URL,
+        normalizeOrigin(process.env.FRONTEND_URL),
         ...envFrontendUrls,
         'https://mokshyafoods.com.np',
         'https://www.mokshyafoods.com.np',
@@ -47,39 +63,44 @@ const corsOptions: CorsOptions = {
         'http://localhost:5173',
         'http://127.0.0.1:5173',
       ].filter(Boolean) as string[]),
-    );
+    ).map((value) => value.toLowerCase());
 
     const allowsWildcardHost = (value: string, suffix: string) => value.endsWith(suffix);
     const isAllowedWildcardOrigin = Boolean(
       origin && (
-        allowsWildcardHost(origin, '.onrender.com') ||
-        allowsWildcardHost(origin, '.vercel.app') ||
-        allowsWildcardHost(origin, '.netlify.app') ||
-        allowsWildcardHost(origin, '.github.dev')
+        allowsWildcardHost(normalizedOrigin, '.onrender.com') ||
+        allowsWildcardHost(normalizedOrigin, '.vercel.app') ||
+        allowsWildcardHost(normalizedOrigin, '.netlify.app') ||
+        allowsWildcardHost(normalizedOrigin, '.github.dev')
       ),
     );
 
-    const isLocalOrigin = origin?.startsWith('http://localhost') || origin?.startsWith('http://127.0.0.1');
+    const isLocalOrigin = normalizedOrigin.startsWith('http://localhost') || normalizedOrigin.startsWith('https://localhost') || normalizedOrigin.startsWith('http://127.0.0.1') || normalizedOrigin.startsWith('https://127.0.0.1');
     const allowLocalOrigins = process.env.NODE_ENV !== 'production';
 
-    if (!origin || allowedOrigins.includes(origin) || isAllowedWildcardOrigin || (allowLocalOrigins && isLocalOrigin)) {
+    if (!origin || allowedOrigins.includes(normalizedOrigin) || isAllowedWildcardOrigin || (allowLocalOrigins && isLocalOrigin)) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));
     }
   },
   methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'Accept'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'Accept', 'X-Requested-With'],
   credentials: true,
-  optionsSuccessStatus: 200,
+  optionsSuccessStatus: 204,
   preflightContinue: false,
 };
 
 app.use(cors(corsOptions));
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ limit: '50mb', extended: true }));
+app.use(express.json({ limit: '2mb' }));
+app.use(express.urlencoded({ limit: '2mb', extended: true }));
 
 app.use((req: Request, res: Response, next: NextFunction) => {
+  if (req.method === 'OPTIONS') {
+    res.sendStatus(204);
+    return;
+  }
+
   console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
   next();
 });
