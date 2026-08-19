@@ -7,11 +7,12 @@ dotenv.config();
 const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
 const apiKey = process.env.CLOUDINARY_API_KEY;
 const apiSecret = process.env.CLOUDINARY_API_SECRET;
+const cloudinaryUrl = process.env.CLOUDINARY_URL?.trim();
 
-const hasCloudinaryConfig = Boolean(cloudName && apiKey && apiSecret);
+const hasCloudinaryConfig = Boolean(cloudinaryUrl || (cloudName && apiKey && apiSecret));
 
 if (hasCloudinaryConfig) {
-  cloudinary.config({
+  cloudinary.config(cloudinaryUrl ? { cloudinary_url: cloudinaryUrl } : {
     cloud_name: cloudName,
     api_key: apiKey,
     api_secret: apiSecret,
