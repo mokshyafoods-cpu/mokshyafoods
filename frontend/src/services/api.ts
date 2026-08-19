@@ -3,7 +3,7 @@ import { toast } from 'sonner';
 
 const LOCAL_API_BASE_URL = 'http://localhost:5000/api';
 const REMOTE_API_BASE_URL = 'https://mokshyafoods.onrender.com/api';
-const REQUEST_TIMEOUT_MS = 8_000;
+const REQUEST_TIMEOUT_MS = 60_000;
 const MAX_RETRIES = 1;
 const AUTH_REDIRECT_KEY = 'auth-redirect-triggered';
 
