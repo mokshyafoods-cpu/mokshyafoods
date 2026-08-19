@@ -472,8 +472,8 @@ export const getAllOrders = async (req: AuthenticatedRequest, res: Response): Pr
       ];
     }
 
-    const total = await ordersColl.countDocuments(filter);
-    const orders = await ordersColl.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).allowDiskUse(true).toArray();
+    const total = await ordersColl.countDocuments(filter, { maxTimeMS: 5000 });
+    const orders = await ordersColl.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).maxTimeMS(5000).allowDiskUse(true).toArray();
 
     return res.json({ success: true, message: 'Orders loaded', data: orders, pagination: { page, limit, total } });
   } catch (error: any) {

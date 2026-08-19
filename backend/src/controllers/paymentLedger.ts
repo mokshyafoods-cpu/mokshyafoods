@@ -166,8 +166,8 @@ export const getAllPaymentLedger = async (req: AuthenticatedRequest, res: Respon
       ];
     }
 
-    const total = await ledgerColl.countDocuments(filter);
-    const ledgerRows = await ledgerColl.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).toArray();
+    const total = await ledgerColl.countDocuments(filter, { maxTimeMS: 5000 });
+    const ledgerRows = await ledgerColl.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).maxTimeMS(5000).toArray();
 
     return res.json({
       success: true,
