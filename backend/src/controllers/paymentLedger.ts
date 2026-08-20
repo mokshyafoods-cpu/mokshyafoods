@@ -167,7 +167,12 @@ export const getAllPaymentLedger = async (req: AuthenticatedRequest, res: Respon
     }
 
     const total = await ledgerColl.countDocuments(filter, { maxTimeMS: 5000 });
-    const ledgerRows = await ledgerColl.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).maxTimeMS(5000).toArray();
+    const ledgerRows = await ledgerColl.find(filter, {
+      projection: {
+        'items.productData.images': 0,
+        'items.productData.thumbnail': 0,
+      },
+    }).sort({ createdAt: -1 }).skip(skip).limit(limit).maxTimeMS(5000).toArray();
 
     return res.json({
       success: true,

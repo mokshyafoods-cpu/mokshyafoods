@@ -301,7 +301,10 @@ export const createOrder = async (req: AuthenticatedRequest, res: Response): Pro
 
     const productMap = new Map<string, any>();
     if (productIds.length) {
-      const products = await productsColl.find({ _id: { $in: productIds }, isActive: { $ne: false } }).toArray();
+      const products = await productsColl.find(
+        { _id: { $in: productIds }, isActive: { $ne: false } },
+        { projection: { name: 1, sku: 1, price: 1, discountPrice: 1, onSale: 1, saleStart: 1, saleEnd: 1, thumbnail: 1, images: 1, quantity: 1 } },
+      ).maxTimeMS(5000).toArray();
       products.forEach((product: any) => productMap.set(product._id.toString(), product));
     }
 
@@ -333,17 +336,19 @@ export const createOrder = async (req: AuthenticatedRequest, res: Response): Pro
         saleEnd: product.saleEnd,
       });
       const trustedSubtotal = requestedQuantity * trustedPrice;
+      const productImage = [product.thumbnail, product.images?.[0]?.url]
+        .find((value) => typeof value === 'string' && /^https?:\/\//i.test(value)) || '/placeholder.jpg';
+
       trustedItems.push({
-        ...item,
+        productId: item.productId,
+        quantity: requestedQuantity,
         price: trustedPrice,
         subtotal: trustedSubtotal,
         name: product.name || item.name || 'Product',
         productData: {
           _id: product._id?.toString?.() || product._id,
           name: product.name,
-          description: product.description,
-          thumbnail: product.thumbnail || product.image || product.images?.[0]?.url || '/placeholder.jpg',
-          images: Array.isArray(product.images) ? product.images : [],
+          thumbnail: productImage,
           sku: product.sku,
           price: product.price,
           discountPrice: product.discountPrice,
@@ -473,7 +478,12 @@ export const getAllOrders = async (req: AuthenticatedRequest, res: Response): Pr
     }
 
     const total = await ordersColl.countDocuments(filter, { maxTimeMS: 5000 });
-    const orders = await ordersColl.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).maxTimeMS(5000).allowDiskUse(true).toArray();
+    const orders = await ordersColl.find(filter, {
+      projection: {
+        'items.productData.images': 0,
+        'items.productData.thumbnail': 0,
+      },
+    }).sort({ createdAt: -1 }).skip(skip).limit(limit).maxTimeMS(5000).allowDiskUse(true).toArray();
 
     return res.json({ success: true, message: 'Orders loaded', data: orders, pagination: { page, limit, total } });
   } catch (error: any) {
@@ -495,6 +505,11 @@ export const getUserOrders = async (req: AuthenticatedRequest, res: Response): P
       .find({
         isDeleted: { $ne: true },
         $or: [{ 'user._id': userId }, { 'user.id': userId }, { userId }, { user: userId }],
+      }, {
+        projection: {
+          'items.productData.images': 0,
+          'items.productData.thumbnail': 0,
+        },
       })
       .sort({ createdAt: -1 })
       .allowDiskUse(true)
