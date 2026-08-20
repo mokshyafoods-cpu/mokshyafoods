@@ -1,7 +1,7 @@
 import express, { Request, Response } from 'express';
 import { createOrder, getAllOrders, getUserOrders, getOrderById, updateOrderStatus, deleteOrder } from '../controllers/orders';
 import { authMiddleware, optionalAuthMiddleware } from '../middleware/auth';
-import { createOrderValidator, updateOrderValidator, validateRequest } from '../middleware/validation';
+import { createOrderValidator, updateOrderValidator, validateRequest } from '../middleware/zodValidation';
 
 interface AuthenticatedRequest extends Request {
   userRole?: string;

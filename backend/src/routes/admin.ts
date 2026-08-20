@@ -19,7 +19,7 @@ import {
   updateStock,
 } from '../controllers/admin';
 import { adminMiddleware } from '../middleware/auth';
-import { updateStockValidator, validateRequest } from '../middleware/validation';
+import { updateStockValidator, validateRequest } from '../middleware/zodValidation';
 
 const router = express.Router();
 

@@ -16,7 +16,7 @@ import {
   validateRequest,
   genericPaymentInitiateValidator,
   genericPaymentVerifyValidator,
-} from '../middleware/validation';
+} from '../middleware/zodValidation';
 
 const router = express.Router();
 

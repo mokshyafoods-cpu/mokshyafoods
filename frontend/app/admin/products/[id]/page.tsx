@@ -60,7 +60,9 @@ export default function EditProductPage() {
           categoryAPI.getAll(),
           productAPI.getById(id, { includeInactive: true }),
         ]);
-        const categoryPayload = categoryResponse?.data?.data ?? categoryResponse?.data ?? [];
+        const categoryPayload = Array.isArray(categoryResponse?.data)
+          ? categoryResponse.data
+          : categoryResponse?.data?.data ?? [];
         setCategories(Array.isArray(categoryPayload) ? categoryPayload : []);
         const productData = productResponse?.data?.data ?? productResponse?.data ?? null;
         setProduct(productData);

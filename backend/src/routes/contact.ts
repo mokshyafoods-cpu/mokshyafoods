@@ -1,7 +1,7 @@
 import express from 'express';
 import { createContactMessage, getAllMessages, updateMessageStatus } from '../controllers/contact';
 import { adminMiddleware } from '../middleware/auth';
-import { contactMessageValidator, updateMessageStatusValidator, validateRequest } from '../middleware/validation';
+import { contactMessageValidator, updateMessageStatusValidator, validateRequest } from '../middleware/zodValidation';
 import { contactLimiter } from '../middleware/rateLimit';
 
 const router = express.Router();

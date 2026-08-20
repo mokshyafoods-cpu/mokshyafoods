@@ -2,7 +2,7 @@ import express from 'express';
 import { register, login, logout, verifyEmail, resendOtp, forgotPassword, resetPassword, googleLogin } from '../controllers/auth';
 import { authMiddleware } from '../middleware/auth';
 import { authLimiter } from '../middleware/rateLimit';
-import { authRegisterValidator, authLoginValidator, authVerifyOtpValidator, forgotPasswordValidator, resetPasswordValidator, googleLoginValidator, validateRequest } from '../middleware/validation';
+import { authRegisterValidator, authLoginValidator, authVerifyOtpValidator, forgotPasswordValidator, resetPasswordValidator, googleLoginValidator, validateRequest } from '../middleware/zodValidation';
 
 const router = express.Router();
 

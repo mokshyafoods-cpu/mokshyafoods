@@ -1,7 +1,7 @@
 import express from 'express';
 import { getAllPosts, getPostBySlug, createPost, updatePost, publishPost, deletePost } from '../controllers/blog';
 import { adminMiddleware } from '../middleware/auth';
-import { createPostValidator, updatePostValidator, validateRequest } from '../middleware/validation';
+import { createPostValidator, updatePostValidator, validateRequest } from '../middleware/zodValidation';
 
 const router = express.Router();
 

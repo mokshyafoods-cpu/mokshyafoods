@@ -51,7 +51,13 @@ export default function NewProductPage() {
     const loadCategories = async () => {
       try {
         const response = await categoryAPI.getAll();
-        setCategories(response?.data ?? response ?? []);
+        const payload = response?.data ?? response ?? [];
+        const nextCategories = Array.isArray(payload)
+          ? payload
+          : Array.isArray(payload?.data)
+            ? payload.data
+            : [];
+        setCategories(nextCategories);
         setBackendAvailable(true);
       } catch (error) {
         console.error('Category fetch failed', error);

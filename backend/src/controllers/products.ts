@@ -82,11 +82,13 @@ export const getAllProducts = async (req: Request, res: Response): Promise<Respo
           if (mongoose.Types.ObjectId.isValid(value)) {
             return { category: new mongoose.Types.ObjectId(value) };
           }
+          const normalizedValue = value.toLowerCase().replace(/^category-/, '');
+          const categoryAliases = Array.from(new Set([value, `category-${normalizedValue}`]));
           return {
             $or: [
-              { category: value },
-              { categoryName: value },
-              { categorySlug: value },
+              ...categoryAliases.map((alias) => ({ category: alias })),
+              ...categoryAliases.map((alias) => ({ categoryName: alias })),
+              ...categoryAliases.map((alias) => ({ categorySlug: alias })),
             ],
           };
         });

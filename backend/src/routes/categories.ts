@@ -1,7 +1,7 @@
 import express from 'express';
 import { getAllCategories, getCategoryById, createCategory, updateCategory, deleteCategory } from '../controllers/categories';
 import { adminMiddleware } from '../middleware/auth';
-import { createCategoryValidator, updateCategoryValidator, validateRequest } from '../middleware/validation';
+import { createCategoryValidator, updateCategoryValidator, validateRequest } from '../middleware/zodValidation';
 
 const router = express.Router();
 

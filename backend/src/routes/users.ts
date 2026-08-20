@@ -2,7 +2,7 @@ import express from 'express';
 import { authMiddleware, adminMiddleware, posMiddleware } from '../middleware/auth';
 import { upload } from '../config/cloudinary';
 import { getProfile, updateProfile, getWishlist, addToWishlist, removeFromWishlist, getAllUsers, deleteUser, updateUserRole, searchUsersByPhone } from '../controllers/users';
-import { profileUpdateValidator, wishlistValidator, searchUsersByPhoneValidator, updateUserRoleValidator, validateRequest } from '../middleware/validation';
+import { profileUpdateValidator, wishlistValidator, searchUsersByPhoneValidator, updateUserRoleValidator, validateRequest } from '../middleware/zodValidation';
 
 const router = express.Router();
 

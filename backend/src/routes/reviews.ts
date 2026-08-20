@@ -1,7 +1,7 @@
 import express from 'express';
 import { createReview, getProductReviews, getUserReviews, updateReview, deleteReview, getAdminReviews, getPendingReviews, approveReview, rejectReview } from '../controllers/reviews';
 import { authMiddleware, adminMiddleware } from '../middleware/auth';
-import { reviewValidator, validateRequest } from '../middleware/validation';
+import { reviewValidator, validateRequest } from '../middleware/zodValidation';
 
 const router = express.Router();
 

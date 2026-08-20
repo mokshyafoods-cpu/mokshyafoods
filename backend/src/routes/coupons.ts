@@ -1,7 +1,7 @@
 import express from 'express';
 import { validateCoupon, getAllCoupons, createCoupon, updateCoupon, deleteCoupon } from '../controllers/coupons';
 import { adminMiddleware } from '../middleware/auth';
-import { validateCouponValidator, createCouponValidator, updateCouponValidator, validateRequest } from '../middleware/validation';
+import { validateCouponValidator, createCouponValidator, updateCouponValidator, validateRequest } from '../middleware/zodValidation';
 
 const router = express.Router();
 

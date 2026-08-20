@@ -12,7 +12,7 @@ import {
   getTillHistory,
 } from '../controllers/pos';
 import { adminMiddleware, posMiddleware } from '../middleware/auth';
-import { posOrderValidator, holdSaleValidator, startTillValidator, closeTillValidator, validateRequest } from '../middleware/validation';
+import { posOrderValidator, holdSaleValidator, startTillValidator, closeTillValidator, validateRequest } from '../middleware/zodValidation';
 
 const router = express.Router();
 
