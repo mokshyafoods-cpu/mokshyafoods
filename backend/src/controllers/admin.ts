@@ -311,8 +311,8 @@ export const getRawMaterials = async (req: Request, res: Response): Promise<Resp
     }
 
     const [rows, total] = await Promise.all([
-      RawMaterial.find(query).sort({ purchaseDate: -1, createdAt: -1 }).skip((page - 1) * limit).limit(limit).lean(),
-      RawMaterial.countDocuments(query),
+      RawMaterial.find(query).sort({ purchaseDate: -1, createdAt: -1 }).skip((page - 1) * limit).limit(limit).maxTimeMS(5000).lean().exec(),
+      RawMaterial.countDocuments(query).maxTimeMS(5000).exec(),
     ]);
 
     return res.json({ success: true, data: { rows, total, page, limit } });
@@ -403,8 +403,8 @@ export const getProductionBatches = async (req: Request, res: Response): Promise
     }
 
     const [rows, total] = await Promise.all([
-      ProductionBatch.find(query).sort({ productionDate: -1, createdAt: -1 }).skip((page - 1) * limit).limit(limit).lean(),
-      ProductionBatch.countDocuments(query),
+      ProductionBatch.find(query).sort({ productionDate: -1, createdAt: -1 }).skip((page - 1) * limit).limit(limit).maxTimeMS(5000).lean().exec(),
+      ProductionBatch.countDocuments(query).maxTimeMS(5000).exec(),
     ]);
 
     return res.json({ success: true, data: { rows, total, page, limit } });
@@ -484,9 +484,12 @@ export const getMonthlyBusinessReport = async (req: Request, res: Response): Pro
     const endDate = String(req.query.endDate || '').trim() || undefined;
     const { start, end } = getReportRange(month || undefined, startDate, endDate);
     const [rawMaterials, batches, allOrders] = await Promise.all([
-      RawMaterial.find({ purchaseDate: { $gte: start, $lte: end } }).sort({ purchaseDate: -1 }).lean(),
-      ProductionBatch.find({ productionDate: { $gte: start, $lte: end } }).sort({ productionDate: -1 }).lean(),
-      mongoose.connection.collection('orders').find({ createdAt: { $gte: start, $lte: end } }).sort({ createdAt: -1 }).toArray(),
+      RawMaterial.find({ purchaseDate: { $gte: start, $lte: end } }).sort({ purchaseDate: -1 }).maxTimeMS(5000).lean().exec(),
+      ProductionBatch.find({ productionDate: { $gte: start, $lte: end } }).sort({ productionDate: -1 }).maxTimeMS(5000).lean().exec(),
+      mongoose.connection.collection('orders').find(
+        { createdAt: { $gte: start, $lte: end } },
+        { projection: { total: 1, channel: 1, transactionType: 1, createdAt: 1 } },
+      ).sort({ createdAt: -1 }).maxTimeMS(5000).toArray(),
     ]);
 
     const websiteSales = allOrders.reduce((sum: number, order: any) => {
