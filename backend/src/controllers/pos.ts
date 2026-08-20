@@ -180,34 +180,6 @@ export const createPOSOrder = async (req: AuthenticatedRequest, res: Response): 
 
     const result = await ordersColl.insertOne(orderDoc as any);
 
-    // Auto-create payment ledger entry for POS orders
-    try {
-      const paymentLedgerColl = mongoose.connection.collection('paymentLedger');
-      const ledgerEntry = {
-        orderId: String(result.insertedId || ''),
-        orderNumber: orderNumber,
-        invoiceNumber: invoiceNumber,
-        customerName: orderDoc.user.name,
-        customerContact: orderDoc.user.phone || '',
-        address: '',
-        products: normalizedItems.map((item: any) => `${item.name || 'Product'} x${item.quantity}`).join(', '),
-        subtotal: subtotal,
-        discountAmount: discountAmount,
-        amount: total,
-        originalAmount: subtotal > 0 ? subtotal : total,
-        paymentMethod: paymentMethod,
-        paymentDate: new Date().toISOString().slice(0, 10),
-        notes: notes || soldBy,
-        soldBy: soldBy,
-        items: normalizedItems,
-        createdAt: new Date(),
-      };
-      await paymentLedgerColl.insertOne(ledgerEntry as any);
-    } catch (ledgerError) {
-      console.warn('Failed to create payment ledger entry for POS order:', ledgerError);
-      // Don't fail the order if ledger creation fails
-    }
-
     await Promise.all(
       normalizedItems.map(async (item) => {
         if (!item.productId || item.quantity <= 0) return;
