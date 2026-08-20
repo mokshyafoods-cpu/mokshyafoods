@@ -111,6 +111,10 @@ export const getDashboardStats = async (_req: Request, res: Response): Promise<R
 export const getSalesAnalytics = async (_req: Request, res: Response): Promise<Response> => {
   try {
     const ordersColl = mongoose.connection.collection('orders');
+    const deliveredOrderFilter = {
+      isDeleted: { $ne: true },
+      $or: [{ status: 'delivered' }, { orderStatus: 'delivered' }],
+    };
 
     const normalizePaymentMethod = (value: unknown): string => {
       const raw = String(value ?? 'cash').trim().toLowerCase();
@@ -146,7 +150,7 @@ export const getSalesAnalytics = async (_req: Request, res: Response): Promise<R
         .toArray(),
       ordersColl
         .aggregate([
-          { $match: { total: { $exists: true }, isDeleted: { $ne: true } } },
+          { $match: { ...deliveredOrderFilter, total: { $exists: true } } },
           {
             $project: {
               paymentMethod: { $ifNull: ['$paymentMethod', '$paymentStatus'] },
@@ -166,7 +170,7 @@ export const getSalesAnalytics = async (_req: Request, res: Response): Promise<R
         .toArray(),
       ordersColl
         .aggregate([
-          { $match: { isDeleted: { $ne: true } } },
+          { $match: deliveredOrderFilter },
           { $unwind: '$items' },
           {
             $project: {
