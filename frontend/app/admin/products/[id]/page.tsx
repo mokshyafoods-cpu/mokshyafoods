@@ -28,7 +28,6 @@ export default function EditProductPage() {
     onSale: false,
     saleStart: '',
     saleEnd: '',
-    quantity: '',
     weight: '',
     packaging: '',
     packagesInStock: '',
@@ -77,10 +76,9 @@ export default function EditProductPage() {
           onSale: !!productData?.onSale,
           saleStart: productData?.saleStart ? new Date(productData.saleStart).toISOString().slice(0, 16) : '',
           saleEnd: productData?.saleEnd ? new Date(productData.saleEnd).toISOString().slice(0, 16) : '',
-          quantity: productData?.quantity?.toString() || '',
           weight: productData?.weight?.toString() || '',
           packaging: productData?.packaging || '',
-          packagesInStock: productData?.packagesInStock?.toString() || '',
+          packagesInStock: (productData?.packagesInStock ?? productData?.quantity)?.toString() || '',
           tags: JSON.stringify(productData?.tags || []),
           isActive: productData?.isActive !== false,
         });
@@ -145,8 +143,8 @@ export default function EditProductPage() {
       toast.error('Description is required');
       return;
     }
-    if (!formData.quantity.trim()) {
-      toast.error('Quantity is required');
+    if (!formData.packagesInStock.trim()) {
+      toast.error('Stock is required');
       return;
     }
     
@@ -165,6 +163,7 @@ export default function EditProductPage() {
       // Ensure onSale, isActive, and dates are appended correctly (booleans as strings)
       submitData.set('onSale', formData.onSale ? 'true' : 'false');
       submitData.set('isActive', formData.isActive ? 'true' : 'false');
+      submitData.set('quantity', formData.packagesInStock);
       if (formData.saleStart) submitData.set('saleStart', formData.saleStart);
       if (formData.saleEnd) submitData.set('saleEnd', formData.saleEnd);
       const categoryValue = formData.category === 'other' ? otherCategory : formData.category;
@@ -327,13 +326,6 @@ export default function EditProductPage() {
                 )}
               </div>
               <FormInput
-                label="Quantity"
-                name="quantity"
-                type="number"
-                value={formData.quantity}
-                onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
-              />
-              <FormInput
                 label="Weight (grams)"
                 name="weight"
                 type="number"
@@ -341,7 +333,7 @@ export default function EditProductPage() {
                 onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
               />
               <FormInput
-                label="Packages in stock"
+                label="Stock (packages)"
                 name="packagesInStock"
                 type="number"
                 value={formData.packagesInStock}

@@ -33,7 +33,6 @@ export default function NewProductPage() {
     onSale: false,
     saleStart: '',
     saleEnd: '',
-    quantity: '',
     weight: '',
     packaging: '',
     packagesInStock: '',
@@ -78,7 +77,7 @@ export default function NewProductPage() {
       if (!formData.discountPrice) newErrors.discountPrice = 'Discount price is required when product is on sale';
       if (formData.saleStart && formData.saleEnd && new Date(formData.saleEnd) < new Date(formData.saleStart)) newErrors.saleEnd = 'Sale end must be after start';
     }
-    if (!formData.quantity || Number(formData.quantity) < 0) newErrors.quantity = 'Valid stock quantity is required';
+    if (!formData.packagesInStock || Number(formData.packagesInStock) < 0) newErrors.packagesInStock = 'Valid stock quantity is required';
     if (!formData.weight || Number(formData.weight) <= 0) newErrors.weight = 'Weight in grams is required';
 
     setErrors(newErrors);
@@ -133,8 +132,8 @@ export default function NewProductPage() {
       } else {
         appendIfPresent('onSale', 'false');
       }
-      appendIfPresent('quantity', formData.quantity);
       appendIfPresent('packagesInStock', formData.packagesInStock);
+      appendIfPresent('quantity', formData.packagesInStock);
       appendIfPresent('weight', formData.weight);
       appendIfPresent('packaging', formData.packaging);
       appendIfPresent('tags', JSON.stringify(selectedTags));
@@ -292,16 +291,6 @@ export default function NewProductPage() {
               </div>
 
               <FormInput
-                label="Quantity (units)"
-                name="quantity"
-                type="number"
-                value={formData.quantity}
-                onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
-                error={errors.quantity}
-                required
-              />
-
-              <FormInput
                 label="Weight (grams)"
                 name="weight"
                 type="number"
@@ -312,11 +301,13 @@ export default function NewProductPage() {
               />
 
               <FormInput
-                label="Packages in stock"
+                label="Stock (packages)"
                 name="packagesInStock"
                 type="number"
                 value={formData.packagesInStock}
                 onChange={(e) => setFormData({ ...formData, packagesInStock: e.target.value })}
+                error={errors.packagesInStock}
+                required
               />
 
               <FormInput
