@@ -1,6 +1,8 @@
 import express from 'express';
 import {
   createProductionBatch,
+  createBusinessEntry,
+  deleteBusinessEntry,
   createRawMaterial,
   deleteProductionBatch,
   deleteRawMaterial,
@@ -8,9 +10,11 @@ import {
   getLowStockProducts,
   getMonthlyBusinessReport,
   getProductionBatches,
+  getBusinessEntries,
   getRawMaterials,
   getSalesAnalytics,
   updateProductionBatch,
+  updateBusinessEntry,
   updateRawMaterial,
   updateStock,
 } from '../controllers/admin';
@@ -33,6 +37,11 @@ router.get('/production-batches', adminMiddleware, getProductionBatches);
 router.post('/production-batches', adminMiddleware, createProductionBatch);
 router.put('/production-batches/:id', adminMiddleware, updateProductionBatch);
 router.delete('/production-batches/:id', adminMiddleware, deleteProductionBatch);
+
+router.get('/business-entries', adminMiddleware, getBusinessEntries);
+router.post('/business-entries', adminMiddleware, createBusinessEntry);
+router.put('/business-entries/:id', adminMiddleware, updateBusinessEntry);
+router.delete('/business-entries/:id', adminMiddleware, deleteBusinessEntry);
 
 router.get('/monthly-report', adminMiddleware, getMonthlyBusinessReport);
 

@@ -188,6 +188,10 @@ export const adminAPI = {
   createProductionBatch: (data: any) => apiClient.post('/admin/production-batches', data),
   updateProductionBatch: (id: string, data: any) => apiClient.put(`/admin/production-batches/${id}`, data),
   deleteProductionBatch: (id: string) => apiClient.delete(`/admin/production-batches/${id}`),
+  getBusinessEntries: (params?: any) => apiClient.get('/admin/business-entries', { params }),
+  createBusinessEntry: (data: any) => apiClient.post('/admin/business-entries', data),
+  updateBusinessEntry: (id: string, data: any) => apiClient.put(`/admin/business-entries/${id}`, data),
+  deleteBusinessEntry: (id: string) => apiClient.delete(`/admin/business-entries/${id}`),
   getMonthlyReport: (params?: any) => apiClient.get('/admin/monthly-report', { params }),
 };
 

@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import Product from '../models/Product';
 import RawMaterial from '../models/RawMaterial';
 import ProductionBatch from '../models/ProductionBatch';
+import BusinessEntry, { BusinessEntryType } from '../models/BusinessEntry';
 
 const getMonthRange = (month?: string) => {
   const target = month ? new Date(`${month}-01T00:00:00`) : new Date();
@@ -477,15 +478,82 @@ export const deleteProductionBatch = async (req: Request, res: Response): Promis
   }
 };
 
+const businessEntryTypes: BusinessEntryType[] = ['machinery', 'utility', 'maintenance', 'operational_purchase', 'other_expense'];
+
+export const getBusinessEntries = async (req: Request, res: Response): Promise<Response> => {
+  try {
+    const page = Math.max(1, Number(req.query.page || 1));
+    const limit = Math.min(100, Math.max(1, Number(req.query.limit || 10)));
+    const query: Record<string, any> = {};
+    const search = String(req.query.search || '').trim();
+    if (search) query.$or = [{ name: { $regex: search, $options: 'i' } }, { supplier: { $regex: search, $options: 'i' } }, { notes: { $regex: search, $options: 'i' } }];
+    if (req.query.type && businessEntryTypes.includes(String(req.query.type) as BusinessEntryType)) query.type = req.query.type;
+    if (req.query.category) query.category = String(req.query.category);
+    if (req.query.paymentStatus) query.paymentStatus = String(req.query.paymentStatus);
+    if (req.query.startDate || req.query.endDate) {
+      query.date = {};
+      if (req.query.startDate) query.date.$gte = new Date(`${String(req.query.startDate)}T00:00:00`);
+      if (req.query.endDate) query.date.$lte = new Date(`${String(req.query.endDate)}T23:59:59.999`);
+    }
+    const [rows, total] = await Promise.all([
+      BusinessEntry.find(query).sort({ date: -1, createdAt: -1 }).skip((page - 1) * limit).limit(limit).lean().exec(),
+      BusinessEntry.countDocuments(query).exec(),
+    ]);
+    return res.json({ success: true, data: { rows, total, page, limit } });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, message: error.message || 'Failed to fetch operations' });
+  }
+};
+
+export const createBusinessEntry = async (req: Request, res: Response): Promise<Response> => {
+  try {
+    const body = req.body || {};
+    if (!businessEntryTypes.includes(String(body.type) as BusinessEntryType)) return res.status(400).json({ success: false, message: 'Valid operation type is required' });
+    const amount = Number(body.amount || 0);
+    if (!String(body.name || '').trim() || !String(body.category || '').trim() || !Number.isFinite(amount) || amount < 0) return res.status(400).json({ success: false, message: 'Name, category, and a valid amount are required' });
+    const entry = await BusinessEntry.create({ ...body, type: String(body.type), name: String(body.name).trim(), category: String(body.category).trim(), amount, date: body.date ? new Date(body.date) : new Date(), dueDate: body.dueDate ? new Date(body.dueDate) : undefined, paidDate: body.paidDate ? new Date(body.paidDate) : undefined, quantity: body.quantity == null ? undefined : Number(body.quantity), unitPrice: body.unitPrice == null ? undefined : Number(body.unitPrice) });
+    return res.status(201).json({ success: true, message: 'Operation saved', data: entry.toObject() });
+  } catch (error: any) {
+    return res.status(400).json({ success: false, message: error.message || 'Failed to save operation' });
+  }
+};
+
+export const updateBusinessEntry = async (req: Request, res: Response): Promise<Response> => {
+  try {
+    const body = req.body || {};
+    const update: Record<string, any> = { ...body };
+    if (body.amount !== undefined) update.amount = Number(body.amount);
+    if (body.date) update.date = new Date(body.date);
+    if (body.dueDate) update.dueDate = new Date(body.dueDate);
+    if (body.paidDate) update.paidDate = new Date(body.paidDate);
+    const entry = await BusinessEntry.findByIdAndUpdate(req.params.id, update, { new: true, runValidators: true }).lean().exec();
+    if (!entry) return res.status(404).json({ success: false, message: 'Operation not found' });
+    return res.json({ success: true, message: 'Operation updated', data: entry });
+  } catch (error: any) {
+    return res.status(400).json({ success: false, message: error.message || 'Failed to update operation' });
+  }
+};
+
+export const deleteBusinessEntry = async (req: Request, res: Response): Promise<Response> => {
+  try {
+    const result = await BusinessEntry.deleteOne({ _id: req.params.id });
+    if (!result.deletedCount) return res.status(404).json({ success: false, message: 'Operation not found' });
+    return res.json({ success: true, message: 'Operation deleted' });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, message: error.message || 'Failed to delete operation' });
+  }
+};
+
 export const getMonthlyBusinessReport = async (req: Request, res: Response): Promise<Response> => {
   try {
     const month = String(req.query.month || '').trim();
     const startDate = String(req.query.startDate || '').trim() || undefined;
     const endDate = String(req.query.endDate || '').trim() || undefined;
     const { start, end } = getReportRange(month || undefined, startDate, endDate);
-    const [rawMaterials, batches, allOrders] = await Promise.all([
+    const [rawMaterials, batches, operations, allOrders] = await Promise.all([
       RawMaterial.find({ purchaseDate: { $gte: start, $lte: end } }).sort({ purchaseDate: -1 }).maxTimeMS(5000).lean().exec(),
       ProductionBatch.find({ productionDate: { $gte: start, $lte: end } }).sort({ productionDate: -1 }).maxTimeMS(5000).lean().exec(),
+      BusinessEntry.find({ date: { $gte: start, $lte: end } }).sort({ date: -1 }).maxTimeMS(5000).lean().exec(),
       mongoose.connection.collection('orders').find(
         { createdAt: { $gte: start, $lte: end } },
         { projection: { total: 1, channel: 1, transactionType: 1, createdAt: 1 } },
@@ -520,6 +588,16 @@ export const getMonthlyBusinessReport = async (req: Request, res: Response): Pro
       return acc;
     }, {});
 
+    const operationBreakdown = operations.reduce((acc: Record<string, number>, row: any) => {
+      const key = String(row.type || 'other_expense');
+      acc[key] = (acc[key] || 0) + Number(row.amount || 0);
+      return acc;
+    }, {});
+    const operatingExpenses = operations.filter((row: any) => row.type !== 'machinery').reduce((sum: number, row: any) => sum + Number(row.amount || 0), 0);
+    const machineryInvestment = operations.filter((row: any) => row.type === 'machinery').reduce((sum: number, row: any) => sum + Number(row.amount || 0), 0);
+    const totalBusinessCost = rawMaterialSpend + operatingExpenses;
+    const netProfit = totalSales - totalBusinessCost;
+
     const partnerProductsTakenCount = allOrders.reduce((count: number, order: any) => {
       const transactionType = String(order.transactionType || 'customer_sale').trim();
       return transactionType === 'partner_product_taken' ? count + 1 : count;
@@ -536,6 +614,17 @@ export const getMonthlyBusinessReport = async (req: Request, res: Response): Pro
         month: month || `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}`,
         rawMaterialSpend,
         rawMaterialBreakdown,
+        operations,
+        operationBreakdown,
+        utilityCost: Number(operationBreakdown.utility || 0),
+        maintenanceCost: Number(operationBreakdown.maintenance || 0),
+        operationalPurchaseCost: Number(operationBreakdown.operational_purchase || 0),
+        otherExpenseCost: Number(operationBreakdown.other_expense || 0),
+        operatingExpenses,
+        machineryInvestment,
+        totalBusinessCost,
+        netProfit,
+        profitMargin: totalSales > 0 ? (netProfit / totalSales) * 100 : 0,
         rawMaterials,
         productionBatches: batches,
         productionByProduct,
