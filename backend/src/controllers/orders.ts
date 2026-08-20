@@ -571,7 +571,10 @@ export const deleteOrder = async (req: Request & { userId?: string; userRole?: s
     }
 
     const ordersColl = mongoose.connection.collection('orders');
-    const existingOrder = await ordersColl.findOne({ _id: new mongoose.Types.ObjectId(id) });
+    const existingOrder = await ordersColl.findOne(
+      { _id: new mongoose.Types.ObjectId(id) },
+      { projection: { isDeleted: 1, status: 1, orderStatus: 1, 'items.productId': 1, 'items.quantity': 1 } },
+    );
     if (!existingOrder) {
       return res.status(404).json({ success: false, message: 'Order not found' });
     }
@@ -613,7 +616,10 @@ export const updateOrderStatus = async (req: Request & { userId?: string; userRo
     if (!id) return res.status(400).json({ success: false, message: 'Order id required' });
 
     const ordersColl = mongoose.connection.collection('orders');
-    const existingOrder = await ordersColl.findOne({ _id: new mongoose.Types.ObjectId(id) });
+    const existingOrder = await ordersColl.findOne(
+      { _id: new mongoose.Types.ObjectId(id) },
+      { projection: { isDeleted: 1, status: 1, orderStatus: 1, userId: 1, user: 1, 'items.productId': 1, 'items.quantity': 1 } },
+    );
     if (!existingOrder) return res.status(404).json({ success: false, message: 'Order not found' });
 
     const userId = req.userId;

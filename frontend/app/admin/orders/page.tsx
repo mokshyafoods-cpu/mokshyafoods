@@ -131,8 +131,17 @@ export default function AdminOrdersPage() {
   })();
 
   const handleStatusChange = async (orderId: string, newStatus: string) => {
-    await orderAPI.update(orderId, { orderStatus: newStatus });
-    await mutate();
+    try {
+      await orderAPI.update(orderId, { orderStatus: newStatus });
+      await mutate((current: any) => current ? {
+        ...current,
+        data: Array.isArray(current.data)
+          ? current.data.map((order: any) => order._id === orderId ? { ...order, orderStatus: newStatus, status: newStatus } : order)
+          : current.data,
+      } : current, { revalidate: false });
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || 'Failed to update order status');
+    }
   };
 
   const handleDeleteOrder = async (orderId: string) => {
@@ -140,7 +149,13 @@ export default function AdminOrdersPage() {
     try {
       await orderAPI.delete(orderId);
       toast.success('Order deleted');
-      await mutate();
+      await mutate((current: any) => current ? {
+        ...current,
+        data: Array.isArray(current.data) ? current.data.filter((order: any) => order._id !== orderId) : current.data,
+        pagination: current.pagination
+          ? { ...current.pagination, total: Math.max(0, Number(current.pagination.total || 0) - 1) }
+          : current.pagination,
+      } : current, { revalidate: false });
     } catch (error: any) {
       toast.error(error?.response?.data?.message || 'Failed to delete order');
     }
@@ -229,7 +244,14 @@ export default function AdminOrdersPage() {
       });
       toast.success('Order updated');
       setEditingOrder(null);
-      await mutate();
+      await mutate((current: any) => current ? {
+        ...current,
+        data: Array.isArray(current.data)
+          ? current.data.map((order: any) => order._id === editingOrder._id
+            ? { ...order, orderStatus: orderEditForm.status, status: orderEditForm.status, soldBy: orderEditForm.soldBy, paymentMethod: orderEditForm.paymentMethod, notes: orderEditForm.notes }
+            : order)
+          : current.data,
+      } : current, { revalidate: false });
     } catch (error: any) {
       toast.error(error?.response?.data?.message || 'Failed to update order');
     }

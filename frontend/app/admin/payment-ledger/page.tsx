@@ -80,7 +80,8 @@ export default function PaymentLedgerPage() {
       await paymentLedgerAPI.delete(id);
       toast.success('Ledger entry deleted');
       setEditingEntry(null);
-      await loadEntries();
+      setEntries((current) => current.filter((entry) => entry._id !== id));
+      setTotalEntries((current) => Math.max(0, current - 1));
     } catch (error: any) {
       toast.error(error?.response?.data?.message || 'Failed to delete ledger entry');
     }
@@ -106,8 +107,8 @@ export default function PaymentLedgerPage() {
     try {
       await paymentLedgerAPI.update(editingEntry._id, entryForm);
       toast.success('Ledger entry updated');
+      setEntries((current) => current.map((entry) => entry._id === editingEntry._id ? { ...entry, ...entryForm, amount: Number(entryForm.amount || 0) } : entry));
       setEditingEntry(null);
-      await loadEntries();
     } catch (error: any) {
       toast.error(error?.response?.data?.message || 'Failed to update ledger entry');
     }
