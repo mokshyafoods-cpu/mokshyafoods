@@ -11,7 +11,13 @@ const router = express.Router();
 
 router.post('/', createOrderValidator, validateRequest, createOrder);
 router.get('/', authMiddleware, (req: AuthenticatedRequest, res: Response) => {
-  if (req.userRole === 'admin') {
+  const normalizedRole = String(req.userRole || '').trim().toLowerCase();
+  const isAdmin = normalizedRole === 'admin'
+    || normalizedRole === 'superadmin'
+    || normalizedRole === 'administrator'
+    || normalizedRole.includes('admin');
+
+  if (isAdmin) {
     return getAllOrders(req, res);
   }
 
