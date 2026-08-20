@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { AlertTriangle, ArrowLeft, BarChart3, Package, ShoppingBag, Users, Settings, LogOut, Menu, X, PlusCircle, BookOpenCheck, Factory, FileBarChart, Boxes, ChevronDown, Store } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { orderAPI } from '@/services/api';
 
 type SectionKey = 'overview' | 'orders' | 'products' | 'low-stock' | 'customers' | 'reviews' | 'payment-ledger' | 'raw-materials' | 'production' | 'reports' | 'operations' | 'settings';
 
@@ -46,6 +47,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname();
   const [navOpen, setNavOpen] = useState(false);
   const [activeSection, setActiveSection] = useState<SectionKey>(() => getSectionFromPath(pathname));
+  const [pendingOrderCount, setPendingOrderCount] = useState(0);
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -56,6 +58,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   useEffect(() => {
     setActiveSection(getSectionFromPath(pathname));
   }, [pathname]);
+
+  useEffect(() => {
+    if (isLoading || user?.role !== 'admin') return;
+    const loadPendingOrderCount = async () => {
+      try {
+        const response = await orderAPI.getAll({ limit: 200 });
+        const orders = Array.isArray(response?.data?.data) ? response.data.data : [];
+        setPendingOrderCount(orders.filter((order: any) => String(order.orderStatus || order.status || 'pending').toLowerCase() === 'pending').length);
+      } catch {
+        setPendingOrderCount(0);
+      }
+    };
+    void loadPendingOrderCount();
+  }, [isLoading, user?.role, pathname]);
 
   if (!user) {
     return null;
@@ -180,6 +196,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                       >
                         <span className="flex h-5 w-5 items-center justify-center">{item.icon}</span>
                         <span className="leading-none">{item.label}</span>
+                        {item.key === 'orders' && pendingOrderCount > 0 && (
+                          <span className="ml-auto inline-flex min-w-6 items-center justify-center rounded-full bg-red-500 px-1.5 py-0.5 text-[11px] font-bold leading-none text-white shadow-sm" aria-label={`${pendingOrderCount} pending orders`}>
+                            {pendingOrderCount}
+                          </span>
+                        )}
                       </Link>
                     );
                   })}

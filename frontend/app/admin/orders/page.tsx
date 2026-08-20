@@ -92,7 +92,6 @@ export default function AdminOrdersPage() {
   }, [orders, search, status, soldBy, page]);
 
   const totalPages = Math.max(1, Math.ceil(totalOrders / PAGE_SIZE));
-  const pendingOrderCount = orders.filter((order: any) => String(order.orderStatus || order.status || 'pending').toLowerCase() === 'pending').length;
 
   const errorInfo = (() => {
     const status = error?.response?.status;
@@ -320,7 +319,6 @@ export default function AdminOrdersPage() {
           </div>
           <div className="flex flex-wrap gap-2">
             <span className="rounded-full bg-sky-50 px-3 py-2 text-sm font-semibold text-sky-700 border border-sky-200">{totalOrders} total orders</span>
-            <span className="rounded-full bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-700 border border-amber-200">{pendingOrderCount} pending orders</span>
             <button type="button" onClick={exportOrdersExcel} className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-100">
               <Download className="h-4 w-4" /> Export
             </button>
@@ -472,15 +470,10 @@ export default function AdminOrdersPage() {
               <div className="p-12 text-center text-slate-500">No orders match your filters.</div>
             ) : (
               <div className="divide-y divide-slate-200">
-                {filteredOrders.map((order: any, index: number) => (
+                {filteredOrders.map((order: any) => (
                   <div key={order._id} className="grid items-center gap-4 px-6 py-5 sm:grid-cols-[1.4fr_1fr_1fr_1fr_1fr_0.8fr_0.8fr]">
                     <div>
-                      <div className="flex items-center gap-2">
-                        <p className="font-semibold text-slate-900">{order.orderNumber || order._id}</p>
-                        {String(order.orderStatus || order.status || 'pending').toLowerCase() === 'pending' && (
-                          <span className="rounded-full bg-amber-100 px-2 py-1 text-[11px] font-bold text-amber-800">Pending #{filteredOrders.slice(0, index + 1).filter((item: any) => String(item.orderStatus || item.status || 'pending').toLowerCase() === 'pending').length}</span>
-                        )}
-                      </div>
+                      <p className="font-semibold text-slate-900">{order.orderNumber || order._id}</p>
                       <p className="text-sm text-slate-500">{new Date(order.createdAt).toLocaleDateString()}</p>
                     </div>
                     <div className="text-slate-900">
