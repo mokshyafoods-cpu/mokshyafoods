@@ -150,7 +150,7 @@ export const getAllProducts = async (req: Request, res: Response): Promise<Respo
     const skip = (page - 1) * limit;
 
     const products = await Product.find(query)
-      .select('name slug sku price discountPrice onSale saleStart saleEnd thumbnail images rating reviewCount category featured isActive createdAt updatedAt description tags packaging')
+      .select('name slug sku price discountPrice onSale saleStart saleEnd thumbnail images quantity packagesInStock rating reviewCount category featured isActive createdAt updatedAt description tags packaging')
       .sort(sortMap[sortOption] || sortMap.latest)
       .skip(skip)
       .limit(limit)
