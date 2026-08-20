@@ -150,7 +150,7 @@ export const getAllProducts = async (req: Request, res: Response): Promise<Respo
     const skip = (page - 1) * limit;
 
     const products = await Product.find(query)
-      .select('name slug sku price discountPrice onSale saleStart saleEnd thumbnail rating reviewCount category featured isActive createdAt updatedAt description tags packaging')
+      .select('name slug sku price discountPrice onSale saleStart saleEnd thumbnail images rating reviewCount category featured isActive createdAt updatedAt description tags packaging')
       .sort(sortMap[sortOption] || sortMap.latest)
       .skip(skip)
       .limit(limit)
@@ -353,8 +353,10 @@ export const updateProduct = async (req: Request, res: Response): Promise<Respon
       try { update.tags = JSON.parse(update.tags); } catch { update.tags = [update.tags]; }
     }
 
-    // Handle image management
+    // Handle image management only when the request explicitly changes images.
     let finalImages: any[] = [];
+    const hasKeepImages = update.keepImages !== undefined;
+    const hasImageUpdate = hasKeepImages || update.images !== undefined || normalizedImages.length > 0;
     
     // Check if we need to preserve existing images
     if (update.keepImages !== undefined) {
@@ -374,8 +376,11 @@ export const updateProduct = async (req: Request, res: Response): Promise<Respon
       finalImages = [...finalImages, ...normalizedImages];
     }
 
-    // Set the images in the update
-    update.images = finalImages;
+    if (hasImageUpdate) {
+      update.images = normalizedImages.length > 0 || hasKeepImages
+        ? finalImages
+        : normalizeHttpImages(update.images);
+    }
     if (update.thumbnail !== undefined && update.thumbnail !== '' && !isHttpImageUrl(update.thumbnail)) {
       delete update.thumbnail;
     }
