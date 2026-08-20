@@ -75,12 +75,12 @@ export const getDashboardStats = async (_req: Request, res: Response): Promise<R
     };
 
     const [totalProducts, totalOrders, totalCustomers, lowStockProducts, recentOrders, revenueResult] = await Promise.all([
-      productsColl.countDocuments(),
-      ordersColl.countDocuments(activeOrderFilter),
-      usersColl.countDocuments(),
-      productsColl.countDocuments({ quantity: { $lte: 10 } }),
-      ordersColl.find({ isDeleted: { $ne: true } }).sort({ createdAt: -1 }).limit(5).toArray(),
-      ordersColl.aggregate([{ $match: activeOrderFilter }, { $group: { _id: null, total: { $sum: '$total' } } }]).toArray(),
+      productsColl.countDocuments({}, { maxTimeMS: 5000 }),
+      ordersColl.countDocuments(activeOrderFilter, { maxTimeMS: 5000 }),
+      usersColl.countDocuments({}, { maxTimeMS: 5000 }),
+      productsColl.countDocuments({ quantity: { $lte: 10 } }, { maxTimeMS: 5000 }),
+      ordersColl.find({ isDeleted: { $ne: true } }, { projection: { orderNumber: 1, total: 1, status: 1, orderStatus: 1, createdAt: 1 } }).sort({ createdAt: -1 }).limit(5).maxTimeMS(5000).toArray(),
+      ordersColl.aggregate([{ $match: activeOrderFilter }, { $group: { _id: null, total: { $sum: '$total' } } }]).maxTimeMS(5000).toArray(),
     ]);
 
     const totalRevenue = revenueResult?.[0]?.total || 0;
@@ -132,6 +132,7 @@ export const getSalesAnalytics = async (_req: Request, res: Response): Promise<R
           },
           { $sort: { _id: 1 } },
         ])
+        .maxTimeMS(5000)
         .toArray(),
       ordersColl
         .aggregate([
@@ -141,6 +142,7 @@ export const getSalesAnalytics = async (_req: Request, res: Response): Promise<R
           { $sort: { quantity: -1 } },
           { $limit: 10 },
         ])
+        .maxTimeMS(5000)
         .toArray(),
       ordersColl
         .aggregate([
@@ -160,6 +162,7 @@ export const getSalesAnalytics = async (_req: Request, res: Response): Promise<R
           },
           { $sort: { total: -1, count: -1 } },
         ])
+        .maxTimeMS(5000)
         .toArray(),
       ordersColl
         .aggregate([
@@ -182,6 +185,7 @@ export const getSalesAnalytics = async (_req: Request, res: Response): Promise<R
           },
           { $sort: { total: -1, quantity: -1 } },
         ])
+        .maxTimeMS(5000)
         .toArray(),
     ]);
 
@@ -194,7 +198,7 @@ export const getSalesAnalytics = async (_req: Request, res: Response): Promise<R
     const topProducts: Array<{ name: string; quantity: number }> = [];
     if (productIds.length > 0) {
       const prodColl = mongoose.connection.collection('products');
-      const prods = await prodColl.find({ _id: { $in: productIds.map((id: any) => (mongoose.Types.ObjectId.isValid(id) ? new mongoose.Types.ObjectId(id) : id)) } }).toArray();
+      const prods = await prodColl.find({ _id: { $in: productIds.map((id: any) => (mongoose.Types.ObjectId.isValid(id) ? new mongoose.Types.ObjectId(id) : id)) } }, { projection: { name: 1 } }).maxTimeMS(5000).toArray();
       topProductsAgg.forEach((p: any) => {
         const found = prods.find((x: any) => x._id?.toString() === p._id?.toString());
         topProducts.push({ name: found?.name || (p._id?.toString() ?? 'Unknown'), quantity: p.quantity });

@@ -112,7 +112,10 @@ apiClient.interceptors.response.use(
     }
 
     if (!error.response) {
-      const message = `Unable to connect to the API server. Please make sure the backend is running at ${API_BASE_URL}.`;
+      const timedOut = error.code === 'ECONNABORTED' || error.message?.includes('timeout');
+      const message = timedOut
+        ? `The API request timed out. The backend may be busy or the database query is taking too long at ${API_BASE_URL}.`
+        : `Unable to connect to the API server at ${API_BASE_URL}. Check that the backend is running and that CORS allows this website.`;
       if (typeof window !== 'undefined') {
         toast.error(message, {
           duration: 2500,
