@@ -143,6 +143,8 @@ function ProductsPageContent() {
   }, [searchQuery, selectedCategories, priceFilter.min, priceFilter.max, sortOption, showDiscounted, showFeatured, selectedTags, ratingFilter, packagingFilter, originFilter, router, queryReady]);
 
   useEffect(() => {
+    if (!queryReady) return;
+
     const loadProducts = async () => {
       setLoading(true);
       setLoadError(null);

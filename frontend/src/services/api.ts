@@ -1,9 +1,9 @@
 import axios from 'axios';
-import { toast } from 'sonner';
 
 const LOCAL_API_BASE_URL = 'http://localhost:5000/api';
 const REMOTE_API_BASE_URL = 'https://mokshyafoods.onrender.com/api';
 const REQUEST_TIMEOUT_MS = 15_000;
+const PRODUCT_REQUEST_TIMEOUT_MS = 30_000;
 const MAX_RETRIES = 0;
 const AUTH_REDIRECT_KEY = 'auth-redirect-triggered';
 
@@ -116,11 +116,6 @@ apiClient.interceptors.response.use(
       const message = timedOut
         ? `The API request timed out. The backend may be busy or the database query is taking too long at ${API_BASE_URL}.`
         : `Unable to connect to the API server at ${API_BASE_URL}. Check that the backend is running and that CORS allows this website.`;
-      if (typeof window !== 'undefined') {
-        toast.error(message, {
-          duration: 2500,
-        });
-      }
       error.message = message;
       return Promise.reject(error);
     }
@@ -163,8 +158,8 @@ export const authAPI = {
 };
 
 export const productAPI = {
-  getAll: (params?: any) => apiClient.get('/products', { params }),
-  getById: (id: string, params?: any) => apiClient.get(`/products/${id}`, { params }),
+  getAll: (params?: any) => apiClient.get('/products', { params, timeout: PRODUCT_REQUEST_TIMEOUT_MS }),
+  getById: (id: string, params?: any) => apiClient.get(`/products/${id}`, { params, timeout: PRODUCT_REQUEST_TIMEOUT_MS }),
   create: (data: any) => apiClient.post('/products', data),
   update: (id: string, data: any) => apiClient.put(`/products/${id}`, data),
   delete: (id: string) => apiClient.delete(`/products/${id}`),

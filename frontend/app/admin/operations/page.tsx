@@ -2,79 +2,255 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { adminAPI } from '@/services/api';
-import { downloadExcel } from '@/lib/excel';
 import { toast } from 'sonner';
-import { Eye, Pencil, Plus, Search, Trash2, X } from 'lucide-react';
 
-const types = [
-  { value: 'machinery', label: 'Machinery & Equipment' },
-  { value: 'utility', label: 'Utility Bill' },
-  { value: 'maintenance', label: 'Maintenance & Repair' },
-  { value: 'operational_purchase', label: 'Operational Purchase' },
-  { value: 'other_expense', label: 'Other Expense' },
-];
-const categories: Record<string, string[]> = {
-  machinery: ['Equipment', 'Furniture', 'Computer', 'Other equipment'],
-  utility: ['Electricity', 'Water', 'Internet', 'Gas', 'Telephone', 'Waste management', 'Other utilities'],
-  maintenance: ['Machine servicing', 'Electrical repair', 'Plumbing', 'Replacement parts', 'Other repairs'],
-  operational_purchase: ['Tools', 'Safety Equipment', 'Cleaning Supplies', 'Kitchen/Processing Supplies', 'Office Supplies', 'Packaging Supplies', 'Furniture', 'Other'],
-  other_expense: ['Transportation', 'Printing', 'Delivery', 'Miscellaneous'],
-};
-const initialForm = { type: 'machinery', name: '', category: 'Equipment', supplier: '', date: new Date().toISOString().slice(0, 10), billingPeriod: '', billNumber: '', dueDate: '', paidDate: '', quantity: '', unitPrice: '', amount: '', paymentMethod: 'cash', paymentStatus: 'paid', warranty: '', usefulLifeMonths: '', notes: '', attachmentUrl: '' };
-const money = (value: unknown) => `Rs ${Number(value || 0).toLocaleString('en-IN')}`;
+interface RawMaterialRow {
+  _id: string;
+  name: string;
+  supplier: string;
+  quantity: number;
+  unit: string;
+  unitCost: number;
+  totalCost: number;
+  purchaseDate: string;
+  notes: string;
+}
+
+interface ProductionBatchRow {
+  _id: string;
+  batchNumber: string;
+  productName: string;
+  quantityProduced: number;
+  unit: string;
+  producedAt: string;
+  notes: string;
+}
 
 export default function AdminOperationsPage() {
-  const [entries, setEntries] = useState<any[]>([]);
-  const [summary, setSummary] = useState<any>(null);
-  const [form, setForm] = useState<any>(initialForm);
-  const [editing, setEditing] = useState<any | null>(null);
-  const [viewing, setViewing] = useState<any | null>(null);
-  const [open, setOpen] = useState(false);
-  const [search, setSearch] = useState('');
-  const [typeFilter, setTypeFilter] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
-  const [fromDate, setFromDate] = useState('');
-  const [toDate, setToDate] = useState('');
-  const [page, setPage] = useState(1);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const [rawMaterials, setRawMaterials] = useState<RawMaterialRow[]>([]);
+  const [productionBatches, setProductionBatches] = useState<ProductionBatchRow[]>([]);
+  const [report, setReport] = useState<any>(null);
+  const [month, setMonth] = useState(() => new Date().toISOString().slice(0, 7));
+  const [form, setForm] = useState({ name: '', supplier: '', quantity: '0', unit: 'kg', unitCost: '0', notes: '' });
+  const [batchForm, setBatchForm] = useState({ batchNumber: '', productName: '', quantityProduced: '0', unit: 'pcs', notes: '' });
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const PAGE_SIZE_RAW = 8;
+  const PAGE_SIZE_BATCH = 6;
 
-  const load = async () => {
-    setLoading(true);
+  const loadData = async () => {
+    setIsLoading(true);
+    setErrorMessage(null);
     try {
-      const [rowsResponse, reportResponse] = await Promise.all([
-        adminAPI.getBusinessEntries({ page, limit: 10, search, type: typeFilter, paymentStatus: statusFilter, startDate: fromDate, endDate: toDate }),
-        adminAPI.getMonthlyReport({ startDate: fromDate, endDate: toDate }),
+      const [materialsRes, batchesRes, reportRes] = await Promise.all([
+        adminAPI.getRawMaterials(),
+        adminAPI.getProductionBatches(),
+        adminAPI.getMonthlyReport({ month }),
       ]);
-      const payload = rowsResponse.data?.data || {};
-      setEntries(payload.rows || []);
-      setTotal(payload.total || 0);
-      setSummary(reportResponse.data?.data || null);
+      const materials = materialsRes.data?.data ?? [];
+      const batches = batchesRes.data?.data ?? [];
+      const reportData = reportRes.data?.data ?? null;
+      setRawMaterials(Array.isArray(materials) ? materials : []);
+      setProductionBatches(Array.isArray(batches) ? batches : []);
+      setReport(reportData);
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Unable to load operations');
-    } finally { setLoading(false); }
+      const message = error.response?.data?.message || 'Unable to load operations data';
+      setErrorMessage(message);
+      toast.error(message);
+      setRawMaterials([]);
+      setProductionBatches([]);
+      setReport(null);
+    } finally {
+      setIsLoading(false);
+    }
   };
-  useEffect(() => { void load(); }, [page, search, typeFilter, statusFilter, fromDate, toDate]);
 
-  const totals = useMemo(() => ({ operating: summary?.operatingExpenses || 0, utility: summary?.utilityCost || 0, maintenance: summary?.maintenanceCost || 0, purchases: summary?.operationalPurchaseCost || 0, machinery: summary?.machineryInvestment || 0 }), [summary]);
-  const setField = (key: string, value: string) => setForm((current: any) => ({ ...current, [key]: value, ...(key === 'type' ? { category: categories[value]?.[0] || '' } : {}) }));
-  const submit = async (event: React.FormEvent) => {
+  useEffect(() => {
+    loadData();
+  }, [month]);
+
+  const rawMaterialSpend = useMemo(() => rawMaterials.reduce((sum, row) => sum + Number(row.totalCost || 0), 0), [rawMaterials]);
+
+  const handleRawMaterialSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     try {
-      const payload = { ...form, amount: Number(form.amount || (Number(form.quantity || 0) * Number(form.unitPrice || 0))), quantity: form.quantity ? Number(form.quantity) : undefined, unitPrice: form.unitPrice ? Number(form.unitPrice) : undefined };
-      if (editing) await adminAPI.updateBusinessEntry(editing._id, payload); else await adminAPI.createBusinessEntry(payload);
-      toast.success(editing ? 'Operation updated' : 'Operation saved'); setOpen(false); setEditing(null); setForm(initialForm); void load();
-    } catch (error: any) { toast.error(error.response?.data?.message || 'Unable to save operation'); }
+      await adminAPI.createRawMaterial({
+        name: form.name,
+        supplier: form.supplier,
+        quantity: Number(form.quantity || 0),
+        unit: form.unit,
+        unitCost: Number(form.unitCost || 0),
+        notes: form.notes,
+        purchaseDate: new Date().toISOString(),
+      });
+      toast.success('Raw material added');
+      setForm({ name: '', supplier: '', quantity: '0', unit: 'kg', unitCost: '0', notes: '' });
+      loadData();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Unable to save raw material');
+    }
   };
-  const edit = (entry: any) => { setEditing(entry); setForm({ ...initialForm, ...entry, date: entry.date ? new Date(entry.date).toISOString().slice(0, 10) : initialForm.date }); setOpen(true); };
-  const remove = async (id: string) => { if (!window.confirm('Delete this operation?')) return; try { await adminAPI.deleteBusinessEntry(id); toast.success('Operation deleted'); void load(); } catch (error: any) { toast.error(error.response?.data?.message || 'Unable to delete operation'); } };
-  const exportRows = async () => downloadExcel('operations.xlsx', [{ name: 'Operations', data: [['Date', 'Type', 'Item', 'Category', 'Amount', 'Status', 'Payment Method'], ...entries.map((item) => [item.date, item.type, item.name, item.category, item.amount, item.paymentStatus, item.paymentMethod])] }]);
 
-  return <div className="space-y-6">
-    <section className="rounded-[2rem] border border-slate-800/70 bg-slate-950/80 p-6 text-white shadow-xl"><div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between"><div><p className="text-xs uppercase tracking-[0.3em] text-slate-400">Operations</p><h1 className="mt-2 text-3xl font-semibold">Business operating costs</h1><p className="mt-2 text-sm text-slate-400">Track expenses and capital purchases without duplicating Raw Materials or Production.</p></div><button onClick={() => { setEditing(null); setForm(initialForm); setOpen(true); }} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-500 px-5 py-3 text-sm font-semibold text-white hover:bg-emerald-400"><Plus className="h-4 w-4" /> Add Operation</button></div><div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">{[['Total Operating Expense', totals.operating], ['Utility Expense', totals.utility], ['Maintenance Expense', totals.maintenance], ['Operational Purchases', totals.purchases], ['Machinery Investment', totals.machinery]].map(([label, value]) => <div key={String(label)} className="rounded-2xl border border-slate-800 bg-slate-900/70 p-4"><p className="text-xs uppercase tracking-wider text-slate-400">{label}</p><p className="mt-2 text-xl font-semibold">{money(value)}</p></div>)}</div></section>
-    <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm"><div className="flex flex-wrap gap-3"><label className="relative flex-1"><Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" /><input value={search} onChange={(e) => { setPage(1); setSearch(e.target.value); }} placeholder="Search operations" className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-3 text-sm" /></label><select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm"><option value="">All types</option>{types.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select><select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm"><option value="">All statuses</option><option value="paid">Paid</option><option value="pending">Pending</option><option value="overdue">Overdue</option></select><input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm" /><input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm" /><button onClick={exportRows} className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold">Export Excel</button></div><div className="mt-5 overflow-x-auto"><table className="w-full min-w-[850px] text-left text-sm"><thead className="border-b border-slate-200 text-xs uppercase tracking-wider text-slate-400"><tr><th className="px-3 py-3">Date</th><th>Type</th><th>Item / Description</th><th>Category</th><th>Amount</th><th>Status</th><th>Actions</th></tr></thead><tbody className="divide-y divide-slate-100">{loading ? <tr><td colSpan={7} className="px-3 py-10 text-center text-slate-500">Loading operations...</td></tr> : entries.length === 0 ? <tr><td colSpan={7} className="px-3 py-10 text-center text-slate-500">No operations found.</td></tr> : entries.map((item) => <tr key={item._id}><td className="px-3 py-4">{item.date ? new Date(item.date).toLocaleDateString() : '-'}</td><td>{types.find((type) => type.value === item.type)?.label || item.type}</td><td className="font-semibold text-slate-900">{item.name}</td><td>{item.category}</td><td className="font-semibold">{money(item.amount)}</td><td><span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold">{item.paymentStatus || 'paid'}</span></td><td><div className="flex gap-2"><button title="View" onClick={() => setViewing(item)}><Eye className="h-4 w-4" /></button><button title="Edit" onClick={() => edit(item)}><Pencil className="h-4 w-4" /></button><button title="Delete" onClick={() => void remove(item._id)}><Trash2 className="h-4 w-4 text-rose-500" /></button></div></td></tr>)}</tbody></table></div><div className="mt-4 flex items-center justify-between text-sm text-slate-500"><span>{total} transactions</span><div className="flex gap-2"><button disabled={page <= 1} onClick={() => setPage((current) => current - 1)} className="rounded-lg border px-3 py-1 disabled:opacity-40">Previous</button><button disabled={page * 10 >= total} onClick={() => setPage((current) => current + 1)} className="rounded-lg border px-3 py-1 disabled:opacity-40">Next</button></div></div></section>
-    <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm"><h2 className="text-xl font-semibold text-slate-900">Expense breakdown</h2><div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">{[['Utilities', totals.utility], ['Maintenance', totals.maintenance], ['Operational Purchases', totals.purchases], ['Other Expenses', summary?.otherExpenseCost || 0], ['Machinery Investment', totals.machinery]].map(([label, value]) => { const totalCost = Number(summary?.operatingExpenses || 0) + Number(summary?.machineryInvestment || 0); const percent = totalCost ? Number(value) / totalCost * 100 : 0; return <div key={String(label)} className="rounded-2xl bg-slate-50 p-4"><p className="text-sm text-slate-600">{label}</p><p className="mt-2 text-lg font-semibold">{money(value)}</p><p className="mt-1 text-xs text-slate-400">{percent.toFixed(1)}% of operations</p></div>; })}</div></section>
-    {open && <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4"><form onSubmit={submit} className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-[2rem] bg-white p-6 shadow-2xl"><div className="flex items-center justify-between"><div><p className="text-xs uppercase tracking-[0.3em] text-slate-400">Operations</p><h2 className="mt-1 text-2xl font-semibold">{editing ? 'Edit operation' : 'Add operation'}</h2></div><button type="button" onClick={() => setOpen(false)}><X /></button></div><div className="mt-5 grid gap-4 md:grid-cols-2">{[['type','Operation Type'],['name','Item / Description'],['category','Category'],['supplier','Supplier'],['date','Date'],['billingPeriod','Billing Period'],['billNumber','Bill / Invoice Number'],['amount','Total Amount'],['paymentMethod','Payment Method'],['paymentStatus','Payment Status'],['warranty','Warranty'],['usefulLifeMonths','Useful Life (months)'],['notes','Notes'],['attachmentUrl','Attachment URL']].map(([key, label]) => <label key={key} className={key === 'notes' ? 'md:col-span-2' : ''}><span className="mb-1 block text-sm font-semibold text-slate-700">{label}</span>{key === 'type' ? <select value={form[key]} onChange={(e) => setField(key, e.target.value)} className="w-full rounded-xl border px-3 py-2.5">{types.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select> : key === 'category' ? <select value={form[key]} onChange={(e) => setField(key, e.target.value)} className="w-full rounded-xl border px-3 py-2.5">{(categories[form.type] || []).map((item) => <option key={item}>{item}</option>)}</select> : key === 'notes' ? <textarea value={form[key]} onChange={(e) => setField(key, e.target.value)} className="min-h-24 w-full rounded-xl border px-3 py-2.5" /> : <input type={key.toLowerCase().includes('date') ? 'date' : key === 'amount' || key === 'usefulLifeMonths' ? 'number' : 'text'} required={['name','category','date','amount'].includes(key)} value={form[key]} onChange={(e) => setField(key, e.target.value)} className="w-full rounded-xl border px-3 py-2.5" />}</label>)}</div><div className="mt-6 flex justify-end gap-3"><button type="button" onClick={() => setOpen(false)} className="rounded-xl border px-4 py-2.5">Cancel</button><button className="rounded-xl bg-primary px-5 py-2.5 font-semibold text-white">Save Operation</button></div></form></div>}
-    {viewing && <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4" onClick={() => setViewing(null)}><div className="w-full max-w-lg rounded-[2rem] bg-white p-6" onClick={(e) => e.stopPropagation()}><div className="flex justify-between"><h2 className="text-2xl font-semibold">Operation details</h2><button onClick={() => setViewing(null)}><X /></button></div><dl className="mt-5 space-y-3 text-sm">{Object.entries(viewing).filter(([key]) => !['_id','__v','createdAt','updatedAt'].includes(key)).map(([key, value]) => <div key={key} className="flex justify-between gap-4 border-b pb-2"><dt className="capitalize text-slate-500">{key.replace(/[A-Z]/g, (letter) => ` ${letter}`)}</dt><dd className="text-right font-semibold text-slate-900">{String(value ?? '-')}</dd></div>)}</dl></div></div>}
-  </div>;
+  const handleBatchSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    try {
+      await adminAPI.createProductionBatch({
+        batchNumber: batchForm.batchNumber || `BATCH-${Date.now()}`,
+        productName: batchForm.productName,
+        quantityProduced: Number(batchForm.quantityProduced || 0),
+        unit: batchForm.unit,
+        producedAt: new Date().toISOString(),
+        notes: batchForm.notes,
+      });
+      toast.success('Production batch added');
+      setBatchForm({ batchNumber: '', productName: '', quantityProduced: '0', unit: 'pcs', notes: '' });
+      loadData();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Unable to save production batch');
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="rounded-[2rem] border border-slate-800/70 bg-slate-950/70 p-6 text-white shadow-xl">
+        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+          <div>
+            <p className="text-sm uppercase tracking-[0.3em] text-slate-400">Operations & Reporting</p>
+            <h1 className="mt-2 text-3xl font-semibold">Business Operations Hub</h1>
+            <p className="mt-2 text-sm text-slate-400">Track raw materials, production batches, and month-wise sales performance in one place.</p>
+          </div>
+          <div className="rounded-2xl border border-slate-800 bg-slate-900/70 px-4 py-3">
+            <label className="text-xs uppercase tracking-[0.3em] text-slate-400">Select month</label>
+            <input type="month" value={month} onChange={(event) => setMonth(event.target.value)} className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white" />
+          </div>
+        </div>
+        {(isLoading || errorMessage) && (
+          <div className={`mt-4 rounded-3xl border px-4 py-3 text-sm ${isLoading ? 'border-slate-200 bg-slate-50 text-slate-700' : 'border-rose-200 bg-rose-50 text-rose-700'}`}>
+            {isLoading ? 'Loading operations data...' : errorMessage}
+          </div>
+        )}
+      </div>
+
+      <div className="grid gap-6 xl:grid-cols-3">
+        <div className="rounded-[2rem] border border-slate-800/70 bg-white p-6 shadow-sm">
+          <p className="text-sm uppercase tracking-[0.3em] text-slate-400">Raw material spend</p>
+          <p className="mt-3 text-3xl font-semibold text-slate-900">RS {rawMaterialSpend}</p>
+        </div>
+        <div className="rounded-[2rem] border border-slate-800/70 bg-white p-6 shadow-sm">
+          <p className="text-sm uppercase tracking-[0.3em] text-slate-400">Production batches</p>
+          <p className="mt-3 text-3xl font-semibold text-slate-900">{productionBatches.length}</p>
+        </div>
+        <div className="rounded-[2rem] border border-slate-800/70 bg-white p-6 shadow-sm">
+          <p className="text-sm uppercase tracking-[0.3em] text-slate-400">Monthly sales</p>
+          <p className="mt-3 text-3xl font-semibold text-slate-900">RS {report?.totalSales ?? 0}</p>
+        </div>
+      </div>
+
+      <div className="grid gap-6 xl:grid-cols-2">
+        <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+          <h2 className="text-xl font-semibold text-slate-900">Add raw material purchase</h2>
+          <form className="mt-4 space-y-3" onSubmit={handleRawMaterialSubmit}>
+            <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Material name" className="w-full rounded-2xl border border-slate-300 px-4 py-3" required />
+            <input value={form.supplier} onChange={(e) => setForm({ ...form, supplier: e.target.value })} placeholder="Supplier" className="w-full rounded-2xl border border-slate-300 px-4 py-3" />
+            <div className="grid gap-3 sm:grid-cols-3">
+              <input type="number" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: e.target.value })} placeholder="Quantity" className="w-full rounded-2xl border border-slate-300 px-4 py-3" />
+              <input value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })} placeholder="Unit" className="w-full rounded-2xl border border-slate-300 px-4 py-3" />
+              <input type="number" value={form.unitCost} onChange={(e) => setForm({ ...form, unitCost: e.target.value })} placeholder="Unit cost" className="w-full rounded-2xl border border-slate-300 px-4 py-3" />
+            </div>
+            <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Notes" className="min-h-[90px] w-full rounded-2xl border border-slate-300 px-4 py-3" />
+            <button type="submit" className="rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-primary/90 hover:shadow-sm">Save raw material</button>
+          </form>
+        </div>
+
+        <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+          <h2 className="text-xl font-semibold text-slate-900">Add production batch</h2>
+          <form className="mt-4 space-y-3" onSubmit={handleBatchSubmit}>
+            <input value={batchForm.batchNumber} onChange={(e) => setBatchForm({ ...batchForm, batchNumber: e.target.value })} placeholder="Batch number" className="w-full rounded-2xl border border-slate-300 px-4 py-3" />
+            <input value={batchForm.productName} onChange={(e) => setBatchForm({ ...batchForm, productName: e.target.value })} placeholder="Product name" className="w-full rounded-2xl border border-slate-300 px-4 py-3" required />
+            <div className="grid gap-3 sm:grid-cols-2">
+              <input type="number" value={batchForm.quantityProduced} onChange={(e) => setBatchForm({ ...batchForm, quantityProduced: e.target.value })} placeholder="Quantity produced" className="w-full rounded-2xl border border-slate-300 px-4 py-3" />
+              <input value={batchForm.unit} onChange={(e) => setBatchForm({ ...batchForm, unit: e.target.value })} placeholder="Unit" className="w-full rounded-2xl border border-slate-300 px-4 py-3" />
+            </div>
+            <textarea value={batchForm.notes} onChange={(e) => setBatchForm({ ...batchForm, notes: e.target.value })} placeholder="Notes" className="min-h-[90px] w-full rounded-2xl border border-slate-300 px-4 py-3" />
+            <button type="submit" className="rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-primary/90 hover:shadow-sm">Save batch</button>
+          </form>
+        </div>
+      </div>
+
+      <div className="grid gap-6 xl:grid-cols-2">
+        <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+          <h2 className="text-xl font-semibold text-slate-900">Raw materials</h2>
+          <div className="mt-4 space-y-3">
+            {rawMaterials.length === 0 ? <p className="text-sm text-slate-500">No raw materials recorded for this month.</p> : rawMaterials.map((item) => (
+              <div key={item._id} className="rounded-2xl border border-slate-200 p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="font-semibold text-slate-900">{item.name}</p>
+                    <p className="text-sm text-slate-500">{item.supplier}</p>
+                  </div>
+                  <div className="text-right text-sm text-slate-600">
+                    <p>{item.quantity} {item.unit}</p>
+                    <p>RS {item.totalCost}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+          <h2 className="text-xl font-semibold text-slate-900">Production batches</h2>
+          <div className="mt-4 space-y-3">
+            {productionBatches.length === 0 ? <p className="text-sm text-slate-500">No production batches recorded for this month.</p> : productionBatches.map((item) => (
+              <div key={item._id} className="rounded-2xl border border-slate-200 p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="font-semibold text-slate-900">{item.productName}</p>
+                    <p className="text-sm text-slate-500">Batch: {item.batchNumber}</p>
+                  </div>
+                  <div className="text-right text-sm text-slate-600">
+                    <p>{item.quantityProduced} {item.unit}</p>
+                    <p>{item.notes}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+        <h2 className="text-xl font-semibold text-slate-900">Monthly business report</h2>
+        <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <div className="rounded-2xl bg-slate-50 p-4">
+            <p className="text-sm text-slate-500">Raw material spend</p>
+            <p className="mt-2 text-2xl font-semibold text-slate-900">RS {report?.rawMaterialSpend ?? 0}</p>
+          </div>
+          <div className="rounded-2xl bg-slate-50 p-4">
+            <p className="text-sm text-slate-500">Total sales</p>
+            <p className="mt-2 text-2xl font-semibold text-slate-900">RS {report?.totalSales ?? 0}</p>
+          </div>
+          <div className="rounded-2xl bg-slate-50 p-4">
+            <p className="text-sm text-slate-500">Website sales</p>
+            <p className="mt-2 text-2xl font-semibold text-slate-900">RS {report?.websiteSales ?? 0}</p>
+          </div>
+          <div className="rounded-2xl bg-slate-50 p-4">
+            <p className="text-sm text-slate-500">POS sales</p>
+            <p className="mt-2 text-2xl font-semibold text-slate-900">RS {report?.posSales ?? 0}</p>
+          </div>
+        </div>
+        <div className="mt-6 rounded-2xl border border-slate-200 p-4">
+          <p className="text-sm font-semibold text-slate-700">Production by product</p>
+          <div className="mt-3 space-y-2">
+            {report && Object.entries(report.productionByProduct || {}).length > 0 ? Object.entries(report.productionByProduct || {}).map(([name, quantity]) => (
+              <div key={name} className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2 text-sm text-slate-700">
+                <span>{name}</span>
+                <span>{String(quantity)}</span>
+              </div>
+            )) : <p className="text-sm text-slate-500">No production data for this month yet.</p>}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
