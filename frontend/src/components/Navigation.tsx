@@ -95,7 +95,7 @@ export default function Navigation() {
   const wishlistCount = isMounted ? wishlistItems.length : 0;
   const filteredCategories = Array.isArray(categories) ? categories.filter((c) => {
     const name = (c.name || '').toString().toLowerCase().trim();
-    return name !== 'healthy snacks' && name !== 'gift packs';
+    return name !== 'healthy snacks' && name !== 'gift packs' && name !== 'powder' && name !== 'food powders';
   }) : [];
   const [searchText, setSearchText] = useState('');
   const mobileNavItems = [

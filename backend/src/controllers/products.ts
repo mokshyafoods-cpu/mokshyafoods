@@ -83,12 +83,16 @@ export const getAllProducts = async (req: Request, res: Response): Promise<Respo
             return { category: new mongoose.Types.ObjectId(value) };
           }
           const normalizedValue = value.toLowerCase().replace(/^category-/, '');
-          const categoryAliases = Array.from(new Set([value, `category-${normalizedValue}`]));
+          const categoryNames = normalizedValue === 'powder' || normalizedValue === 'food-powders'
+            ? ['powder', 'food-powders']
+            : [normalizedValue];
+          const categoryAliases = Array.from(new Set(categoryNames.flatMap((name) => [name, `category-${name}`])));
+          const categoryPatterns = categoryAliases.map((alias) => new RegExp(`^${alias}$`, 'i'));
           return {
             $or: [
-              ...categoryAliases.map((alias) => ({ category: alias })),
-              ...categoryAliases.map((alias) => ({ categoryName: alias })),
-              ...categoryAliases.map((alias) => ({ categorySlug: alias })),
+              ...categoryPatterns.map((pattern) => ({ category: pattern })),
+              ...categoryPatterns.map((pattern) => ({ categoryName: pattern })),
+              ...categoryPatterns.map((pattern) => ({ categorySlug: pattern })),
             ],
           };
         });
