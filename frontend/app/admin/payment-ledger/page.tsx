@@ -298,8 +298,8 @@ export default function PaymentLedgerPage() {
   }, [page, fromDate, toDate]);
 
   return (
-    <div className="space-y-8">
-      <div className="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-xl">
+    <div className="space-y-6 sm:space-y-8">
+      <div className="rounded-[2rem] border border-slate-200 bg-white p-4 shadow-xl sm:p-6 lg:p-8">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <p className="text-sm uppercase tracking-[0.3em] text-slate-400">Payment Ledger</p>
@@ -337,7 +337,7 @@ export default function PaymentLedgerPage() {
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-[2rem] border border-slate-200 bg-white shadow-xl">
+      <div className="min-w-0 w-full overflow-x-auto rounded-[2rem] border border-slate-200 bg-white shadow-xl">
         <div className="min-w-[1400px]">
           <div className="grid gap-0 border-b border-slate-200 bg-slate-100 px-6 py-4 text-sm font-semibold uppercase tracking-[0.2em] text-slate-500 md:grid-cols-[1fr_1fr_1.1fr_0.75fr_0.75fr_0.75fr_0.7fr_0.7fr_0.8fr]">
             <span>Order #</span>

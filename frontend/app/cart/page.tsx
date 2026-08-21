@@ -83,11 +83,11 @@ export default function CartPage() {
     <div className="min-h-screen flex flex-col bg-slate-50">
       <Navigation />
 
-      <main className="flex-grow py-12 px-4">
+      <main className="flex-grow px-4 py-8 sm:py-12">
         <div className="max-w-6xl mx-auto">
-          <h1 className="text-4xl font-bold text-primary mb-8">Shopping Cart</h1>
+          <h1 className="mb-6 text-3xl font-bold text-primary sm:mb-8 sm:text-4xl">Shopping Cart</h1>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:gap-8">
             {/* Cart Items */}
             <div className="lg:col-span-2">
               <div className="bg-white rounded-3xl border border-slate-200 shadow-sm">
@@ -132,7 +132,7 @@ export default function CartPage() {
                   const discountAmount = detailCompareAtPrice - detailPrice;
 
                   return (
-                    <div key={item.productId} className="p-6 border-b border-slate-200 last:border-b-0 flex flex-col gap-6 sm:flex-row sm:items-center">
+                    <div key={item.productId} className="flex flex-col gap-4 border-b border-slate-200 p-4 last:border-b-0 sm:flex-row sm:items-center sm:gap-6 sm:p-6">
                       <div className="flex items-center gap-4">
                         <div className="text-sm font-semibold text-white bg-primary rounded-full w-8 h-8 flex items-center justify-center">{idx + 1}</div>
                         <div className="w-20 h-20 rounded-2xl bg-slate-100 overflow-hidden flex items-center justify-center flex-shrink-0">
@@ -176,7 +176,7 @@ export default function CartPage() {
                           type="button"
                           onClick={() => updateQuantity(item.productId, Math.max(1, item.quantity - 1))}
                           aria-label={`Decrease quantity of ${item.name}`}
-                          className="rounded-full bg-white p-2 text-slate-700 shadow-sm transition hover:bg-slate-100"
+                          className="h-10 w-10 rounded-full bg-white p-2.5 text-slate-700 shadow-sm transition hover:bg-slate-100"
                         >
                           <Minus className="w-4 h-4" />
                         </button>
@@ -187,7 +187,7 @@ export default function CartPage() {
                           type="button"
                           onClick={() => updateQuantity(item.productId, item.quantity + 1)}
                           aria-label={`Increase quantity of ${item.name}`}
-                          className="rounded-full bg-white p-2 text-slate-700 shadow-sm transition hover:bg-slate-100"
+                          className="h-10 w-10 rounded-full bg-white p-2.5 text-slate-700 shadow-sm transition hover:bg-slate-100"
                         >
                           <Plus className="w-4 h-4" />
                         </button>

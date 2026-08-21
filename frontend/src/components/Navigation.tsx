@@ -204,7 +204,7 @@ export default function Navigation() {
   };
 
   return (
-    <div className="sticky top-0 z-50 w-full overflow-x-hidden pb-20 pt-0 supports-[padding-top:env(safe-area-inset-top)]:pt-[env(safe-area-inset-top,0px)] lg:pb-0">
+    <div className="sticky top-0 z-50 w-full overflow-x-hidden pb-16 pt-0 supports-[padding-top:env(safe-area-inset-top)]:pt-[env(safe-area-inset-top,0px)] lg:pb-0">
       <div className="bg-primary px-3 py-1 text-center text-[11px] font-semibold leading-3 text-primary-foreground sm:px-4 sm:py-1.5 sm:text-sm sm:leading-4">
         <span className="block truncate sm:whitespace-normal">
           Naturally dried foods and food powders from Nepal, prepared with care.
@@ -237,6 +237,13 @@ export default function Navigation() {
                   <Package2 className="h-4 w-4 text-primary" />
                   <span className="relative inline-block transform transition-transform duration-150 ease-out group-hover:-translate-y-1">
                     Shop
+                    <span className="absolute left-0 -bottom-1 h-[3px] w-full bg-primary origin-left scale-x-0 transition-transform duration-150 ease-out group-hover:scale-x-100" />
+                  </span>
+                </Link>
+                <Link href="/products?category=powder" onClick={closeNav} className="flex items-center gap-2 text-slate-950 group hover:text-primary transition">
+                  <BadgeInfo className="h-4 w-4 text-primary" />
+                  <span className="relative inline-block transform transition-transform duration-150 ease-out group-hover:-translate-y-1">
+                    Powder
                     <span className="absolute left-0 -bottom-1 h-[3px] w-full bg-primary origin-left scale-x-0 transition-transform duration-150 ease-out group-hover:scale-x-100" />
                   </span>
                 </Link>
@@ -362,6 +369,10 @@ export default function Navigation() {
                 <Link href="/products" onClick={closeNav} className="flex items-center gap-2 py-2 text-slate-950 hover:text-primary">
                   <Package2 className="h-4 w-4 text-primary" />
                   <span>All Products</span>
+                </Link>
+                <Link href="/products?category=powder" onClick={closeNav} className="flex items-center gap-2 py-2 text-slate-950 hover:text-primary">
+                  <BadgeInfo className="h-4 w-4 text-primary" />
+                  <span>Powder</span>
                 </Link>
                 {filteredCategories.slice(0, 5).map((category) => (
                   <button

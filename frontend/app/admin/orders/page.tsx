@@ -309,7 +309,7 @@ export default function AdminOrdersPage() {
   }, [orders]);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
       <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-xl">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
           <div>
@@ -533,8 +533,8 @@ export default function AdminOrdersPage() {
       </div>
 
       {ledgerOpen && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/60 px-4 py-6">
-          <div className="w-full max-w-3xl rounded-[2rem] border border-slate-200 bg-white shadow-2xl">
+        <div className="fixed inset-0 z-[60] flex items-start justify-center overflow-y-auto bg-slate-950/60 px-4 py-6 sm:items-center">
+          <div className="my-auto max-h-[calc(100dvh-3rem)] w-full max-w-3xl overflow-y-auto rounded-[2rem] border border-slate-200 bg-white shadow-2xl">
             <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
               <div>
                 <p className="text-sm uppercase tracking-[0.3em] text-slate-400">Payment ledger</p>
@@ -595,8 +595,8 @@ export default function AdminOrdersPage() {
       )}
 
       {editingOrder && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/60 px-4 py-6">
-          <div className="w-full max-w-3xl rounded-[2rem] border border-slate-200 bg-white shadow-2xl">
+        <div className="fixed inset-0 z-[70] flex items-start justify-center overflow-y-auto bg-slate-950/60 px-4 py-6 sm:items-center">
+          <div className="my-auto max-h-[calc(100dvh-3rem)] w-full max-w-3xl overflow-y-auto rounded-[2rem] border border-slate-200 bg-white shadow-2xl">
             <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
               <div>
                 <p className="text-sm uppercase tracking-[0.3em] text-slate-400">Edit order</p>

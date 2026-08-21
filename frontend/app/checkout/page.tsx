@@ -201,14 +201,14 @@ export default function CheckoutPage() {
     <div className="min-h-screen flex flex-col bg-slate-50">
       <Navigation />
 
-      <main className="flex-grow py-12 px-4">
+      <main className="flex-grow px-4 py-8 sm:py-12">
         <div className="max-w-6xl mx-auto">
-          <h1 className="text-4xl font-bold text-primary mb-8">Checkout</h1>
+          <h1 className="mb-6 text-3xl font-bold text-primary sm:mb-8 sm:text-4xl">Checkout</h1>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:gap-8">
             <div className="lg:col-span-2">
               <form onSubmit={handleSubmit} className="space-y-6" noValidate>
-                <div className="rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-sm space-y-4">
+                <div className="space-y-4 rounded-[1.75rem] border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
                   <h2 className="text-xl font-bold text-primary">Personal Information</h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
@@ -259,7 +259,7 @@ export default function CheckoutPage() {
                   </div>
                 </div>
 
-                <div className="rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-sm space-y-4">
+                <div className="space-y-4 rounded-[1.75rem] border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
                   <h2 className="text-xl font-bold text-primary">Delivery Details</h2>
 
                   <div>
@@ -298,7 +298,7 @@ export default function CheckoutPage() {
                   </div>
                 </div>
 
-                <div className="rounded-[1.75rem] border border-slate-300 bg-white p-6 shadow-sm space-y-4">
+                <div className="space-y-4 rounded-[1.75rem] border border-slate-300 bg-white p-4 shadow-sm sm:p-6">
                   <h2 className="text-xl font-bold text-slate-950">Payment Method</h2>
                   <div className="space-y-3">
                     <label className="flex items-center gap-3 rounded-2xl border border-primary bg-primary/10 px-4 py-4 text-slate-900 shadow-sm">

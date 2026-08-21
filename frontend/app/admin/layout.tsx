@@ -234,7 +234,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </aside>
         )}
 
-        <main className={`flex-1 ${isPosFullScreen ? 'lg:p-0' : 'lg:p-8'}`}>
+        <main className={`min-w-0 flex-1 ${isPosFullScreen ? 'lg:p-0' : 'lg:p-8'}`}>
           <div className="print:hidden border-b border-slate-800/70 bg-slate-950/75 px-4 py-4 backdrop-blur-xl lg:px-0">
             <div className={`mx-auto flex items-center justify-between gap-4 ${isPosFullScreen ? 'max-w-none px-4 sm:px-6 lg:px-8' : 'max-w-7xl'}`}>
               <div>
@@ -290,7 +290,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               </div>
             </div>
           </div>
-          <div className={isPosFullScreen ? 'w-full px-0 py-0' : 'mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6 lg:px-0'}>
+          <div className={isPosFullScreen ? 'w-full px-0 py-0' : 'mx-auto max-w-7xl space-y-5 px-4 py-4 sm:space-y-6 sm:px-6 sm:py-6 lg:px-0'}>
             {renderSectionContent()}
           </div>
         </main>
